@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { ThemedText } from './ThemedText';
 import { fr } from '../i18n/fr';
@@ -12,8 +13,12 @@ const LABELS: Record<string, string> = {
 };
 
 export function TabBar({ state, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
   return (
-    <View className="flex-row bg-header dark:bg-headerDark border-t border-hairline dark:border-hairlineDark px-2 pt-2.5 pb-7">
+    <View
+      className="flex-row bg-header dark:bg-headerDark border-t border-hairline dark:border-hairlineDark px-2 pt-2.5"
+      style={{ paddingBottom: Math.max(insets.bottom, 8) }}
+    >
       {state.routes.map((route, index) => {
         const focused = state.index === index;
         return (

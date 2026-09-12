@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react-nativ
 import { TeamScreen } from './TeamScreen';
 import * as teamsService from '../services/teams';
 import { useAppStore } from '../store/useAppStore';
+import type { ResultTag } from '../types';
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
@@ -19,7 +20,7 @@ const mockTeamDetail = {
     played: 3,
     goalDiff: 3,
     stadium: 'Stade des Marnes',
-    form: ['V', 'V', 'N', 'D', 'V'] as const,
+    form: ['V', 'V', 'N', 'D', 'V'] as ResultTag[],
     squadCount: 18,
   },
   nextMatch: null,

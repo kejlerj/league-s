@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "ligue-amateur-scaffold",
-    "slug": "ligue-amateur-scaffold",
+    "name": "Ligue Amateur",
+    "slug": "ligue-amateur",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "ligueamateurscaffold",
+    "scheme": "ligueamateur",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true

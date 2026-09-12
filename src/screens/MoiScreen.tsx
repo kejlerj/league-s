@@ -40,9 +40,9 @@ export function MoiScreen() {
         </View>
       </HeaderCard>
 
-      <View className="px-5 pt-4 gap-4.5 pb-6">
+      <View className="px-5 pt-4 gap-[18px] pb-6">
         <View className="flex-row gap-3">
-          <Card>
+          <Card className="flex-1">
             <View className="p-3.5">
               <ThemedText mono tone="accent" weight="semibold" size={20}>{profile.pronoPoints}</ThemedText>
               <ThemedText tone="muted" weight="medium" size={11} className="mt-1.5 uppercase tracking-wide">
@@ -50,7 +50,7 @@ export function MoiScreen() {
               </ThemedText>
             </View>
           </Card>
-          <Card>
+          <Card className="flex-1">
             <View className="p-3.5">
               <ThemedText mono weight="semibold" size={20}>{followedCount}</ThemedText>
               <ThemedText tone="muted" weight="medium" size={11} className="mt-1.5 uppercase tracking-wide">
@@ -65,11 +65,13 @@ export function MoiScreen() {
           <Card>
             <CardRow isFirst>
               <ThemedText weight="medium" size={14.5} className="flex-1">{fr.moi.theme}</ThemedText>
-              <SegmentedTabs
-                options={fr.moi.themeOptions}
-                value={THEME_MODES.indexOf(themeMode)}
-                onChange={(index) => setThemeMode(THEME_MODES[index])}
-              />
+              <View className="flex-1">
+                <SegmentedTabs
+                  options={fr.moi.themeOptions}
+                  value={THEME_MODES.indexOf(themeMode)}
+                  onChange={(index) => setThemeMode(THEME_MODES[index])}
+                />
+              </View>
             </CardRow>
             {accountRows.map((row) => (
               <CardRow key={row.label}>

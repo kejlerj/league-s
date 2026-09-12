@@ -26,7 +26,7 @@ export function getTeam(id: string): Promise<TeamDetail> {
       ? {
           ...nextFixture,
           opponentName: opponentName(nextFixture),
-          venueTag: (nextFixture.homeTeamId === id ? 'dom.' : 'ext.') as const,
+          venueTag: (nextFixture.homeTeamId === id ? 'dom.' : 'ext.') as 'dom.' | 'ext.',
         }
       : null;
 
