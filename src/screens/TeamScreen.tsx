@@ -15,6 +15,7 @@ import { useAsync } from '../hooks/useAsync';
 import { useAppStore } from '../store/useAppStore';
 import { getTeam } from '../services/teams';
 import { fr } from '../i18n/fr';
+import { formatShortDate } from '../logic/formatDate';
 
 export function TeamScreen({ id }: { id: string }) {
   const isFollowing = useAppStore((s) => s.isFollowing(id));
@@ -88,7 +89,7 @@ export function TeamScreen({ id }: { id: string }) {
                   <View className="flex-row items-center justify-between">
                     <SectionLabel>{fr.team.nextMatch}</SectionLabel>
                     <ThemedText tone="accent" mono weight="semibold" size={12.5}>
-                      {new Date(data.nextMatch.kickoff).toLocaleDateString('fr-FR')}
+                      {formatShortDate(data.nextMatch.kickoff)}
                     </ThemedText>
                   </View>
                   <ThemedText weight="semibold" size={17}>

@@ -15,6 +15,7 @@ import { getMatch } from '../services/matches';
 import { teams } from '../data/teams';
 import { players } from '../data/players';
 import { fr } from '../i18n/fr';
+import { formatMatchDate, formatMatchDateTime } from '../logic/formatDate';
 
 export function MatchScreen({ id }: { id: string }) {
   const { data: match, loading, error, reload } = useAsync(() => getMatch(id), [id]);
@@ -32,9 +33,20 @@ export function MatchScreen({ id }: { id: string }) {
         <View className="gap-4">
           <View className="flex-row items-center justify-between">
             <BackLink label={`Journée ${match?.matchday ?? ''}`} />
-            <View className="bg-field dark:bg-fieldDark rounded-md px-2 py-1">
-              <ThemedText tone="muted" weight="semibold" size={11} className="uppercase tracking-wide">
-                {fr.match.done}
+            <View
+              className={`rounded-md px-2 py-1 ${
+                match?.status === 'live' ? 'bg-warnBg dark:bg-warnBgDark' : 'bg-field dark:bg-fieldDark'
+              }`}
+            >
+              <ThemedText
+                tone={match?.status === 'live' ? undefined : 'muted'}
+                className={
+                  match?.status === 'live' ? 'text-warn dark:text-warnDark uppercase tracking-wide' : 'uppercase tracking-wide'
+                }
+                weight="semibold"
+                size={11}
+              >
+                {match?.status === 'live' ? fr.match.live : fr.match.done}
               </ThemedText>
             </View>
           </View>
@@ -46,11 +58,17 @@ export function MatchScreen({ id }: { id: string }) {
                   <Crest size={46} />
                   <ThemedText weight="medium" size={13.5} className="text-center">{homeTeam?.name}</ThemedText>
                 </View>
-                <View className="flex-row items-center gap-2.5">
-                  <ThemedText mono weight="semibold" size={40}>{match.homeScore}</ThemedText>
-                  <ThemedText tone="faint" size={26}>–</ThemedText>
-                  <ThemedText mono weight="semibold" size={40} tone="muted">{match.awayScore}</ThemedText>
-                </View>
+                {match.status !== 'upcoming' && match.homeScore !== undefined && match.awayScore !== undefined ? (
+                  <View className="flex-row items-center gap-2.5">
+                    <ThemedText mono weight="semibold" size={40}>{match.homeScore}</ThemedText>
+                    <ThemedText tone="faint" size={26}>–</ThemedText>
+                    <ThemedText mono weight="semibold" size={40} tone="muted">{match.awayScore}</ThemedText>
+                  </View>
+                ) : (
+                  <ThemedText tone="accent" weight="semibold" size={16} className="uppercase tracking-wide">
+                    {fr.match.live}
+                  </ThemedText>
+                )}
                 <View className="flex-1 items-center gap-2">
                   <Crest size={46} />
                   <ThemedText weight="medium" size={13.5} tone="muted" className="text-center">
@@ -59,7 +77,7 @@ export function MatchScreen({ id }: { id: string }) {
                 </View>
               </View>
               <ThemedText tone="muted" size={12.5} className="text-center">
-                {new Date(match.kickoff).toLocaleDateString('fr-FR')} · {match.venue}
+                {formatMatchDate(match.kickoff)} · {match.venue}
                 {match.spectators ? ` · ${match.spectators} spectateurs` : ''}
               </ThemedText>
             </>
@@ -152,7 +170,7 @@ export function MatchScreen({ id }: { id: string }) {
                     match.referee ? [fr.match.infoKeys.referee, match.referee] : null,
                     [fr.match.infoKeys.venue, match.venue],
                     match.spectators ? [fr.match.infoKeys.spectators, String(match.spectators)] : null,
-                    [fr.match.infoKeys.kickoff, new Date(match.kickoff).toLocaleString('fr-FR')],
+                    [fr.match.infoKeys.kickoff, formatMatchDateTime(match.kickoff)],
                   ].filter((entry): entry is [string, string] => entry !== null)
                 ).map(([k, v], i) => (
                   <CardRow key={k} isFirst={i === 0}>

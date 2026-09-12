@@ -80,7 +80,11 @@ export function ClassementScreen() {
             <Card>
               {standings.data.map((row, i) => (
                 <Pressable key={row.teamId} onPress={() => router.push(`/classement/team/${row.teamId}`)}>
-                  <CardRow isFirst={i === 0}>
+                  <CardRow
+                    isFirst={i === 0}
+                    testID={`standings-row-${row.teamId}`}
+                    className={row.followed ? 'bg-accent/5 dark:bg-accentDark/10' : undefined}
+                  >
                     <ThemedText
                       mono
                       weight="semibold"

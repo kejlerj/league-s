@@ -60,6 +60,7 @@ export const fr = {
   },
   match: {
     done: 'Terminé',
+    live: 'En direct',
     videoLabel: 'Résumé du match',
     videoOpen: 'Ouvrir ›',
     events: 'Faits de match',
