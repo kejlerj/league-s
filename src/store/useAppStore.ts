@@ -28,41 +28,58 @@ const DEFAULT_FOLLOWS: Record<string, FollowEntry> = {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set, get) => ({
-      themeMode: 'system',
-      follows: DEFAULT_FOLLOWS,
-      mvpVotes: {},
+    (set, get) => {
+      // Cache the derived id array by the `follows` object identity so that
+      // `useAppStore((s) => s.followedTeamIds())` returns a referentially
+      // stable result across renders when `follows` hasn't changed. Without
+      // this, each call allocates a new array; zustand's React 19
+      // `useSyncExternalStore`-based subscription then sees a "changed"
+      // snapshot on every read and can loop ("Maximum update depth
+      // exceeded").
+      let followedIdsCache: { key: AppState['follows']; ids: string[] } | null = null;
 
-      setThemeMode: (mode) => set({ themeMode: mode }),
+      return {
+        themeMode: 'system',
+        follows: DEFAULT_FOLLOWS,
+        mvpVotes: {},
 
-      toggleFollow: (teamId) =>
-        set((state) => {
-          const next = { ...state.follows };
-          if (next[teamId]) {
-            delete next[teamId];
-          } else {
-            next[teamId] = { notifyLevel: 'full' };
+        setThemeMode: (mode) => set({ themeMode: mode }),
+
+        toggleFollow: (teamId) =>
+          set((state) => {
+            const next = { ...state.follows };
+            if (next[teamId]) {
+              delete next[teamId];
+            } else {
+              next[teamId] = { notifyLevel: 'full' };
+            }
+            return { follows: next };
+          }),
+
+        isFollowing: (teamId) => Boolean(get().follows[teamId]),
+
+        followedTeamIds: () => {
+          const follows = get().follows;
+          if (!followedIdsCache || followedIdsCache.key !== follows) {
+            followedIdsCache = { key: follows, ids: Object.keys(follows) };
           }
-          return { follows: next };
-        }),
+          return followedIdsCache.ids;
+        },
 
-      isFollowing: (teamId) => Boolean(get().follows[teamId]),
+        toggleMvpVote: (matchId, playerId) =>
+          set((state) => {
+            const next = { ...state.mvpVotes };
+            if (next[matchId] === playerId) {
+              delete next[matchId];
+            } else {
+              next[matchId] = playerId;
+            }
+            return { mvpVotes: next };
+          }),
 
-      followedTeamIds: () => Object.keys(get().follows),
-
-      toggleMvpVote: (matchId, playerId) =>
-        set((state) => {
-          const next = { ...state.mvpVotes };
-          if (next[matchId] === playerId) {
-            delete next[matchId];
-          } else {
-            next[matchId] = playerId;
-          }
-          return { mvpVotes: next };
-        }),
-
-      hasVotedFor: (matchId, playerId) => get().mvpVotes[matchId] === playerId,
-    }),
+        hasVotedFor: (matchId, playerId) => get().mvpVotes[matchId] === playerId,
+      };
+    },
     {
       name: 'ligue-amateur-app-store',
       storage: createJSONStorage(() => AsyncStorage),
