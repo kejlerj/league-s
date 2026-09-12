@@ -43,7 +43,14 @@ export function getMyFixtures(followedTeamIds: string[]): Promise<FixtureRow[]> 
       }
     }
 
-    return rows.sort((a, b) => {
+    const seen = new Set<string>();
+    const deduped = rows.filter((row) => {
+      if (seen.has(row.matchId)) return false;
+      seen.add(row.matchId);
+      return true;
+    });
+
+    return deduped.sort((a, b) => {
       const kickoffOf = (matchId: string) =>
         new Date(fixtures.find((m) => m.id === matchId)!.kickoff).getTime();
       return kickoffOf(a.matchId) - kickoffOf(b.matchId);

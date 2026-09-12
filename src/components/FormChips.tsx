@@ -12,7 +12,13 @@ const BG_CLASS: Record<ResultTag, string> = {
 const TEXT_STYLE: Record<ResultTag, { color: string } | undefined> = {
   V: { color: '#fff' },
   N: undefined,
-  D: { color: '#A82C1E' },
+  D: undefined,
+};
+
+const TEXT_CLASS: Record<ResultTag, string | undefined> = {
+  V: undefined,
+  N: undefined,
+  D: 'text-neg dark:text-negDark',
 };
 
 export function FormChips({ form }: { form: ResultTag[] }) {
@@ -23,7 +29,7 @@ export function FormChips({ form }: { form: ResultTag[] }) {
           key={i}
           className={`w-[22px] h-[22px] rounded-md items-center justify-center ${BG_CLASS[tag]}`}
         >
-          <ThemedText weight="semibold" size={11.5} style={TEXT_STYLE[tag]}>
+          <ThemedText weight="semibold" size={11.5} style={TEXT_STYLE[tag]} className={TEXT_CLASS[tag]}>
             {tag}
           </ThemedText>
         </View>

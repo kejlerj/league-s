@@ -11,6 +11,12 @@ test('getMyFixtures returns one row per fixture for every followed team, sorted 
   expect(timestamps).toEqual([...timestamps].sort((a, b) => a - b));
 });
 
+test('getMyFixtures dedupes a fixture shared by two followed teams into a single row', async () => {
+  const rows = await getMyFixtures(['fc-vallonnais', 'us-coteaux']);
+  const sharedFixtureRows = rows.filter((r) => r.matchId === 'm-j4-vallonnais');
+  expect(sharedFixtureRows).toHaveLength(1);
+});
+
 test('getMatch resolves a known match and rejects an unknown id', async () => {
   const match = await getMatch('m-j3-vallonnais');
   expect(match.homeScore).toBe(3);
