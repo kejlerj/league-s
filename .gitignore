@@ -26,6 +26,9 @@ npm-debug.*
 yarn-debug.*
 yarn-error.*
 
+# Claude Code harness runtime state
+.claude/*.lock
+
 # macOS
 .DS_Store
 *.pem
