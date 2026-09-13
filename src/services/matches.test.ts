@@ -1,14 +1,14 @@
 import { getMyFixtures, getMatch } from './matches';
 import { fixtures } from '../data/fixtures';
 
-test('getMyFixtures returns one row per fixture for every followed team, sorted by kickoff', async () => {
+test('getMyFixtures returns one row per fixture for every followed team, newest kickoff first', async () => {
   const rows = await getMyFixtures(['fc-vallonnais', 'as-riverain']);
   expect(rows.length).toBeGreaterThanOrEqual(6);
 
   const kickoffOf = (matchId: string) =>
     new Date(fixtures.find((m) => m.id === matchId)!.kickoff).getTime();
   const timestamps = rows.map((r) => kickoffOf(r.matchId));
-  expect(timestamps).toEqual([...timestamps].sort((a, b) => a - b));
+  expect(timestamps).toEqual([...timestamps].sort((a, b) => b - a));
 });
 
 test('getMyFixtures dedupes a fixture shared by two followed teams into a single row', async () => {
