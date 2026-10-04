@@ -13,6 +13,7 @@ import (
 	"league-s/internal/app/player"
 	"league-s/internal/app/season"
 	"league-s/internal/app/squadmembership"
+	"league-s/internal/app/standing"
 	"league-s/internal/app/team"
 	"league-s/internal/httpx"
 )
@@ -46,6 +47,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 		matchStore := match.NewPostgresStore(pool)
 		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/matches", match.NewHandler(match.NewService(matchStore), matchStore).Routes())
+		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/standings", standing.NewHandler(season.NewPostgresStore(pool), matchStore).Routes())
 	})
 
 	return r
