@@ -54,6 +54,16 @@ func TestRoutesAreMounted(t *testing.T) {
 		{http.MethodPatch, "/api/v1/leagues/1/seasons/1/teams/1/squad/1"},
 		{http.MethodPost, "/api/v1/leagues/1/seasons/1/teams/1/squad/1/leave"},
 		{http.MethodPost, "/api/v1/leagues/1/seasons/1/transfers"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1/matches"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1/matches/1"},
+		{http.MethodPatch, "/api/v1/leagues/1/seasons/1/matches/1"},
+		{http.MethodDelete, "/api/v1/leagues/1/seasons/1/matches/abc"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches/1/start"},
+		{http.MethodPut, "/api/v1/leagues/1/seasons/1/matches/1/score"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches/1/finish"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches/1/postpone"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches/1/cancel"},
 	}
 
 	for _, rt := range routes {

@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/cors"
 
 	"league-s/internal/app/league"
+	"league-s/internal/app/match"
 	"league-s/internal/app/player"
 	"league-s/internal/app/season"
 	"league-s/internal/app/squadmembership"
@@ -42,6 +43,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 		squad := squadmembership.NewHandler(squadmembership.NewService(squadStore), squadStore)
 		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad", squad.Routes())
 		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/transfers", squad.TransferRoutes())
+
+		matchStore := match.NewPostgresStore(pool)
+		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/matches", match.NewHandler(match.NewService(matchStore), matchStore).Routes())
 	})
 
 	return r
