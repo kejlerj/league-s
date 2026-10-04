@@ -2,14 +2,17 @@ package server
 
 import (
 	"encoding/json"
-	"league-s/internal/db"
-	"league-s/internal/team"
 	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+
+	"league-s/internal/db"
+	"league-s/internal/httpx"
+	"league-s/internal/team"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -30,7 +33,6 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Mount("/teams", team.NewHandler(team.NewPostgresStore(q)).Routes())
-		// r.Mount("/players", player.NewHandler(player.NewPostgresStore(q)).Routes())
 	})
 
 	return r
@@ -49,6 +51,11 @@ func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {
-	jsonResp, _ := json.Marshal(s.db.Health())
-	_, _ = w.Write(jsonResp)
+	if err := s.db.Health(r.Context()); err != nil {
+		slog.ErrorContext(r.Context(), "health check", "err", err)
+		httpx.JSON(w, http.StatusServiceUnavailable, map[string]string{"status": "down"})
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, map[string]string{"status": "up"})
 }
