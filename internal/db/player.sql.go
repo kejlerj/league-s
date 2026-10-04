@@ -7,26 +7,37 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const createPlayer = `-- name: CreatePlayer :one
-INSERT INTO player (firstname, lastname) 
-VALUES ($1, $2) 
-RETURNING id, firstname, lastname, created_at, updated_at
+INSERT INTO player (league_id, firstname, lastname, icon)
+VALUES ($1, $2, $3, $4)
+RETURNING id, league_id, firstname, lastname, icon, created_at, updated_at
 `
 
 type CreatePlayerParams struct {
+	LeagueID  uuid.UUID
 	Firstname string
 	Lastname  string
+	Icon      *string
 }
 
 func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Player, error) {
-	row := q.db.QueryRow(ctx, createPlayer, arg.Firstname, arg.Lastname)
+	row := q.db.QueryRow(ctx, createPlayer,
+		arg.LeagueID,
+		arg.Firstname,
+		arg.Lastname,
+		arg.Icon,
+	)
 	var i Player
 	err := row.Scan(
 		&i.ID,
+		&i.LeagueID,
 		&i.Firstname,
 		&i.Lastname,
+		&i.Icon,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -34,88 +45,57 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Pla
 }
 
 const getPlayerByID = `-- name: GetPlayerByID :one
-SELECT id, firstname, lastname, created_at, updated_at FROM player WHERE id = $1
+SELECT id, league_id, firstname, lastname, icon, created_at, updated_at FROM player WHERE id = $1 AND league_id = $2
 `
 
-func (q *Queries) GetPlayerByID(ctx context.Context, id int64) (Player, error) {
-	row := q.db.QueryRow(ctx, getPlayerByID, id)
+type GetPlayerByIDParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) GetPlayerByID(ctx context.Context, arg GetPlayerByIDParams) (Player, error) {
+	row := q.db.QueryRow(ctx, getPlayerByID, arg.ID, arg.LeagueID)
 	var i Player
 	err := row.Scan(
 		&i.ID,
+		&i.LeagueID,
 		&i.Firstname,
 		&i.Lastname,
+		&i.Icon,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const getPlayersByTeamAndSeason = `-- name: GetPlayersByTeamAndSeason :many
-SELECT player.id, player.firstname, player.lastname, player.created_at, player.updated_at, team_membership.number FROM player
-JOIN team_membership ON team_membership.player_id = player.id
-WHERE team_membership.team_id = $1
-  AND team_membership.season_id = $2
-  AND team_membership.left_on IS NULL
-ORDER BY player.lastname
-`
-
-type GetPlayersByTeamAndSeasonParams struct {
-	TeamID   int64
-	SeasonID int64
-}
-
-type GetPlayersByTeamAndSeasonRow struct {
-	Player Player
-	Number *int32
-}
-
-func (q *Queries) GetPlayersByTeamAndSeason(ctx context.Context, arg GetPlayersByTeamAndSeasonParams) ([]GetPlayersByTeamAndSeasonRow, error) {
-	rows, err := q.db.Query(ctx, getPlayersByTeamAndSeason, arg.TeamID, arg.SeasonID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetPlayersByTeamAndSeasonRow
-	for rows.Next() {
-		var i GetPlayersByTeamAndSeasonRow
-		if err := rows.Scan(
-			&i.Player.ID,
-			&i.Player.Firstname,
-			&i.Player.Lastname,
-			&i.Player.CreatedAt,
-			&i.Player.UpdatedAt,
-			&i.Number,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const updatePlayer = `-- name: UpdatePlayer :one
 UPDATE player
 SET firstname = $1, lastname = $2, updated_at = now()
-WHERE id = $3 
-RETURNING id, firstname, lastname, created_at, updated_at
+WHERE id = $3 AND league_id = $4
+RETURNING id, league_id, firstname, lastname, icon, created_at, updated_at
 `
 
 type UpdatePlayerParams struct {
 	Firstname string
 	Lastname  string
-	ID        int64
+	ID        uuid.UUID
+	LeagueID  uuid.UUID
 }
 
 func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (Player, error) {
-	row := q.db.QueryRow(ctx, updatePlayer, arg.Firstname, arg.Lastname, arg.ID)
+	row := q.db.QueryRow(ctx, updatePlayer,
+		arg.Firstname,
+		arg.Lastname,
+		arg.ID,
+		arg.LeagueID,
+	)
 	var i Player
 	err := row.Scan(
 		&i.ID,
+		&i.LeagueID,
 		&i.Firstname,
 		&i.Lastname,
+		&i.Icon,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

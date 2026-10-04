@@ -1,13 +1,18 @@
 -- +goose Up
 CREATE TABLE season_team (
-    season_id   BIGINT NOT NULL REFERENCES season(id) ON DELETE CASCADE,
-    team_id     BIGINT NOT NULL REFERENCES team(id) ON DELETE RESTRICT,
+    season_id   UUID NOT NULL,
+    team_id     UUID NOT NULL,
+    league_id   UUID NOT NULL,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    PRIMARY KEY (season_id, team_id)
+    PRIMARY KEY (season_id, team_id),
+    CONSTRAINT season_team_season_fkey FOREIGN KEY (season_id, league_id)
+        REFERENCES season(id, league_id) ON DELETE CASCADE,
+    CONSTRAINT season_team_team_fkey FOREIGN KEY (team_id, league_id)
+        REFERENCES team(id, league_id) ON DELETE RESTRICT,
+    CONSTRAINT season_team_league_key UNIQUE (season_id, team_id, league_id)
 );
 
--- The primary key starts with season_id, so it doesn't help to find a team's seasons
 CREATE INDEX season_team_team ON season_team (team_id);
 
 -- +goose Down

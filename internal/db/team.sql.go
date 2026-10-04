@@ -7,24 +7,28 @@ package db
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const createTeam = `-- name: CreateTeam :one
-INSERT INTO team (name, logo)
-VALUES ($1, $2)
-RETURNING id, name, logo, created_at, updated_at
+INSERT INTO team (league_id, name, logo)
+VALUES ($1, $2, $3)
+RETURNING id, league_id, name, logo, created_at, updated_at
 `
 
 type CreateTeamParams struct {
-	Name string
-	Logo *string
+	LeagueID uuid.UUID
+	Name     string
+	Logo     *string
 }
 
 func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (Team, error) {
-	row := q.db.QueryRow(ctx, createTeam, arg.Name, arg.Logo)
+	row := q.db.QueryRow(ctx, createTeam, arg.LeagueID, arg.Name, arg.Logo)
 	var i Team
 	err := row.Scan(
 		&i.ID,
+		&i.LeagueID,
 		&i.Name,
 		&i.Logo,
 		&i.CreatedAt,
@@ -34,18 +38,55 @@ func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (Team, e
 }
 
 const getTeamByID = `-- name: GetTeamByID :one
-SELECT id, name, logo, created_at, updated_at FROM team WHERE id = $1
+SELECT id, league_id, name, logo, created_at, updated_at FROM team WHERE id = $1 AND league_id = $2
 `
 
-func (q *Queries) GetTeamByID(ctx context.Context, id int64) (Team, error) {
-	row := q.db.QueryRow(ctx, getTeamByID, id)
+type GetTeamByIDParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) GetTeamByID(ctx context.Context, arg GetTeamByIDParams) (Team, error) {
+	row := q.db.QueryRow(ctx, getTeamByID, arg.ID, arg.LeagueID)
 	var i Team
 	err := row.Scan(
 		&i.ID,
+		&i.LeagueID,
 		&i.Name,
 		&i.Logo,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getTeamsByLeagueID = `-- name: GetTeamsByLeagueID :many
+SELECT id, league_id, name, logo, created_at, updated_at FROM team WHERE league_id = $1 ORDER BY name
+`
+
+func (q *Queries) GetTeamsByLeagueID(ctx context.Context, leagueID uuid.UUID) ([]Team, error) {
+	rows, err := q.db.Query(ctx, getTeamsByLeagueID, leagueID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Team
+	for rows.Next() {
+		var i Team
+		if err := rows.Scan(
+			&i.ID,
+			&i.LeagueID,
+			&i.Name,
+			&i.Logo,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

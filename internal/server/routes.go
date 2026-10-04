@@ -1,8 +1,6 @@
 package server
 
 import (
-	"encoding/json"
-	"log"
 	"log/slog"
 	"net/http"
 
@@ -10,9 +8,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
-	"league-s/internal/db"
 	"league-s/internal/httpx"
-	"league-s/internal/team"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -29,25 +25,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	r.Get("/health", s.healthHandler)
 
-	q := db.New(s.db.Pool())
-
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Mount("/teams", team.NewHandler(team.NewPostgresStore(q)).Routes())
-	})
-
 	return r
-}
-
-func (s *Server) HelloWorldHandler(w http.ResponseWriter, r *http.Request) {
-	resp := make(map[string]string)
-	resp["message"] = "Hello World"
-
-	jsonResp, err := json.Marshal(resp)
-	if err != nil {
-		log.Fatalf("error handling JSON marshal. Err: %v", err)
-	}
-
-	_, _ = w.Write(jsonResp)
 }
 
 func (s *Server) healthHandler(w http.ResponseWriter, r *http.Request) {

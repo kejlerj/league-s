@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE league (
-    id          BIGSERIAL PRIMARY KEY,
+    id          UUID PRIMARY KEY DEFAULT uuidv7(),
     name        TEXT NOT NULL,
     logo        TEXT,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
