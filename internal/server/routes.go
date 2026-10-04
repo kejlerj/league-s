@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/cors"
 
 	"league-s/internal/app/league"
+	"league-s/internal/app/team"
 	"league-s/internal/httpx"
 )
 
@@ -30,6 +31,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Mount("/leagues", league.NewHandler(league.NewPostgresStore(pool)).Routes())
+		r.Mount("/leagues/{leagueID}/teams", team.NewHandler(team.NewPostgresStore(pool)).Routes())
 	})
 
 	return r
