@@ -44,6 +44,11 @@ func TestRoutesAreMounted(t *testing.T) {
 		{http.MethodGet, "/api/v1/leagues/1/teams/1"},
 		{http.MethodPost, "/api/v1/leagues/1/players"},
 		{http.MethodGet, "/api/v1/leagues/1/players/1"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1/teams"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/teams/1"},
+		{http.MethodDelete, "/api/v1/leagues/1/seasons/1/teams/1"},
 	}
 
 	for _, rt := range routes {
