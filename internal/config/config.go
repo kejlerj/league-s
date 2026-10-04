@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/url"
 	"os"
@@ -14,6 +15,8 @@ import (
 type Config struct {
 	Port        int
 	DatabaseURL string
+	LogFormat   string
+	LogLevel    slog.Level
 }
 
 func Load() (Config, error) {
@@ -44,6 +47,22 @@ func Load() (Config, error) {
 		errs = append(errs, fmt.Errorf("PORT must be a number between 1 and 65535, got %q", rawPort))
 	}
 
+	logFormat := os.Getenv("LOG_FORMAT")
+	switch logFormat {
+	case "":
+		logFormat = "json"
+	case "json", "text":
+	default:
+		errs = append(errs, fmt.Errorf("LOG_FORMAT must be json or text, got %q", logFormat))
+	}
+
+	logLevel := slog.LevelInfo
+	if raw := os.Getenv("LOG_LEVEL"); raw != "" {
+		if err := logLevel.UnmarshalText([]byte(raw)); err != nil {
+			errs = append(errs, fmt.Errorf("LOG_LEVEL must be debug, info, warn or error, got %q", raw))
+		}
+	}
+
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
 	}
@@ -56,5 +75,5 @@ func Load() (Config, error) {
 		RawQuery: url.Values{"sslmode": {"disable"}, "search_path": {schema}}.Encode(),
 	}
 
-	return Config{Port: port, DatabaseURL: dsn.String()}, nil
+	return Config{Port: port, DatabaseURL: dsn.String(), LogFormat: logFormat, LogLevel: logLevel}, nil
 }

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log/slog"
 	"strings"
 	"testing"
 )
@@ -14,6 +15,31 @@ func setValidEnv(t *testing.T) {
 	t.Setenv("DB_USERNAME", "admin")
 	t.Setenv("DB_PASSWORD", "password1234")
 	t.Setenv("DB_SCHEMA", "public")
+	t.Setenv("LOG_FORMAT", "")
+	t.Setenv("LOG_LEVEL", "")
+}
+
+func TestLoad_Logging(t *testing.T) {
+	setValidEnv(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.LogFormat != "json" || cfg.LogLevel != slog.LevelInfo {
+		t.Errorf("defaults = %s / %s, want json / INFO", cfg.LogFormat, cfg.LogLevel)
+	}
+
+	t.Setenv("LOG_FORMAT", "text")
+	t.Setenv("LOG_LEVEL", "debug")
+
+	cfg, err = Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.LogFormat != "text" || cfg.LogLevel != slog.LevelDebug {
+		t.Errorf("config = %s / %s, want text / DEBUG", cfg.LogFormat, cfg.LogLevel)
+	}
 }
 
 func TestLoad(t *testing.T) {
@@ -76,6 +102,8 @@ func TestLoad_Errors(t *testing.T) {
 		{"missing database name", "DB_DATABASE", "", "DB_DATABASE is required"},
 		{"missing username", "DB_USERNAME", "", "DB_USERNAME is required"},
 		{"missing password", "DB_PASSWORD", "", "DB_PASSWORD is required"},
+		{"unknown log format", "LOG_FORMAT", "xml", "LOG_FORMAT must be json or text"},
+		{"unknown log level", "LOG_LEVEL", "loud", "LOG_LEVEL must be debug, info, warn or error"},
 	}
 
 	for _, tt := range tests {

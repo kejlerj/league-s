@@ -5,13 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"league-s/internal/config"
 	"league-s/internal/database"
+	"league-s/internal/logging"
 	"league-s/internal/server"
 )
 
@@ -45,6 +48,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("config: %v", err)
 	}
+
+	slog.SetDefault(logging.New(os.Stdout, cfg.LogFormat, cfg.LogLevel))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	db, err := database.New(ctx, cfg.DatabaseURL)

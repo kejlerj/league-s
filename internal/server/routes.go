@@ -16,11 +16,13 @@ import (
 	"league-s/internal/app/standing"
 	"league-s/internal/app/team"
 	"league-s/internal/httpx"
+	"league-s/internal/logging"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
+	r.Use(logging.Requests(slog.Default()))
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
