@@ -1,0 +1,49 @@
+version: "2"
+
+run:
+  build-tags:
+    - integration
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - gosec
+    - misspell
+    - noctx
+    - errname
+    - exhaustive
+    - nilerr
+    - nilnil
+    - contextcheck
+    - modernize
+    - unconvert
+    - unparam
+    - intrange
+    - thelper
+  exclusions:
+    paths:
+      - internal/db
+    rules:
+      - path: _test\.go
+        linters:
+          - gosec
+        text: G101
+
+formatters:
+  enable:
+    - gci
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - localmodule
+    goimports:
+      local-prefixes:
+        - league-s
+  exclusions:
+    paths:
+      - internal/db
