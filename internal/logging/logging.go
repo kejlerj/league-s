@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
 )
 
 const (
@@ -15,12 +16,24 @@ const (
 	FormatText = "text"
 )
 
+const RequestIDHeader = "X-Request-Id"
+
+type requestIDKey struct{}
+
+func RequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := uuid.NewString()
+		w.Header().Set(RequestIDHeader, id)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), requestIDKey{}, id)))
+	})
+}
+
 type contextHandler struct {
 	slog.Handler
 }
 
 func (h contextHandler) Handle(ctx context.Context, r slog.Record) error {
-	if id := middleware.GetReqID(ctx); id != "" {
+	if id, ok := ctx.Value(requestIDKey{}).(string); ok {
 		r.AddAttrs(slog.String("request_id", id))
 	}
 	return h.Handler.Handle(ctx, r)

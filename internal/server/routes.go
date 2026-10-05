@@ -21,7 +21,7 @@ import (
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.RequestID)
+	r.Use(logging.RequestID)
 	r.Use(logging.Requests(slog.Default()))
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
