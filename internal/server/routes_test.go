@@ -1,31 +1,81 @@
+//go:build integration
+
 package server
 
 import (
-	"io"
+	"context"
 	"net/http"
-	"net/http/httptest"
+	"os"
+	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"league-s/internal/testdb"
+	"league-s/internal/testhttp"
 )
 
-func TestHandler(t *testing.T) {
-	s := &Server{}
-	server := httptest.NewServer(http.HandlerFunc(s.HelloWorldHandler))
-	defer server.Close()
-	resp, err := http.Get(server.URL)
-	if err != nil {
-		t.Fatalf("error making request to server. Err: %v", err)
+var testPool *pgxpool.Pool
+
+func TestMain(m *testing.M) {
+	os.Exit(testdb.Run(m, &testPool))
+}
+
+type poolService struct{ pool *pgxpool.Pool }
+
+func (p poolService) Health(context.Context) error { return nil }
+func (p poolService) Pool() *pgxpool.Pool          { return p.pool }
+func (p poolService) Close()                       {}
+
+func TestRoutesAreMounted(t *testing.T) {
+	testdb.New(t, testPool)
+	router := (&Server{db: poolService{testPool}}).RegisterRoutes()
+
+	routes := []struct {
+		method string
+		path   string
+	}{
+		{http.MethodPost, "/api/v1/leagues"},
+		{http.MethodGet, "/api/v1/leagues"},
+		{http.MethodGet, "/api/v1/leagues/1"},
+		{http.MethodDelete, "/api/v1/leagues/abc"},
+		{http.MethodGet, "/api/v1/leagues/1/teams"},
+		{http.MethodPost, "/api/v1/leagues/1/teams"},
+		{http.MethodGet, "/api/v1/leagues/1/teams/1"},
+		{http.MethodPost, "/api/v1/leagues/1/players"},
+		{http.MethodGet, "/api/v1/leagues/1/players/1"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1/teams"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/teams/1"},
+		{http.MethodDelete, "/api/v1/leagues/1/seasons/1/teams/1"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1/teams/1/squad"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/teams/1/squad"},
+		{http.MethodPatch, "/api/v1/leagues/1/seasons/1/teams/1/squad/1"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/teams/1/squad/1/leave"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/transfers"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1/matches"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1/matches/1"},
+		{http.MethodPatch, "/api/v1/leagues/1/seasons/1/matches/1"},
+		{http.MethodDelete, "/api/v1/leagues/1/seasons/1/matches/abc"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches/1/start"},
+		{http.MethodPut, "/api/v1/leagues/1/seasons/1/matches/1/score"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches/1/finish"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches/1/postpone"},
+		{http.MethodPost, "/api/v1/leagues/1/seasons/1/matches/1/cancel"},
+		{http.MethodGet, "/api/v1/leagues/1/seasons/1/standings"},
 	}
-	defer resp.Body.Close()
-	// Assertions
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("expected status OK; got %v", resp.Status)
-	}
-	expected := "{\"message\":\"Hello World\"}"
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("error reading response body. Err: %v", err)
-	}
-	if expected != string(body) {
-		t.Errorf("expected response body to be %v; got %v", expected, string(body))
+
+	for _, rt := range routes {
+		t.Run(rt.method+" "+rt.path, func(t *testing.T) {
+			rec := testhttp.Do(t, router, rt.method, rt.path, "{}")
+			if rec.Code == http.StatusMethodNotAllowed {
+				t.Fatalf("status = 405, route is not registered for %s", rt.method)
+			}
+			if !strings.Contains(rec.Header().Get("Content-Type"), "application/json") {
+				t.Fatalf("status = %d, body = %q: request did not reach a handler", rec.Code, rec.Body)
+			}
+		})
 	}
 }

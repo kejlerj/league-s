@@ -1,6 +1,6 @@
 # Simple Makefile for a Go project
 
-include .env
+-include .env
 DB_URL=postgres://$(DB_USERNAME):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_DATABASE)?sslmode=disable
 
 migrate-up:
@@ -45,14 +45,20 @@ docker-down:
 		docker-compose down; \
 	fi
 
-# Test the application
 test:
-	@echo "Testing..."
-	@go test ./... -v
-# Integrations Tests for the application
+	@go tool gotestsum --format testdox -- ./...
+
 itest:
-	@echo "Running integration tests..."
-	@go test ./internal/database -v
+	@go tool gotestsum --format testdox -- -tags=integration ./...
+
+lint:
+	@golangci-lint run
+
+fmt:
+	@golangci-lint fmt
+
+vuln:
+	@go tool govulncheck ./...
 
 # Clean the binary
 clean:
@@ -76,4 +82,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest migrate-up migrate-down migrate-status migrate-reset
+.PHONY: all build run test itest lint fmt vuln clean watch docker-run docker-down migrate-up migrate-down migrate-status migrate-reset

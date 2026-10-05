@@ -2,10 +2,10 @@
 CREATE TYPE match_status AS ENUM ('scheduled', 'live', 'finished', 'postponed', 'cancelled');
 
 CREATE TABLE match (
-    id            BIGSERIAL PRIMARY KEY,
-    season_id     BIGINT NOT NULL,
-    home_team_id  BIGINT NOT NULL,
-    away_team_id  BIGINT NOT NULL,
+    id            UUID PRIMARY KEY DEFAULT uuidv7(),
+    season_id     UUID NOT NULL,
+    home_team_id  UUID NOT NULL,
+    away_team_id  UUID NOT NULL,
     matchday      INT NOT NULL CHECK (matchday > 0),
     kickoff_at    TIMESTAMPTZ,
     status        match_status NOT NULL DEFAULT 'scheduled',
@@ -14,8 +14,10 @@ CREATE TABLE match (
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    FOREIGN KEY (season_id, home_team_id) REFERENCES season_team(season_id, team_id) ON DELETE RESTRICT,
-    FOREIGN KEY (season_id, away_team_id) REFERENCES season_team(season_id, team_id) ON DELETE RESTRICT,
+    CONSTRAINT match_home_team_fkey FOREIGN KEY (season_id, home_team_id)
+        REFERENCES season_team(season_id, team_id) ON DELETE RESTRICT,
+    CONSTRAINT match_away_team_fkey FOREIGN KEY (season_id, away_team_id)
+        REFERENCES season_team(season_id, team_id) ON DELETE RESTRICT,
     CHECK (home_team_id <> away_team_id),
     CHECK ((home_score IS NULL) = (away_score IS NULL)),
     CHECK (status <> 'finished' OR home_score IS NOT NULL)

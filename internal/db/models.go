@@ -7,8 +7,9 @@ package db
 import (
 	"database/sql/driver"
 	"fmt"
+	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/google/uuid"
 )
 
 type MatchStatus string
@@ -57,72 +58,78 @@ func (ns NullMatchStatus) Value() (driver.Value, error) {
 }
 
 type League struct {
-	ID        int64
+	ID        uuid.UUID
 	Name      string
 	Logo      *string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Match struct {
-	ID         int64
-	SeasonID   int64
-	HomeTeamID int64
-	AwayTeamID int64
+	ID         uuid.UUID
+	SeasonID   uuid.UUID
+	HomeTeamID uuid.UUID
+	AwayTeamID uuid.UUID
 	Matchday   int32
-	KickoffAt  pgtype.Timestamptz
+	KickoffAt  *time.Time
 	Status     MatchStatus
 	HomeScore  *int32
 	AwayScore  *int32
-	CreatedAt  pgtype.Timestamptz
-	UpdatedAt  pgtype.Timestamptz
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type Player struct {
-	ID        int64
+	ID        uuid.UUID
+	LeagueID  uuid.UUID
 	Firstname string
 	Lastname  string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	Icon      *string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Season struct {
-	ID           int64
+	ID           uuid.UUID
 	Name         string
-	StartOn      pgtype.Date
-	EndOn        pgtype.Date
+	StartOn      time.Time
+	EndOn        time.Time
 	MatchWinPts  int32
 	MatchDrawPts int32
 	MatchLossPts int32
 	TieBreakers  []string
-	LeagueID     int64
-	CreatedAt    pgtype.Timestamptz
-	UpdatedAt    pgtype.Timestamptz
+	MaxSquadSize *int32
+	LeagueID     uuid.UUID
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type SeasonTeam struct {
-	SeasonID  int64
-	TeamID    int64
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	SeasonID  uuid.UUID
+	TeamID    uuid.UUID
+	LeagueID  uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type SquadMembership struct {
+	ID        uuid.UUID
+	PlayerID  uuid.UUID
+	SeasonID  uuid.UUID
+	TeamID    uuid.UUID
+	LeagueID  uuid.UUID
+	Number    *int32
+	JoinedOn  time.Time
+	LeftOn    *time.Time
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Team struct {
-	ID        int64
+	ID        uuid.UUID
+	LeagueID  uuid.UUID
 	Name      string
 	Logo      *string
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-}
-
-type TeamMembership struct {
-	ID        int64
-	PlayerID  int64
-	SeasonID  int64
-	TeamID    int64
-	Number    *int32
-	JoinedOn  pgtype.Date
-	LeftOn    pgtype.Date
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }

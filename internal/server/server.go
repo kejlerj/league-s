@@ -3,11 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"strconv"
 	"time"
-
-	_ "github.com/joho/godotenv/autoload"
 
 	"league-s/internal/database"
 )
@@ -18,8 +14,7 @@ type Server struct {
 	db database.Service
 }
 
-func NewServer(db database.Service) *http.Server {
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
+func NewServer(port int, db database.Service) *http.Server {
 	NewServer := &Server{
 		port: port,
 		db:   db,

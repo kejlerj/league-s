@@ -1,74 +1,49 @@
+//go:build integration
+
 package database
 
 import (
 	"context"
 	"log"
+	"os"
 	"testing"
-	"time"
 
-	"github.com/testcontainers/testcontainers-go"
+	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func mustStartPostgresContainer() (func(context.Context, ...testcontainers.TerminateOption) error, error) {
-	var (
-		dbName = "database"
-		dbPwd  = "password"
-		dbUser = "user"
-	)
-
-	dbContainer, err := postgres.Run(
-		context.Background(),
-		"postgres:latest",
-		postgres.WithDatabase(dbName),
-		postgres.WithUsername(dbUser),
-		postgres.WithPassword(dbPwd),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).
-				WithStartupTimeout(5*time.Second)),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	database = dbName
-	password = dbPwd
-	username = dbUser
-
-	dbHost, err := dbContainer.Host(context.Background())
-	if err != nil {
-		return dbContainer.Terminate, err
-	}
-
-	dbPort, err := dbContainer.MappedPort(context.Background(), "5432/tcp")
-	if err != nil {
-		return dbContainer.Terminate, err
-	}
-
-	host = dbHost
-	port = dbPort.Port()
-
-	return dbContainer.Terminate, err
-}
+var databaseURL string
 
 func TestMain(m *testing.M) {
-	teardown, err := mustStartPostgresContainer()
+	os.Exit(run(m))
+}
+
+func run(m *testing.M) int {
+	ctx := context.Background()
+	tclog.SetDefault(tclog.NewNoopLogger())
+
+	ctr, err := postgres.Run(ctx, "postgres:18",
+		postgres.WithDatabase("test"),
+		postgres.WithUsername("test"),
+		postgres.WithPassword("test"),
+		postgres.BasicWaitStrategies(),
+	)
 	if err != nil {
-		log.Fatalf("could not start postgres container: %v", err)
+		log.Fatalf("start postgres: %v", err)
+	}
+	defer func() { _ = ctr.Terminate(ctx) }()
+
+	databaseURL, err = ctr.ConnectionString(ctx, "sslmode=disable")
+	if err != nil {
+		log.Fatalf("connection string: %v", err)
 	}
 
-	m.Run()
-
-	if teardown != nil && teardown(context.Background()) != nil {
-		log.Fatalf("could not teardown postgres container: %v", err)
-	}
+	return m.Run()
 }
 
 func mustNew(t *testing.T) Service {
 	t.Helper()
-	srv, err := New(context.Background())
+	srv, err := New(context.Background(), databaseURL)
 	if err != nil {
 		t.Fatalf("New() returned an error: %v", err)
 	}
@@ -88,18 +63,8 @@ func TestHealth(t *testing.T) {
 	srv := mustNew(t)
 	defer srv.Close()
 
-	stats := srv.Health()
-
-	if stats["status"] != "up" {
-		t.Fatalf("expected status to be up, got %s", stats["status"])
-	}
-
-	if _, ok := stats["error"]; ok {
-		t.Fatalf("expected error not to be present")
-	}
-
-	if stats["message"] != "It's healthy" {
-		t.Fatalf("expected message to be 'It's healthy', got %s", stats["message"])
+	if err := srv.Health(t.Context()); err != nil {
+		t.Fatalf("Health() = %v, want nil", err)
 	}
 }
 
@@ -107,9 +72,7 @@ func TestHealthDown(t *testing.T) {
 	srv := mustNew(t)
 	srv.Close()
 
-	stats := srv.Health()
-
-	if stats["status"] != "down" {
-		t.Fatalf("expected status to be down, got %s", stats["status"])
+	if err := srv.Health(t.Context()); err == nil {
+		t.Fatal("Health() = nil, want an error once the pool is closed")
 	}
 }
