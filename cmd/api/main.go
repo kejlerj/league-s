@@ -12,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
+
 	"league-s/internal/config"
 	"league-s/internal/database"
 	"league-s/internal/logging"
@@ -51,6 +53,13 @@ func main() {
 
 	slog.SetDefault(logging.New(os.Stdout, cfg.LogFormat, cfg.LogLevel))
 
+	if cfg.SentryDSN != "" {
+		err := sentry.Init(sentry.ClientOptions{Dsn: cfg.SentryDSN, Environment: cfg.Environment})
+		if err != nil {
+			log.Fatalf("sentry: %v", err)
+		}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	db, err := database.New(ctx, cfg.DatabaseURL)
 	cancel()
@@ -58,6 +67,7 @@ func main() {
 		log.Fatalf("database: %v", err)
 	}
 	defer db.Close()
+	defer sentry.Flush(2 * time.Second)
 
 	server := server.NewServer(cfg.Port, db)
 

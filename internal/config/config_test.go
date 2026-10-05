@@ -17,6 +17,31 @@ func setValidEnv(t *testing.T) {
 	t.Setenv("DB_SCHEMA", "public")
 	t.Setenv("LOG_FORMAT", "")
 	t.Setenv("LOG_LEVEL", "")
+	t.Setenv("APP_ENV", "")
+	t.Setenv("SENTRY_DSN", "")
+}
+
+func TestLoad_ErrorTracking(t *testing.T) {
+	setValidEnv(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.SentryDSN != "" {
+		t.Errorf("SentryDSN = %q, want it empty: error tracking is off by default", cfg.SentryDSN)
+	}
+
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("SENTRY_DSN", "https://public@sentry.invalid/1")
+
+	cfg, err = Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.Environment != "production" || cfg.SentryDSN != "https://public@sentry.invalid/1" {
+		t.Errorf("config = %s / %s, want production and the DSN", cfg.Environment, cfg.SentryDSN)
+	}
 }
 
 func TestLoad_Logging(t *testing.T) {
