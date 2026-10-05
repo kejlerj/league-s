@@ -24,6 +24,7 @@ func NewHandler(store *PostgresStore) *Handler {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", h.create)
+	r.Get("/", h.list)
 	r.Get("/{seasonID}", h.get)
 	r.Get("/{seasonID}/teams", h.getTeams)
 	r.Post("/{seasonID}/teams/{teamID}", h.addTeam)
@@ -135,6 +136,28 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusCreated, toResponse(res))
+}
+
+func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
+	ids, ok := pathIDs(w, r, "leagueID")
+	if !ok {
+		return
+	}
+	leagueID := ids[0]
+
+	seasons, err := h.store.GetByLeague(r.Context(), leagueID)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "list seasons", "err", err, "league_id", leagueID)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	res := make([]seasonResponse, len(seasons))
+	for i, s := range seasons {
+		res[i] = toResponse(s)
+	}
+
+	httpx.JSON(w, http.StatusOK, res)
 }
 
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) {

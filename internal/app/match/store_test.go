@@ -14,7 +14,7 @@ func TestStore_WritesAreScopedToTheLeague(t *testing.T) {
 	store := NewPostgresStore(testPool)
 	other := f.seed.CreateLeague(testdb.LeagueParams{})
 
-	created, err := NewService(store).Schedule(t.Context(), f.season.LeagueID, f.season.ID, f.home.ID, f.away.ID, 1, nil)
+	created, err := NewService(store).Schedule(t.Context(), f.season.LeagueID, f.season.ID, f.home.ID, f.away.ID, 1, nil, nil)
 	if err != nil {
 		t.Fatalf("Schedule() error = %v", err)
 	}

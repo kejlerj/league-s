@@ -4,8 +4,8 @@ WHERE id = sqlc.arg(id) AND league_id = sqlc.arg(league_id)
 FOR UPDATE;
 
 -- name: CreateMatch :one
-INSERT INTO match (season_id, home_team_id, away_team_id, matchday, kickoff_at)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO match (season_id, home_team_id, away_team_id, matchday, kickoff_at, venue)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetMatch :one
@@ -30,6 +30,10 @@ SET matchday = sqlc.arg(matchday),
     status = sqlc.arg(status),
     home_score = sqlc.narg(home_score),
     away_score = sqlc.narg(away_score),
+    venue = sqlc.narg(venue),
+    referee = sqlc.narg(referee),
+    convocation_at = sqlc.narg(convocation_at),
+    video_url = sqlc.narg(video_url),
     updated_at = now()
 FROM season
 WHERE match.id = sqlc.arg(id)

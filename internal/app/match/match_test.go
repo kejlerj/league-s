@@ -253,3 +253,48 @@ func TestSeason_Contains(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateDetails_OnlyChangesWhatIsGiven(t *testing.T) {
+	m := matchIn(StatusScheduled)
+	m.UpdateDetails(Details{Venue: new("Urban Soccer Aubervilliers"), Referee: new("S. Lambert")})
+	m.UpdateDetails(Details{Referee: new("K. Benali"), VideoURL: new("https://example.com/match.mp4")})
+
+	got := m.Details()
+	switch {
+	case got.Venue == nil || *got.Venue != "Urban Soccer Aubervilliers":
+		t.Errorf("venue = %v, want it kept from the first update", got.Venue)
+	case got.Referee == nil || *got.Referee != "K. Benali":
+		t.Errorf("referee = %v, want the one from the second update", got.Referee)
+	case got.VideoURL == nil || *got.VideoURL != "https://example.com/match.mp4":
+		t.Errorf("video url = %v, want the one from the second update", got.VideoURL)
+	case got.ConvocationAt != nil:
+		t.Errorf("details = %+v, want the other fields left empty", got)
+	}
+}
+
+func TestUpdateDetails_IsAllowedInEveryStatus(t *testing.T) {
+	for _, status := range allStatuses {
+		m := matchIn(status)
+		m.UpdateDetails(Details{VideoURL: new("https://example.com/match.mp4")})
+
+		if got := m.Details().VideoURL; got == nil || *got != "https://example.com/match.mp4" {
+			t.Errorf("video url on a %s match = %v, want it set", status, got)
+		}
+		if m.Status() != status {
+			t.Errorf("status = %s, want %s unchanged", m.Status(), status)
+		}
+	}
+}
+
+func TestDetails_ReturnsACopy(t *testing.T) {
+	m := matchIn(StatusScheduled)
+	venue := "Le Five Paris 18"
+	m.UpdateDetails(Details{Venue: &venue})
+
+	venue = "changed by the caller"
+	*m.Details().Venue = "changed through the getter"
+
+	if got := *m.Details().Venue; got != "Le Five Paris 18" {
+		t.Errorf("venue = %q, want it to change only through UpdateDetails", got)
+	}
+}

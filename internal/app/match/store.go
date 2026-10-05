@@ -50,6 +50,12 @@ func toMatch(m db.Match) *Match {
 		matchday:   m.Matchday,
 		kickoffAt:  m.KickoffAt,
 		status:     Status(m.Status),
+		details: Details{
+			Venue:         m.Venue,
+			Referee:       m.Referee,
+			ConvocationAt: m.ConvocationAt,
+			VideoURL:      m.VideoUrl,
+		},
 	}
 	if m.HomeScore != nil && m.AwayScore != nil {
 		res.score = &Score{Home: *m.HomeScore, Away: *m.AwayScore}
@@ -91,6 +97,7 @@ func (s *PostgresStore) Create(ctx context.Context, m *Match) (*Match, error) {
 		AwayTeamID: m.awayTeamID,
 		Matchday:   m.matchday,
 		KickoffAt:  m.kickoffAt,
+		Venue:      m.details.Venue,
 	})
 
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == pgerrcode.ForeignKeyViolation {
@@ -137,6 +144,11 @@ func (s *PostgresStore) Save(ctx context.Context, leagueID uuid.UUID, m *Match) 
 		Matchday:  m.matchday,
 		KickoffAt: m.kickoffAt,
 		Status:    db.MatchStatus(m.status),
+
+		Venue:         m.details.Venue,
+		Referee:       m.details.Referee,
+		ConvocationAt: m.details.ConvocationAt,
+		VideoUrl:      m.details.VideoURL,
 	}
 	if m.score != nil {
 		params.HomeScore = &m.score.Home

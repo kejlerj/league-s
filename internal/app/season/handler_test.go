@@ -192,6 +192,40 @@ func TestGetSeason_Errors(t *testing.T) {
 	}
 }
 
+func TestListSeasons(t *testing.T) {
+	s := testdb.New(t, testPool)
+	league := s.CreateLeague(testdb.LeagueParams{})
+	other := s.CreateLeague(testdb.LeagueParams{})
+	s.CreateSeason(testdb.SeasonParams{League: &league, Name: "2024-2025", StartOn: "2024-08-01", EndOn: "2025-05-31"})
+	s.CreateSeason(testdb.SeasonParams{League: &league, Name: "2025-2026", StartOn: "2025-08-01", EndOn: "2026-05-31"})
+	s.CreateSeason(testdb.SeasonParams{League: &other, Name: "Other league"})
+
+	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, seasonsPath(league), "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+	}
+
+	var seasons []seasonResponse
+	if err := json.NewDecoder(rec.Body).Decode(&seasons); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(seasons) != 2 || seasons[0].Name != "2025-2026" || seasons[1].Name != "2024-2025" {
+		t.Errorf("seasons = %+v, want the two seasons of the league, most recent first", seasons)
+	}
+}
+
+func TestListSeasons_Empty(t *testing.T) {
+	league := testdb.New(t, testPool).CreateLeague(testdb.LeagueParams{})
+
+	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, seasonsPath(league), "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+	}
+	if body := strings.TrimSpace(rec.Body.String()); body != "[]" {
+		t.Errorf("body = %s, want an empty JSON array", body)
+	}
+}
+
 func TestAddTeamThenListTeams(t *testing.T) {
 	s := testdb.New(t, testPool)
 	season := s.CreateSeason(testdb.SeasonParams{})

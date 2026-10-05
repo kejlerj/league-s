@@ -102,7 +102,7 @@ func TestServiceSchedule(t *testing.T) {
 	store := newFakeStore()
 	seasonID, home, away := uuid.New(), uuid.New(), uuid.New()
 
-	got, err := NewService(store).Schedule(t.Context(), uuid.New(), seasonID, home, away, 4, &inSeason)
+	got, err := NewService(store).Schedule(t.Context(), uuid.New(), seasonID, home, away, 4, &inSeason, nil)
 	if err != nil {
 		t.Fatalf("Schedule() error = %v", err)
 	}
@@ -177,7 +177,7 @@ func TestServiceSchedule_Errors(t *testing.T) {
 			store := newFakeStore()
 			tt.prepare(store.state)
 
-			got, err := NewService(store).Schedule(t.Context(), uuid.New(), uuid.New(), home, tt.away, 1, tt.kickoffAt)
+			got, err := NewService(store).Schedule(t.Context(), uuid.New(), uuid.New(), home, tt.away, 1, tt.kickoffAt, nil)
 			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("Schedule() error = %v, want %v", err, tt.wantErr)
 			}
@@ -273,13 +273,13 @@ func TestServiceTransitions_Errors(t *testing.T) {
 	}
 }
 
-func TestServiceReschedule(t *testing.T) {
+func TestServiceUpdate(t *testing.T) {
 	store := newFakeStore()
 	store.state.current = matchIn(StatusPostponed)
 
-	got, err := NewService(store).Reschedule(t.Context(), uuid.New(), uuid.New(), uuid.New(), new(int32(5)), &inSeason)
+	got, err := NewService(store).Update(t.Context(), uuid.New(), uuid.New(), uuid.New(), new(int32(5)), &inSeason, Details{})
 	if err != nil {
-		t.Fatalf("Reschedule() error = %v", err)
+		t.Fatalf("Update() error = %v", err)
 	}
 
 	wantCalls := []string{"begin", "tx.LockSeason", "tx.GetForUpdate", "tx.CountOnMatchday", "tx.Save", "commit"}
@@ -291,21 +291,21 @@ func TestServiceReschedule(t *testing.T) {
 	}
 }
 
-func TestServiceReschedule_KeepsWhatIsNotSent(t *testing.T) {
+func TestServiceUpdate_KeepsWhatIsNotSent(t *testing.T) {
 	store := newFakeStore()
 	store.state.current = matchIn(StatusScheduled)
 	store.state.current.kickoffAt = &inSeason
 
-	got, err := NewService(store).Reschedule(t.Context(), uuid.New(), uuid.New(), uuid.New(), new(int32(7)), nil)
+	got, err := NewService(store).Update(t.Context(), uuid.New(), uuid.New(), uuid.New(), new(int32(7)), nil, Details{})
 	if err != nil {
-		t.Fatalf("Reschedule() error = %v", err)
+		t.Fatalf("Update() error = %v", err)
 	}
 	if got.Matchday() != 7 || got.KickoffAt() == nil || !got.KickoffAt().Equal(inSeason) {
 		t.Errorf("match = %+v, want matchday 7 and the kickoff unchanged", got)
 	}
 }
 
-func TestServiceReschedule_Errors(t *testing.T) {
+func TestServiceUpdate_Errors(t *testing.T) {
 	tests := []struct {
 		name      string
 		prepare   func(s *fakeState)
@@ -323,9 +323,9 @@ func TestServiceReschedule_Errors(t *testing.T) {
 			store.state.current = matchIn(StatusScheduled)
 			tt.prepare(store.state)
 
-			_, err := NewService(store).Reschedule(t.Context(), uuid.New(), uuid.New(), uuid.New(), nil, tt.kickoffAt)
+			_, err := NewService(store).Update(t.Context(), uuid.New(), uuid.New(), uuid.New(), nil, tt.kickoffAt, Details{})
 			if !errors.Is(err, tt.wantErr) {
-				t.Fatalf("Reschedule() error = %v, want %v", err, tt.wantErr)
+				t.Fatalf("Update() error = %v, want %v", err, tt.wantErr)
 			}
 			if store.state.saved != nil {
 				t.Errorf("saved = %+v, want nothing saved", store.state.saved)
@@ -380,5 +380,52 @@ func TestServiceDelete(t *testing.T) {
 	}
 	if store.state.deleted != uuid.Nil {
 		t.Error("the match was deleted, want the deletion refused")
+	}
+}
+
+func TestServiceSchedule_KeepsTheVenue(t *testing.T) {
+	store := newFakeStore()
+
+	got, err := NewService(store).Schedule(t.Context(), uuid.New(), uuid.New(), uuid.New(), uuid.New(), 1, nil, new("Le Five Paris 18"))
+	if err != nil {
+		t.Fatalf("Schedule() error = %v", err)
+	}
+	if venue := got.Details().Venue; venue == nil || *venue != "Le Five Paris 18" {
+		t.Errorf("venue = %v, want Le Five Paris 18", venue)
+	}
+}
+
+func TestServiceUpdate_DetailsOnlyDoNotTouchTheCalendar(t *testing.T) {
+	for _, status := range allStatuses {
+		t.Run(string(status), func(t *testing.T) {
+			store := newFakeStore()
+			store.state.current = matchIn(status)
+
+			got, err := NewService(store).Update(t.Context(), uuid.New(), uuid.New(), uuid.New(), nil, nil, Details{Referee: new("S. Lambert")})
+			if err != nil {
+				t.Fatalf("Update() error = %v", err)
+			}
+
+			wantCalls := []string{"begin", "tx.GetForUpdate", "tx.Save", "commit"}
+			if !slices.Equal(store.state.calls, wantCalls) {
+				t.Errorf("calls = %v, want %v", store.state.calls, wantCalls)
+			}
+			if referee := got.Details().Referee; referee == nil || *referee != "S. Lambert" || got.Status() != status {
+				t.Errorf("match = %+v, want the referee set and the status unchanged", got)
+			}
+		})
+	}
+}
+
+func TestServiceUpdate_ARefusedRescheduleDoesNotSaveTheDetails(t *testing.T) {
+	store := newFakeStore()
+	store.state.current = matchIn(StatusFinished)
+
+	_, err := NewService(store).Update(t.Context(), uuid.New(), uuid.New(), uuid.New(), new(int32(2)), nil, Details{Referee: new("S. Lambert")})
+	if !errors.Is(err, ErrRescheduleNotPending) {
+		t.Fatalf("Update() error = %v, want ErrRescheduleNotPending", err)
+	}
+	if store.state.saved != nil {
+		t.Errorf("saved = %+v, want nothing saved", store.state.saved)
 	}
 }

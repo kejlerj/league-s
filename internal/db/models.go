@@ -66,17 +66,21 @@ type League struct {
 }
 
 type Match struct {
-	ID         uuid.UUID
-	SeasonID   uuid.UUID
-	HomeTeamID uuid.UUID
-	AwayTeamID uuid.UUID
-	Matchday   int32
-	KickoffAt  *time.Time
-	Status     MatchStatus
-	HomeScore  *int32
-	AwayScore  *int32
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID            uuid.UUID
+	SeasonID      uuid.UUID
+	HomeTeamID    uuid.UUID
+	AwayTeamID    uuid.UUID
+	Matchday      int32
+	KickoffAt     *time.Time
+	Status        MatchStatus
+	HomeScore     *int32
+	AwayScore     *int32
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	Venue         *string
+	Referee       *string
+	ConvocationAt *time.Time
+	VideoUrl      *string
 }
 
 type Player struct {
