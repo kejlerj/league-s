@@ -80,13 +80,27 @@ func (q *Queries) CreateMatch(ctx context.Context, arg CreateMatchParams) (Match
 	return i, err
 }
 
-const deleteMatch = `-- name: DeleteMatch :exec
-DELETE FROM match WHERE id = $1
+const deleteMatch = `-- name: DeleteMatch :execrows
+DELETE FROM match
+USING season
+WHERE match.id = $1
+  AND match.season_id = $2
+  AND season.id = match.season_id
+  AND season.league_id = $3
 `
 
-func (q *Queries) DeleteMatch(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.Exec(ctx, deleteMatch, id)
-	return err
+type DeleteMatchParams struct {
+	ID       uuid.UUID
+	SeasonID uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) DeleteMatch(ctx context.Context, arg DeleteMatchParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteMatch, arg.ID, arg.SeasonID, arg.LeagueID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const getMatch = `-- name: GetMatch :one
@@ -250,8 +264,12 @@ SET matchday = $1,
     home_score = $4,
     away_score = $5,
     updated_at = now()
-WHERE id = $6
-RETURNING id, season_id, home_team_id, away_team_id, matchday, kickoff_at, status, home_score, away_score, created_at, updated_at
+FROM season
+WHERE match.id = $6
+  AND match.season_id = $7
+  AND season.id = match.season_id
+  AND season.league_id = $8
+RETURNING match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at
 `
 
 type UpdateMatchParams struct {
@@ -261,6 +279,8 @@ type UpdateMatchParams struct {
 	HomeScore *int32
 	AwayScore *int32
 	ID        uuid.UUID
+	SeasonID  uuid.UUID
+	LeagueID  uuid.UUID
 }
 
 func (q *Queries) UpdateMatch(ctx context.Context, arg UpdateMatchParams) (Match, error) {
@@ -271,6 +291,8 @@ func (q *Queries) UpdateMatch(ctx context.Context, arg UpdateMatchParams) (Match
 		arg.HomeScore,
 		arg.AwayScore,
 		arg.ID,
+		arg.SeasonID,
+		arg.LeagueID,
 	)
 	var i Match
 	err := row.Scan(

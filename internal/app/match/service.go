@@ -12,8 +12,8 @@ type Store interface {
 	CountOnMatchday(ctx context.Context, seasonID uuid.UUID, matchday int32, excludeID uuid.UUID, teamIDs ...uuid.UUID) (int64, error)
 	Create(ctx context.Context, m *Match) (*Match, error)
 	GetForUpdate(ctx context.Context, leagueID, seasonID, id uuid.UUID) (*Match, error)
-	Save(ctx context.Context, m *Match) (*Match, error)
-	Delete(ctx context.Context, id uuid.UUID) error
+	Save(ctx context.Context, leagueID uuid.UUID, m *Match) (*Match, error)
+	Delete(ctx context.Context, leagueID, seasonID, id uuid.UUID) error
 	InTx(ctx context.Context, fn func(store Store) error) error
 }
 
@@ -99,7 +99,7 @@ func (s *Service) Delete(ctx context.Context, leagueID, seasonID, id uuid.UUID) 
 		if err := m.CheckDeletable(); err != nil {
 			return err
 		}
-		return store.Delete(ctx, id)
+		return store.Delete(ctx, leagueID, seasonID, id)
 	})
 }
 
@@ -114,7 +114,7 @@ func (s *Service) transition(ctx context.Context, leagueID, seasonID, id uuid.UU
 			return err
 		}
 
-		res, err = store.Save(ctx, m)
+		res, err = store.Save(ctx, leagueID, m)
 		return err
 	})
 	return res, err
@@ -138,7 +138,7 @@ func (s *Service) change(ctx context.Context, leagueID, seasonID, id uuid.UUID, 
 			return err
 		}
 
-		res, err = store.Save(ctx, m)
+		res, err = store.Save(ctx, leagueID, m)
 		return err
 	})
 	return res, err

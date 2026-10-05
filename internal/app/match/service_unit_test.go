@@ -70,13 +70,13 @@ func (f *fakeStore) GetForUpdate(context.Context, uuid.UUID, uuid.UUID, uuid.UUI
 	return f.state.current, nil
 }
 
-func (f *fakeStore) Save(_ context.Context, m *Match) (*Match, error) {
+func (f *fakeStore) Save(_ context.Context, _ uuid.UUID, m *Match) (*Match, error) {
 	f.record("Save")
 	f.state.saved = m
 	return m, nil
 }
 
-func (f *fakeStore) Delete(_ context.Context, id uuid.UUID) error {
+func (f *fakeStore) Delete(_ context.Context, _, _, id uuid.UUID) error {
 	f.record("Delete")
 	f.state.deleted = id
 	return nil

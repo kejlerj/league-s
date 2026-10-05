@@ -129,9 +129,11 @@ func (s *PostgresStore) GetForUpdate(ctx context.Context, leagueID, seasonID, id
 	return toMatch(res), nil
 }
 
-func (s *PostgresStore) Save(ctx context.Context, m *Match) (*Match, error) {
+func (s *PostgresStore) Save(ctx context.Context, leagueID uuid.UUID, m *Match) (*Match, error) {
 	params := db.UpdateMatchParams{
 		ID:        m.id,
+		SeasonID:  m.seasonID,
+		LeagueID:  leagueID,
 		Matchday:  m.matchday,
 		KickoffAt: m.kickoffAt,
 		Status:    db.MatchStatus(m.status),
@@ -142,6 +144,9 @@ func (s *PostgresStore) Save(ctx context.Context, m *Match) (*Match, error) {
 	}
 
 	res, err := s.q.UpdateMatch(ctx, params)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrGetNotFound
+	}
 	if err != nil {
 		return nil, fmt.Errorf("save match %s: %w", m.id, err)
 	}
@@ -149,9 +154,13 @@ func (s *PostgresStore) Save(ctx context.Context, m *Match) (*Match, error) {
 	return toMatch(res), nil
 }
 
-func (s *PostgresStore) Delete(ctx context.Context, id uuid.UUID) error {
-	if err := s.q.DeleteMatch(ctx, id); err != nil {
+func (s *PostgresStore) Delete(ctx context.Context, leagueID, seasonID, id uuid.UUID) error {
+	n, err := s.q.DeleteMatch(ctx, db.DeleteMatchParams{ID: id, SeasonID: seasonID, LeagueID: leagueID})
+	if err != nil {
 		return fmt.Errorf("delete match %s: %w", id, err)
+	}
+	if n == 0 {
+		return ErrGetNotFound
 	}
 	return nil
 }

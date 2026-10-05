@@ -31,11 +31,20 @@ SET matchday = sqlc.arg(matchday),
     home_score = sqlc.narg(home_score),
     away_score = sqlc.narg(away_score),
     updated_at = now()
-WHERE id = sqlc.arg(id)
-RETURNING *;
+FROM season
+WHERE match.id = sqlc.arg(id)
+  AND match.season_id = sqlc.arg(season_id)
+  AND season.id = match.season_id
+  AND season.league_id = sqlc.arg(league_id)
+RETURNING match.*;
 
--- name: DeleteMatch :exec
-DELETE FROM match WHERE id = $1;
+-- name: DeleteMatch :execrows
+DELETE FROM match
+USING season
+WHERE match.id = sqlc.arg(id)
+  AND match.season_id = sqlc.arg(season_id)
+  AND season.id = match.season_id
+  AND season.league_id = sqlc.arg(league_id);
 
 -- name: ListMatches :many
 SELECT match.* FROM match
