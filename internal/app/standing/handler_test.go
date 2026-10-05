@@ -34,7 +34,7 @@ func play(t *testing.T, s db.Season, home, away db.Team, matchday int32, homeGoa
 	t.Helper()
 	svc := match.NewService(match.NewPostgresStore(testPool))
 
-	m, err := svc.Schedule(t.Context(), s.LeagueID, s.ID, home.ID, away.ID, matchday, nil)
+	m, err := svc.Schedule(t.Context(), s.LeagueID, s.ID, home.ID, away.ID, matchday, nil, nil)
 	if err != nil {
 		t.Fatalf("Schedule() error = %v", err)
 	}
@@ -59,7 +59,7 @@ func TestGetStandings(t *testing.T) {
 
 	play(t, season, lions, bears, 1, 2, 0)
 	play(t, season, bears, wolves, 2, 1, 1)
-	if _, err := match.NewService(match.NewPostgresStore(testPool)).Schedule(t.Context(), season.LeagueID, season.ID, wolves.ID, lions.ID, 3, nil); err != nil {
+	if _, err := match.NewService(match.NewPostgresStore(testPool)).Schedule(t.Context(), season.LeagueID, season.ID, wolves.ID, lions.ID, 3, nil, nil); err != nil {
 		t.Fatalf("Schedule() error = %v", err)
 	}
 

@@ -25,11 +25,12 @@ func NewService(store Store) *Service {
 	return &Service{store: store}
 }
 
-func (s *Service) Schedule(ctx context.Context, leagueID, seasonID, homeTeamID, awayTeamID uuid.UUID, matchday int32, kickoffAt *time.Time) (*Match, error) {
+func (s *Service) Schedule(ctx context.Context, leagueID, seasonID, homeTeamID, awayTeamID uuid.UUID, matchday int32, kickoffAt *time.Time, venue *string) (*Match, error) {
 	m, err := New(seasonID, homeTeamID, awayTeamID, matchday, kickoffAt)
 	if err != nil {
 		return nil, err
 	}
+	m.UpdateDetails(Details{Venue: venue})
 
 	var res *Match
 	err = s.store.InTx(ctx, func(store Store) error {
@@ -47,7 +48,14 @@ func (s *Service) Schedule(ctx context.Context, leagueID, seasonID, homeTeamID, 
 	return res, err
 }
 
-func (s *Service) Reschedule(ctx context.Context, leagueID, seasonID, id uuid.UUID, matchday *int32, kickoffAt *time.Time) (*Match, error) {
+func (s *Service) Update(ctx context.Context, leagueID, seasonID, id uuid.UUID, matchday *int32, kickoffAt *time.Time, details Details) (*Match, error) {
+	if matchday == nil && kickoffAt == nil {
+		return s.transition(ctx, leagueID, seasonID, id, func(m *Match) error {
+			m.UpdateDetails(details)
+			return nil
+		})
+	}
+
 	return s.change(ctx, leagueID, seasonID, id, func(m *Match) error {
 		newMatchday, newKickoffAt := m.Matchday(), m.KickoffAt()
 		if matchday != nil {
@@ -56,7 +64,11 @@ func (s *Service) Reschedule(ctx context.Context, leagueID, seasonID, id uuid.UU
 		if kickoffAt != nil {
 			newKickoffAt = kickoffAt
 		}
-		return m.Reschedule(newMatchday, newKickoffAt)
+		if err := m.Reschedule(newMatchday, newKickoffAt); err != nil {
+			return err
+		}
+		m.UpdateDetails(details)
+		return nil
 	})
 }
 

@@ -42,9 +42,9 @@ func (q *Queries) CountTeamMatchesOnMatchday(ctx context.Context, arg CountTeamM
 }
 
 const createMatch = `-- name: CreateMatch :one
-INSERT INTO match (season_id, home_team_id, away_team_id, matchday, kickoff_at)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, season_id, home_team_id, away_team_id, matchday, kickoff_at, status, home_score, away_score, created_at, updated_at
+INSERT INTO match (season_id, home_team_id, away_team_id, matchday, kickoff_at, venue)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, season_id, home_team_id, away_team_id, matchday, kickoff_at, status, home_score, away_score, created_at, updated_at, venue, referee, convocation_at, video_url
 `
 
 type CreateMatchParams struct {
@@ -53,6 +53,7 @@ type CreateMatchParams struct {
 	AwayTeamID uuid.UUID
 	Matchday   int32
 	KickoffAt  *time.Time
+	Venue      *string
 }
 
 func (q *Queries) CreateMatch(ctx context.Context, arg CreateMatchParams) (Match, error) {
@@ -62,6 +63,7 @@ func (q *Queries) CreateMatch(ctx context.Context, arg CreateMatchParams) (Match
 		arg.AwayTeamID,
 		arg.Matchday,
 		arg.KickoffAt,
+		arg.Venue,
 	)
 	var i Match
 	err := row.Scan(
@@ -76,6 +78,10 @@ func (q *Queries) CreateMatch(ctx context.Context, arg CreateMatchParams) (Match
 		&i.AwayScore,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Venue,
+		&i.Referee,
+		&i.ConvocationAt,
+		&i.VideoUrl,
 	)
 	return i, err
 }
@@ -104,7 +110,7 @@ func (q *Queries) DeleteMatch(ctx context.Context, arg DeleteMatchParams) (int64
 }
 
 const getMatch = `-- name: GetMatch :one
-SELECT match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at FROM match
+SELECT match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at, match.venue, match.referee, match.convocation_at, match.video_url FROM match
 JOIN season ON season.id = match.season_id
 WHERE match.id = $1
   AND match.season_id = $2
@@ -132,12 +138,16 @@ func (q *Queries) GetMatch(ctx context.Context, arg GetMatchParams) (Match, erro
 		&i.AwayScore,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Venue,
+		&i.Referee,
+		&i.ConvocationAt,
+		&i.VideoUrl,
 	)
 	return i, err
 }
 
 const getMatchForUpdate = `-- name: GetMatchForUpdate :one
-SELECT match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at FROM match
+SELECT match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at, match.venue, match.referee, match.convocation_at, match.video_url FROM match
 JOIN season ON season.id = match.season_id
 WHERE match.id = $1
   AND match.season_id = $2
@@ -166,12 +176,16 @@ func (q *Queries) GetMatchForUpdate(ctx context.Context, arg GetMatchForUpdatePa
 		&i.AwayScore,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Venue,
+		&i.Referee,
+		&i.ConvocationAt,
+		&i.VideoUrl,
 	)
 	return i, err
 }
 
 const listMatches = `-- name: ListMatches :many
-SELECT match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at FROM match
+SELECT match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at, match.venue, match.referee, match.convocation_at, match.video_url FROM match
 JOIN season ON season.id = match.season_id
 WHERE match.season_id = $1
   AND season.league_id = $2
@@ -222,6 +236,10 @@ func (q *Queries) ListMatches(ctx context.Context, arg ListMatchesParams) ([]Mat
 			&i.AwayScore,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Venue,
+			&i.Referee,
+			&i.ConvocationAt,
+			&i.VideoUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -263,24 +281,32 @@ SET matchday = $1,
     status = $3,
     home_score = $4,
     away_score = $5,
+    venue = $6,
+    referee = $7,
+    convocation_at = $8,
+    video_url = $9,
     updated_at = now()
 FROM season
-WHERE match.id = $6
-  AND match.season_id = $7
+WHERE match.id = $10
+  AND match.season_id = $11
   AND season.id = match.season_id
-  AND season.league_id = $8
-RETURNING match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at
+  AND season.league_id = $12
+RETURNING match.id, match.season_id, match.home_team_id, match.away_team_id, match.matchday, match.kickoff_at, match.status, match.home_score, match.away_score, match.created_at, match.updated_at, match.venue, match.referee, match.convocation_at, match.video_url
 `
 
 type UpdateMatchParams struct {
-	Matchday  int32
-	KickoffAt *time.Time
-	Status    MatchStatus
-	HomeScore *int32
-	AwayScore *int32
-	ID        uuid.UUID
-	SeasonID  uuid.UUID
-	LeagueID  uuid.UUID
+	Matchday      int32
+	KickoffAt     *time.Time
+	Status        MatchStatus
+	HomeScore     *int32
+	AwayScore     *int32
+	Venue         *string
+	Referee       *string
+	ConvocationAt *time.Time
+	VideoUrl      *string
+	ID            uuid.UUID
+	SeasonID      uuid.UUID
+	LeagueID      uuid.UUID
 }
 
 func (q *Queries) UpdateMatch(ctx context.Context, arg UpdateMatchParams) (Match, error) {
@@ -290,6 +316,10 @@ func (q *Queries) UpdateMatch(ctx context.Context, arg UpdateMatchParams) (Match
 		arg.Status,
 		arg.HomeScore,
 		arg.AwayScore,
+		arg.Venue,
+		arg.Referee,
+		arg.ConvocationAt,
+		arg.VideoUrl,
 		arg.ID,
 		arg.SeasonID,
 		arg.LeagueID,
@@ -307,6 +337,10 @@ func (q *Queries) UpdateMatch(ctx context.Context, arg UpdateMatchParams) (Match
 		&i.AwayScore,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Venue,
+		&i.Referee,
+		&i.ConvocationAt,
+		&i.VideoUrl,
 	)
 	return i, err
 }

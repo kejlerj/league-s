@@ -30,6 +30,18 @@ type Match struct {
 	kickoffAt  *time.Time
 	status     Status
 	score      *Score
+	details    Details
+}
+
+type Details struct {
+	Venue         *string
+	Referee       *string
+	ConvocationAt *time.Time
+	VideoURL      *string
+}
+
+func (d Details) isEmpty() bool {
+	return d == Details{}
 }
 
 func New(seasonID, homeTeamID, awayTeamID uuid.UUID, matchday int32, kickoffAt *time.Time) (*Match, error) {
@@ -69,6 +81,37 @@ func (m *Match) Score() *Score {
 		return nil
 	}
 	return new(*m.score)
+}
+
+func (m *Match) Details() Details {
+	return Details{
+		Venue:         clone(m.details.Venue),
+		Referee:       clone(m.details.Referee),
+		ConvocationAt: clone(m.details.ConvocationAt),
+		VideoURL:      clone(m.details.VideoURL),
+	}
+}
+
+func (m *Match) UpdateDetails(d Details) {
+	if d.Venue != nil {
+		m.details.Venue = clone(d.Venue)
+	}
+	if d.Referee != nil {
+		m.details.Referee = clone(d.Referee)
+	}
+	if d.ConvocationAt != nil {
+		m.details.ConvocationAt = clone(d.ConvocationAt)
+	}
+	if d.VideoURL != nil {
+		m.details.VideoURL = clone(d.VideoURL)
+	}
+}
+
+func clone[T any](v *T) *T {
+	if v == nil {
+		return nil
+	}
+	return new(*v)
 }
 
 func (m *Match) Start() error {
