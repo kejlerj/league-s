@@ -29,7 +29,7 @@ func (h *Handler) Routes() chi.Router {
 
 type createTeamRequest struct {
 	Name string  `json:"name" validate:"required,max=50"`
-	Logo *string `json:"logo" validate:"omitempty,url"`
+	Logo *string `json:"logo" validate:"omitempty,http_url"`
 }
 
 type teamResponse struct {

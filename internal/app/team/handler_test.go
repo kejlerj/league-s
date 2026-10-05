@@ -85,6 +85,7 @@ func TestCreateTeam_Errors(t *testing.T) {
 		{"missing name", teamsPath, `{}`, http.StatusUnprocessableEntity},
 		{"name too long", teamsPath, `{"name": "` + strings.Repeat("a", 51) + `"}`, http.StatusUnprocessableEntity},
 		{"logo is not a URL", teamsPath, `{"name": "Lyon", "logo": "not a url"}`, http.StatusUnprocessableEntity},
+		{"logo is not an http URL", teamsPath, `{"name": "Lyon", "logo": "javascript:alert(1)"}`, http.StatusUnprocessableEntity},
 		{"name taken in the league", teamsPath, `{"name": "Les Bleus"}`, http.StatusConflict},
 		{"unknown league", func(db.League) string { return "/api/v1/leagues/" + uuid.NewString() + "/teams" }, `{"name": "Lyon"}`, http.StatusNotFound},
 		{"invalid league id", func(db.League) string { return "/api/v1/leagues/abc/teams" }, `{"name": "Lyon"}`, http.StatusBadRequest},

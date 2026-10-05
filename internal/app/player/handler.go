@@ -22,7 +22,7 @@ func NewHandler(store *PostgresStore) *Handler {
 type createPlayerRequest struct {
 	Firstname string  `json:"firstname" validate:"required,max=50"`
 	Lastname  string  `json:"lastname" validate:"required,max=50"`
-	Icon      *string `json:"icon" validate:"omitempty,url"`
+	Icon      *string `json:"icon" validate:"omitempty,http_url"`
 }
 
 type playerResponse struct {

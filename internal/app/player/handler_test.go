@@ -99,6 +99,7 @@ func TestCreatePlayer_Errors(t *testing.T) {
 		{"firstname too long", playersPath, `{"firstname": "` + strings.Repeat("a", 51) + `", "lastname": "Dupont"}`, http.StatusUnprocessableEntity},
 		{"lastname too long", playersPath, `{"firstname": "Jean", "lastname": "` + strings.Repeat("a", 51) + `"}`, http.StatusUnprocessableEntity},
 		{"icon is not a URL", playersPath, `{"firstname": "Jean", "lastname": "Dupont", "icon": "not a url"}`, http.StatusUnprocessableEntity},
+		{"icon is not an http URL", playersPath, `{"firstname": "Jean", "lastname": "Dupont", "icon": "javascript:alert(1)"}`, http.StatusUnprocessableEntity},
 		{"unknown league", func(db.League) string { return "/api/v1/leagues/" + uuid.NewString() + "/players" }, valid, http.StatusNotFound},
 		{"invalid league id", func(db.League) string { return "/api/v1/leagues/abc/players" }, valid, http.StatusBadRequest},
 	}

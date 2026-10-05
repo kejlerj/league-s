@@ -93,6 +93,7 @@ func TestCreateLeague_Errors(t *testing.T) {
 		{"missing name", `{}`, http.StatusUnprocessableEntity},
 		{"name too long", `{"name": "` + strings.Repeat("a", 51) + `"}`, http.StatusUnprocessableEntity},
 		{"logo is not a URL", `{"name": "Ligue 1", "logo": "not a url"}`, http.StatusUnprocessableEntity},
+		{"logo is not an http URL", `{"name": "Ligue 1", "logo": "javascript:alert(1)"}`, http.StatusUnprocessableEntity},
 	}
 
 	for _, tt := range tests {
