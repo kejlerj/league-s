@@ -1,145 +1,67 @@
 export type ResultTag = 'V' | 'N' | 'D';
 
-export interface District {
+export type ApiMatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed' | 'cancelled';
+
+export type MatchStatus = 'upcoming' | 'live' | 'played' | 'cancelled';
+
+export interface Season {
   id: string;
+  league_id: string;
   name: string;
-  division: string;
-  season: string;
-  seller: string;
+  start_on: string;
+  end_on: string;
 }
 
 export interface Team {
   id: string;
+  league_id: string;
   name: string;
-  shortName: string;
-  crestColor: string;
-  rank: number;
-  points: number;
-  played: number;
-  goalDiff: number;
-  stadium: string;
-  form: ResultTag[];
-  squadCount: number;
+  logo: string | null;
 }
 
-export interface Player {
+export interface TeamRef {
   id: string;
-  teamId: string;
-  number: number;
   name: string;
-  position: string;
-  matchesPlayed: number;
-  goals: number;
-  assists: number;
+  logo: string | null;
 }
 
-export type MatchStatus = 'upcoming' | 'live' | 'played';
-
-export interface MatchEvent {
-  minute: number;
-  type: 'goal' | 'yellow' | 'red' | 'sub';
-  playerName: string;
-  detail: string;
-  score: string;
-}
-
-export interface MatchOdds {
-  home: number;
-  draw: number;
-  away: number;
-}
-
-export interface MatchMvp {
-  playerId: string;
-  votePercent: number;
-  voteCount: number;
-}
-
-export interface Match {
+export interface ApiMatch {
   id: string;
+  season_id: string;
+  home_team: TeamRef;
+  away_team: TeamRef;
   matchday: number;
-  homeTeamId: string;
-  awayTeamId: string;
-  kickoff: string; // ISO 8601
-  venue: string;
-  status: MatchStatus;
-  homeScore?: number;
-  awayScore?: number;
-  odds?: MatchOdds;
-  referee?: string;
-  convocation?: string;
-  spectators?: number;
-  videoUrl?: string;
-  videoDuration?: string;
-  events?: MatchEvent[];
-  mvp?: MatchMvp;
+  kickoff_at: string | null;
+  status: ApiMatchStatus;
+  home_score: number | null;
+  away_score: number | null;
+  venue: string | null;
+  referee: string | null;
+  convocation_at: string | null;
+  video_url: string | null;
 }
 
-export type StandingsZone = 'promotion' | 'playoff' | 'relegation' | 'none';
-
-export interface StandingsRow {
+export interface StandingRow {
   rank: number;
-  teamId: string;
-  teamName: string;
+  team_id: string;
+  team_name: string;
   played: number;
-  goalDiff: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goals_for: number;
+  goals_against: number;
+  goal_difference: number;
   points: number;
-  zone: StandingsZone;
-  followed: boolean;
 }
 
-export interface PeopleRow {
-  rank: number;
-  playerId: string;
-  name: string;
-  teamName: string;
-  value: number;
-  unit: string;
+export interface SquadRow {
+  membership_id: string;
+  player_id: string;
+  firstname: string;
+  lastname: string;
+  icon: string | null;
+  number: number;
+  joined_on: string;
+  left_on: string | null;
 }
-
-export interface Profile {
-  name: string;
-  supporterOf: string;
-  since: number;
-  pronoPoints: number;
-  pronoRank: number;
-}
-
-export interface ResultLine {
-  matchId: string;
-  opponent: string;
-  venueTag: 'dom.' | 'ext.';
-  result: ResultTag;
-  score: string;
-}
-
-export interface TeamDetail {
-  team: Team;
-  nextMatch:
-    | (Match & { opponentName: string; venueTag: 'dom.' | 'ext.' })
-    | null;
-  lastResults: ResultLine[];
-  squad: Player[];
-}
-
-export type FixtureSlotTone = 'score' | 'live' | 'odds' | 'date';
-
-export interface FixtureSlot {
-  text: string;
-  tone: FixtureSlotTone;
-}
-
-export type FixtureTarget =
-  | { kind: 'match'; id: string }
-  | { kind: 'team'; id: string };
-
-export interface FixtureRow {
-  matchId: string;
-  when: string;
-  match: string;
-  sub: string;
-  slot: FixtureSlot;
-  target: FixtureTarget;
-}
-
-export type ListItem = { kind: 'fixture'; row: FixtureRow } | { kind: 'shop' };

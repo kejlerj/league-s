@@ -4,16 +4,15 @@ import { MoiScreen } from './MoiScreen';
 import { useAppStore } from '../store/useAppStore';
 
 beforeEach(() => {
-  useAppStore.setState({ themeMode: 'system', follows: { 'fc-vallonnais': { notifyLevel: 'full' } }, mvpVotes: {} });
+  useAppStore.setState({ themeMode: 'system', follows: { 'team-a': { notifyLevel: 'full' } } });
 });
 
-test('renders the profile name and followed-team count', () => {
+test('shows how many teams are followed on this device', () => {
   render(<MoiScreen />);
-  expect(screen.getByText('Julien Mercier')).toBeTruthy();
   expect(screen.getByText('1')).toBeTruthy();
 });
 
-test('tapping a theme segment updates the store', () => {
+test('tapping Sombre updates the theme in the store', () => {
   render(<MoiScreen />);
   fireEvent.press(screen.getByTestId('segmented-tab-Sombre'));
   expect(useAppStore.getState().themeMode).toBe('dark');

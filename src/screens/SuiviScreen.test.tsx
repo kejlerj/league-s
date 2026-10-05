@@ -2,82 +2,88 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
 import { SuiviScreen } from './SuiviScreen';
 import * as matchesService from '../services/matches';
+import * as leagueService from '../services/league';
 import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
-import type { FixtureRow, FixtureSlotTone } from '../types';
+import type { ApiMatch } from '../types';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
+jest.mock('../services/matches');
+jest.mock('../services/league');
 
-function fixtureRow(id: string, tone: FixtureSlotTone = 'score'): FixtureRow {
+const SEASON = { id: 'season-1', league_id: 'l', name: '2026-2027', start_on: '2026-08-29T00:00:00Z', end_on: '2027-05-30T00:00:00Z' };
+const TEAM = '01a10d58-8ae5-723e-b3d1-8d75cbe828bb';
+
+function apiMatch(id: string, status: ApiMatch['status'], home: string, away: string): ApiMatch {
   return {
-    matchId: id,
-    when: 'Dim. 14',
-    match: `Match ${id}`,
-    sub: 'J4 · domicile · 15:00',
-    slot: { text: tone === 'score' ? '3–1' : 'en cours', tone },
-    target: { kind: 'match', id },
+    id,
+    season_id: SEASON.id,
+    home_team: { id: 'home', name: home, logo: null },
+    away_team: { id: 'away', name: away, logo: null },
+    matchday: 4,
+    kickoff_at: '2026-10-05T18:00:00Z',
+    status,
+    home_score: status === 'finished' ? 3 : null,
+    away_score: status === 'finished' ? 1 : null,
+    venue: null,
+    referee: null,
+    convocation_at: null,
+    video_url: null,
   };
 }
 
 beforeEach(() => {
   mockPush.mockClear();
-  useAppStore.setState({
-    follows: { 'fc-vallonnais': { notifyLevel: 'full' } },
-    mvpVotes: {},
-    themeMode: 'system',
-  });
+  jest.mocked(leagueService.listSeasons).mockResolvedValue([SEASON]);
+  useAppStore.setState({ themeMode: 'system', follows: { [TEAM]: { notifyLevel: 'full' } } });
 });
 
-afterEach(() => {
-  jest.restoreAllMocks();
-});
-
-test('renders a shop-suggestion row after the 5th fixture', async () => {
-  const rows = Array.from({ length: 6 }, (_, i) => fixtureRow(`m${i + 1}`));
-  jest.spyOn(matchesService, 'getMyFixtures').mockResolvedValue(rows);
+test('lists the followed fixtures for the current season', async () => {
+  jest.mocked(matchesService.getFollowedFixtures).mockResolvedValue([
+    { match: apiMatch('m1', 'finished', 'Bastille', 'Belleville'), teamId: 'home' },
+  ]);
 
   render(<SuiviScreen />);
 
-  await waitFor(() => expect(screen.getByText('Match m6')).toBeTruthy());
-  expect(screen.getByText('Boutique de la ligue · floquage offert')).toBeTruthy();
+  await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
+  expect(matchesService.getFollowedFixtures).toHaveBeenCalledWith(SEASON.id, [TEAM]);
+  expect(screen.getByText('3–1')).toBeTruthy();
 });
 
-test('tapping a played fixture row navigates to its match page', async () => {
-  jest.spyOn(matchesService, 'getMyFixtures').mockResolvedValue([fixtureRow('m1')]);
+test('tapping a finished fixture opens its match page', async () => {
+  jest.mocked(matchesService.getFollowedFixtures).mockResolvedValue([
+    { match: apiMatch('m1', 'finished', 'Bastille', 'Belleville'), teamId: 'home' },
+  ]);
 
   render(<SuiviScreen />);
+  await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
+  fireEvent.press(screen.getByText('Bastille — Belleville'));
 
-  await waitFor(() => expect(screen.getByText('Match m1')).toBeTruthy());
-  fireEvent.press(screen.getByText('Match m1'));
   expect(mockPush).toHaveBeenCalledWith('/match/m1');
 });
 
-test('shows an error state on failure and retries the fetch on tapping retry', async () => {
-  const getMyFixtures = jest
-    .spyOn(matchesService, 'getMyFixtures')
-    .mockRejectedValueOnce(new Error('network down'))
-    .mockResolvedValueOnce([fixtureRow('m1')]);
-
-  render(<SuiviScreen />);
-
-  await waitFor(() => expect(screen.getByText(fr.suivi.error)).toBeTruthy());
-  expect(getMyFixtures).toHaveBeenCalledTimes(1);
-
-  fireEvent.press(screen.getByText(fr.common.retry));
-
-  await waitFor(() => expect(screen.getByText('Match m1')).toBeTruthy());
-  expect(getMyFixtures).toHaveBeenCalledTimes(2);
-});
-
-test('shows the empty state when zero teams are followed', async () => {
-  useAppStore.setState({ follows: {}, mvpVotes: {}, themeMode: 'system' });
-  jest.spyOn(matchesService, 'getMyFixtures').mockResolvedValue([]);
+test('shows the empty state when no team is followed', async () => {
+  useAppStore.setState({ follows: {} });
+  jest.mocked(matchesService.getFollowedFixtures).mockResolvedValue([]);
 
   render(<SuiviScreen />);
 
   await waitFor(() => expect(screen.getByText(fr.suivi.empty)).toBeTruthy());
   expect(screen.getByText(fr.suivi.emptyHint)).toBeTruthy();
+});
+
+test('shows an error and retries on tap', async () => {
+  jest.mocked(matchesService.getFollowedFixtures)
+    .mockRejectedValueOnce(new Error('network'))
+    .mockResolvedValueOnce([{ match: apiMatch('m1', 'finished', 'Bastille', 'Belleville'), teamId: 'home' }]);
+
+  render(<SuiviScreen />);
+  await waitFor(() => expect(screen.getByText(fr.suivi.error)).toBeTruthy());
+
+  fireEvent.press(screen.getByText(fr.common.retry));
+
+  await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
 });

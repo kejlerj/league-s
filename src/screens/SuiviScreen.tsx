@@ -10,30 +10,28 @@ import { ThemedText } from '../components/ThemedText';
 import { Skeleton } from '../components/Skeleton';
 import { ErrorState } from '../components/ErrorState';
 import { useAsync } from '../hooks/useAsync';
+import { useCurrentSeason } from '../hooks/useCurrentSeason';
 import { useAppStore } from '../store/useAppStore';
-import { getMyFixtures } from '../services/matches';
-import { injectShopRows } from '../logic/injectShopRows';
-import { teams } from '../data/teams';
+import { getFollowedFixtures } from '../services/matches';
+import { toFixtureRow } from '../logic/fixtureRow';
 import { fr } from '../i18n/fr';
-import type { FixtureTarget } from '../types';
 
 export function SuiviScreen() {
   const router = useRouter();
   const followedTeamIds = useAppStore((s) => s.followedTeamIds());
-  const { data: fixtures, loading, error, reload } = useAsync(
-    () => getMyFixtures(followedTeamIds),
-    [followedTeamIds.join(',')]
+  const season = useCurrentSeason();
+  const fixtures = useAsync(
+    () => (season.season ? getFollowedFixtures(season.season.id, followedTeamIds) : Promise.resolve([])),
+    [season.season?.id, followedTeamIds.join(',')]
   );
 
-  const followedNames = followedTeamIds
-    .map((id) => teams.find((t) => t.id === id)?.name ?? id)
-    .join(' · ')
-    .toUpperCase();
+  const rows = (fixtures.data ?? []).map(({ match, teamId }) => toFixtureRow(match, teamId));
+  const loading = season.loading || fixtures.loading;
+  const error = season.error ?? fixtures.error;
 
-  const items = fixtures ? injectShopRows(fixtures) : [];
-
-  function goToFixture(target: FixtureTarget) {
-    router.push(target.kind === 'match' ? `/match/${target.id}` : `/suivi/team/${target.id}`);
+  function reload() {
+    season.reload();
+    fixtures.reload();
   }
 
   return (
@@ -42,7 +40,7 @@ export function SuiviScreen() {
         <View className="flex-row items-end justify-between">
           <View>
             <ThemedText tone="muted" weight="semibold" size={11} className="uppercase tracking-wide">
-              {followedNames || fr.suivi.calendarLabel.toUpperCase()}
+              {season.season ? `Saison ${season.season.name}` : fr.suivi.calendarLabel}
             </ThemedText>
             <ThemedText weight="semibold" size={24} className="mt-1.5">{fr.suivi.title}</ThemedText>
           </View>
@@ -56,55 +54,44 @@ export function SuiviScreen() {
         {loading && <Skeleton rows={5} />}
         {error && <ErrorState message={fr.suivi.error} onRetry={reload} />}
 
-        {fixtures && (
+        {!loading && !error && (
           <>
             <SectionLabel>{fr.suivi.calendarLabel}</SectionLabel>
 
-            {items.length === 0 ? (
+            {followedTeamIds.length === 0 ? (
               <View className="py-6 gap-1">
                 <ThemedText tone="muted" size={13.5}>{fr.suivi.empty}</ThemedText>
                 <ThemedText tone="faint" size={12}>{fr.suivi.emptyHint}</ThemedText>
               </View>
+            ) : rows.length === 0 ? (
+              <ThemedText tone="muted" size={13.5} className="py-6">{fr.suivi.noMatches}</ThemedText>
             ) : (
               <Card>
-                {items.map((item, index) =>
-                  item.kind === 'fixture' ? (
-                    <Pressable key={item.row.matchId} onPress={() => goToFixture(item.row.target)}>
-                      <CardRow isFirst={index === 0}>
-                        <View style={{ width: 52 }}>
-                          <ThemedText tone="muted" weight="medium" size={11.5}>{item.row.when}</ThemedText>
-                        </View>
-                        <View className="flex-1">
-                          <ThemedText weight="medium" size={14.5}>{item.row.match}</ThemedText>
-                          <ThemedText tone="muted" size={11.5} className="mt-0.5">{item.row.sub}</ThemedText>
-                        </View>
-                        <SlotChip text={item.row.slot.text} tone={item.row.slot.tone} />
-                      </CardRow>
-                    </Pressable>
-                  ) : (
-                    <CardRow key={`shop-${index}`} isFirst={index === 0}>
-                      <View style={{ width: 52, height: 40 }} className="rounded-lg bg-field dark:bg-fieldDark" />
-                      <View className="flex-1">
-                        <ThemedText weight="medium" size={13.5}>{fr.suivi.shopItemName}</ThemedText>
-                        <ThemedText tone="muted" size={11.5} className="mt-0.5">{fr.suivi.shopItemNote}</ThemedText>
+                {rows.map((row, index) => (
+                  <Pressable
+                    key={row.matchId}
+                    onPress={() =>
+                      router.push(
+                        row.target.kind === 'match' ? `/match/${row.target.id}` : `/suivi/team/${row.target.id}`
+                      )
+                    }
+                  >
+                    <CardRow isFirst={index === 0}>
+                      <View style={{ width: 52 }}>
+                        <ThemedText tone="muted" weight="medium" size={11.5}>{row.when}</ThemedText>
                       </View>
-                      <ThemedText
-                        tone="accent"
-                        weight="semibold"
-                        size={12.5}
-                        onPress={() => router.push('/boutique')}
-                      >
-                        {fr.suivi.shopCta}
-                      </ThemedText>
+                      <View className="flex-1">
+                        <ThemedText weight="medium" size={14.5}>{row.title}</ThemedText>
+                        <ThemedText tone="muted" size={11.5} className="mt-0.5">{row.sub}</ThemedText>
+                      </View>
+                      <SlotChip text={row.slot.text} tone={row.slot.tone} />
                     </CardRow>
-                  )
-                )}
+                  </Pressable>
+                ))}
               </Card>
             )}
 
-            <ThemedText tone="muted" size={11.5} className="leading-5">
-              {fr.suivi.footerNote}
-            </ThemedText>
+            <ThemedText tone="muted" size={11.5} className="leading-5">{fr.suivi.footerNote}</ThemedText>
           </>
         )}
       </View>

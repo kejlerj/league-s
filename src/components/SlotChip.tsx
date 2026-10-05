@@ -1,26 +1,24 @@
 import React from 'react';
 import { View } from 'react-native';
 import { ThemedText } from './ThemedText';
-import type { FixtureSlotTone } from '../types';
+import type { SlotTone } from '@/src/logic/fixtureRow';
 
-const TONE_CLASS: Record<FixtureSlotTone, string> = {
+const TONE_CLASS: Record<SlotTone, string> = {
   score: 'bg-field dark:bg-fieldDark',
   live: 'bg-warnBg dark:bg-warnBgDark',
-  odds: 'bg-accent dark:bg-accentDark',
   date: 'bg-field dark:bg-fieldDark',
+  muted: 'bg-field dark:bg-fieldDark',
 };
 
-export function SlotChip({ text, tone }: { text: string; tone: FixtureSlotTone }) {
+export function SlotChip({ text, tone }: { text: string; tone: SlotTone }) {
   return (
-    <View
-      className={`h-[26px] px-2.5 rounded-lg items-center justify-center ${TONE_CLASS[tone]}`}
-    >
+    <View className={`h-[26px] px-2.5 rounded-lg items-center justify-center ${TONE_CLASS[tone]}`}>
       <ThemedText
         mono
         weight="semibold"
         size={12.5}
+        tone={tone === 'muted' ? 'faint' : 'primary'}
         className={tone === 'live' ? 'text-warn dark:text-warnDark' : undefined}
-        style={tone === 'odds' ? { color: '#fff' } : undefined}
       >
         {text}
       </ThemedText>

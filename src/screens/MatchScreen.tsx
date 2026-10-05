@@ -10,75 +10,76 @@ import { Crest } from '../components/Avatar';
 import { Skeleton } from '../components/Skeleton';
 import { ErrorState } from '../components/ErrorState';
 import { useAsync } from '../hooks/useAsync';
-import { useAppStore } from '../store/useAppStore';
+import { useCurrentSeason } from '../hooks/useCurrentSeason';
 import { getMatch } from '../services/matches';
-import { teams } from '../data/teams';
-import { players } from '../data/players';
+import { statusOf } from '../logic/results';
+import { formatDateTime, formatTime, parseApiDate } from '../logic/dateTime';
 import { fr } from '../i18n/fr';
-import { formatMatchDate, formatMatchDateTime } from '../logic/formatDate';
+import type { MatchStatus } from '../types';
+
+const STATUS_LABEL: Record<MatchStatus, string> = {
+  upcoming: fr.match.upcoming,
+  live: fr.match.live,
+  played: fr.match.done,
+  cancelled: fr.match.cancelled,
+};
 
 export function MatchScreen({ id }: { id: string }) {
-  const { data: match, loading, error, reload } = useAsync(() => getMatch(id), [id]);
-  const voted = useAppStore((s) => (match?.mvp ? s.hasVotedFor(match.id, match.mvp.playerId) : false));
-  const toggleMvpVote = useAppStore((s) => s.toggleMvpVote);
+  const season = useCurrentSeason();
+  const match = useAsync(
+    () => (season.season ? getMatch(season.season.id, id) : Promise.resolve(null)),
+    [season.season?.id, id]
+  );
 
-  const homeTeam = match ? teams.find((t) => t.id === match.homeTeamId) : undefined;
-  const awayTeam = match ? teams.find((t) => t.id === match.awayTeamId) : undefined;
-  const mvpPlayer = match?.mvp ? players.find((p) => p.id === match.mvp!.playerId) : undefined;
-  const voteCount = match?.mvp ? match.mvp.voteCount + (voted ? 1 : 0) : 0;
+  const loading = season.loading || match.loading;
+  const error = season.error ?? match.error;
+  const data = match.data;
+  const status = data ? statusOf(data) : null;
+  const kickoff = data?.kickoff_at ? parseApiDate(data.kickoff_at) : null;
+  const convocation = data?.convocation_at ? parseApiDate(data.convocation_at) : null;
+  const hasScore = data !== null && data.home_score !== null && data.away_score !== null;
 
   return (
     <Screen>
       <HeaderCard>
         <View className="gap-4">
           <View className="flex-row items-center justify-between">
-            <BackLink label={`Journée ${match?.matchday ?? ''}`} />
-            <View
-              className={`rounded-md px-2 py-1 ${
-                match?.status === 'live' ? 'bg-warnBg dark:bg-warnBgDark' : 'bg-field dark:bg-fieldDark'
-              }`}
-            >
-              <ThemedText
-                tone={match?.status === 'live' ? undefined : 'muted'}
-                className={
-                  match?.status === 'live' ? 'text-warn dark:text-warnDark uppercase tracking-wide' : 'uppercase tracking-wide'
-                }
-                weight="semibold"
-                size={11}
-              >
-                {match?.status === 'live' ? fr.match.live : fr.match.done}
-              </ThemedText>
-            </View>
+            <BackLink label={data ? fr.match.journee(data.matchday) : ''} />
+            {status && (
+              <View className="bg-field dark:bg-fieldDark rounded-md px-2 py-1">
+                <ThemedText tone="muted" weight="semibold" size={11} className="uppercase tracking-wide">
+                  {STATUS_LABEL[status]}
+                </ThemedText>
+              </View>
+            )}
           </View>
 
-          {match && (
+          {data && (
             <>
               <View className="flex-row items-center gap-2">
                 <View className="flex-1 items-center gap-2">
-                  <Crest size={46} />
-                  <ThemedText weight="medium" size={13.5} className="text-center">{homeTeam?.name}</ThemedText>
+                  <Crest size={46} uri={data.home_team.logo} />
+                  <ThemedText weight="medium" size={13.5} className="text-center">{data.home_team.name}</ThemedText>
                 </View>
-                {match.status !== 'upcoming' && match.homeScore !== undefined && match.awayScore !== undefined ? (
-                  <View className="flex-row items-center gap-2.5">
-                    <ThemedText mono weight="semibold" size={40}>{match.homeScore}</ThemedText>
+                <View className="flex-row items-center gap-2.5">
+                  {hasScore ? (
+                    <>
+                      <ThemedText mono weight="semibold" size={40}>{data.home_score}</ThemedText>
+                      <ThemedText tone="faint" size={26}>–</ThemedText>
+                      <ThemedText mono weight="semibold" size={40} tone="muted">{data.away_score}</ThemedText>
+                    </>
+                  ) : (
                     <ThemedText tone="faint" size={26}>–</ThemedText>
-                    <ThemedText mono weight="semibold" size={40} tone="muted">{match.awayScore}</ThemedText>
-                  </View>
-                ) : (
-                  <ThemedText tone="accent" weight="semibold" size={16} className="uppercase tracking-wide">
-                    {fr.match.live}
-                  </ThemedText>
-                )}
+                  )}
+                </View>
                 <View className="flex-1 items-center gap-2">
-                  <Crest size={46} />
-                  <ThemedText weight="medium" size={13.5} tone="muted" className="text-center">
-                    {awayTeam?.name}
-                  </ThemedText>
+                  <Crest size={46} uri={data.away_team.logo} />
+                  <ThemedText weight="medium" size={13.5} tone="muted" className="text-center">{data.away_team.name}</ThemedText>
                 </View>
               </View>
               <ThemedText tone="muted" size={12.5} className="text-center">
-                {formatMatchDate(match.kickoff)} · {match.venue}
-                {match.spectators ? ` · ${match.spectators} spectateurs` : ''}
+                {kickoff ? formatDateTime(kickoff) : fr.match.scheduleTbd}
+                {data.venue ? ` · ${data.venue}` : ''}
               </ThemedText>
             </>
           )}
@@ -87,19 +88,14 @@ export function MatchScreen({ id }: { id: string }) {
 
       <View className="px-5 pt-4 gap-5 pb-6">
         {loading && <Skeleton rows={4} />}
-        {error && <ErrorState message={fr.match.error} onRetry={reload} />}
+        {error && <ErrorState message={fr.match.error} onRetry={() => { season.reload(); match.reload(); }} />}
 
-        {match && (
+        {data && (
           <>
-            {match.videoUrl && (
-              <Pressable onPress={() => Linking.openURL(match.videoUrl!)}>
+            {data.video_url && (
+              <Pressable onPress={() => Linking.openURL(data.video_url as string)}>
                 <Card>
-                  <View className="h-[186px] bg-field dark:bg-fieldDark items-center justify-center">
-                    <ThemedText tone="faint" size={11.5}>
-                      résumé vidéo · {match.videoDuration}
-                    </ThemedText>
-                  </View>
-                  <CardRow>
+                  <CardRow isFirst>
                     <ThemedText weight="medium" size={13.5} className="flex-1">{fr.match.videoLabel}</ThemedText>
                     <ThemedText tone="accent" weight="semibold" size={12.5}>{fr.match.videoOpen}</ThemedText>
                   </CardRow>
@@ -107,77 +103,22 @@ export function MatchScreen({ id }: { id: string }) {
               </Pressable>
             )}
 
-            {match.events && match.events.length > 0 && (
-              <View className="gap-2.5">
-                <SectionLabel>{fr.match.events}</SectionLabel>
-                <Card>
-                  {match.events.map((e, i) => (
-                    <CardRow key={i} isFirst={i === 0}>
-                      <ThemedText mono weight="medium" size={13} tone="muted" style={{ width: 34 }}>
-                        {e.minute}'
-                      </ThemedText>
-                      <View className="w-5 h-5 rounded-[5px] bg-accent dark:bg-accentDark" />
-                      <View className="flex-1">
-                        <ThemedText weight="medium" size={14.5}>{e.playerName}</ThemedText>
-                        <ThemedText tone="muted" size={11.5} className="mt-0.5">{e.detail}</ThemedText>
-                      </View>
-                      <ThemedText tone="muted" weight="medium" size={12.5}>{e.score}</ThemedText>
-                    </CardRow>
-                  ))}
-                </Card>
-              </View>
-            )}
-
-            {match.mvp && mvpPlayer && (
-              <Card>
-                <View className="p-4 gap-3.5">
-                  <View className="flex-row items-center justify-between">
-                    <SectionLabel>{fr.match.mvpTitle}</SectionLabel>
-                    <ThemedText tone="faint" size={11.5}>{fr.match.votes(voteCount)}</ThemedText>
-                  </View>
-                  <View className="flex-row items-center gap-3">
-                    <Crest size={48} />
-                    <View className="flex-1">
-                      <ThemedText weight="semibold" size={16}>{mvpPlayer.name}</ThemedText>
-                      <ThemedText tone="muted" size={12.5} className="mt-0.5">
-                        {mvpPlayer.position} · {match.mvp.votePercent}% des voix
-                      </ThemedText>
-                    </View>
-                  </View>
-                  <View className="h-2 rounded bg-field dark:bg-fieldDark overflow-hidden">
-                    <View style={{ width: `${match.mvp.votePercent}%` }} className="h-2 bg-accent dark:bg-accentDark" />
-                  </View>
-                  <Pressable
-                    testID="mvp-vote-button"
-                    onPress={() => toggleMvpVote(match.id, match.mvp!.playerId)}
-                    className={`h-11 rounded-xl items-center justify-center ${
-                      voted ? 'bg-accent dark:bg-accentDark' : 'border border-border dark:border-borderDark'
-                    }`}
-                  >
-                    <ThemedText weight="semibold" size={14} style={voted ? { color: '#fff' } : undefined}>
-                      {voted ? fr.match.votedCta : fr.match.voteCta}
-                    </ThemedText>
-                  </Pressable>
-                </View>
-              </Card>
-            )}
-
             <View className="gap-2.5">
               <SectionLabel>{fr.match.info}</SectionLabel>
               <Card>
-                {(
-                  [
-                    match.referee ? [fr.match.infoKeys.referee, match.referee] : null,
-                    [fr.match.infoKeys.venue, match.venue],
-                    match.spectators ? [fr.match.infoKeys.spectators, String(match.spectators)] : null,
-                    [fr.match.infoKeys.kickoff, formatMatchDateTime(match.kickoff)],
-                  ].filter((entry): entry is [string, string] => entry !== null)
-                ).map(([k, v], i) => (
-                  <CardRow key={k} isFirst={i === 0}>
-                    <ThemedText tone="muted" size={12.5} style={{ width: 104 }}>{k}</ThemedText>
-                    <ThemedText weight="medium" size={13.5} className="flex-1">{v}</ThemedText>
-                  </CardRow>
-                ))}
+                {[
+                  data.referee ? [fr.match.infoKeys.referee, data.referee] : null,
+                  data.venue ? [fr.match.infoKeys.venue, data.venue] : null,
+                  [fr.match.infoKeys.kickoff, kickoff ? formatDateTime(kickoff) : fr.match.scheduleTbd],
+                  convocation ? [fr.match.infoKeys.convocation, formatTime(convocation)] : null,
+                ]
+                  .filter((entry): entry is string[] => entry !== null)
+                  .map(([label, value], index) => (
+                    <CardRow key={label} isFirst={index === 0}>
+                      <ThemedText tone="muted" size={12.5} style={{ width: 104 }}>{label}</ThemedText>
+                      <ThemedText weight="medium" size={13.5} className="flex-1">{value}</ThemedText>
+                    </CardRow>
+                  ))}
               </Card>
             </View>
           </>

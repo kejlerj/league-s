@@ -12,36 +12,31 @@ interface FollowEntry {
 interface AppState {
   themeMode: ThemeMode;
   follows: Record<string, FollowEntry>;
-  mvpVotes: Record<string, string>;
   setThemeMode: (mode: ThemeMode) => void;
   toggleFollow: (teamId: string) => void;
   isFollowing: (teamId: string) => boolean;
   followedTeamIds: () => string[];
-  toggleMvpVote: (matchId: string, playerId: string) => void;
-  hasVotedFor: (matchId: string, playerId: string) => boolean;
 }
 
-const DEFAULT_FOLLOWS: Record<string, FollowEntry> = {
-  'fc-vallonnais': { notifyLevel: 'full' },
-  'as-riverain': { notifyLevel: 'result' },
-};
+const STORE_VERSION = 2;
+
+export function migrateAppState<T extends { follows: Record<string, FollowEntry> }>(
+  persisted: unknown,
+  version: number
+): T {
+  const state = persisted as T;
+  return version < STORE_VERSION ? { ...state, follows: {} } : state;
+}
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => {
-      // Cache the derived id array by the `follows` object identity so that
-      // `useAppStore((s) => s.followedTeamIds())` returns a referentially
-      // stable result across renders when `follows` hasn't changed. Without
-      // this, each call allocates a new array; zustand's React 19
-      // `useSyncExternalStore`-based subscription then sees a "changed"
-      // snapshot on every read and can loop ("Maximum update depth
-      // exceeded").
-      let followedIdsCache: { key: AppState['follows']; ids: string[] } | null = null;
+      let cachedFollows: Record<string, FollowEntry> | null = null;
+      let cachedIds: string[] = [];
 
       return {
         themeMode: 'system',
-        follows: DEFAULT_FOLLOWS,
-        mvpVotes: {},
+        follows: {},
 
         setThemeMode: (mode) => set({ themeMode: mode }),
 
@@ -60,33 +55,22 @@ export const useAppStore = create<AppState>()(
 
         followedTeamIds: () => {
           const follows = get().follows;
-          if (!followedIdsCache || followedIdsCache.key !== follows) {
-            followedIdsCache = { key: follows, ids: Object.keys(follows) };
+          if (follows !== cachedFollows) {
+            cachedFollows = follows;
+            cachedIds = Object.keys(follows);
           }
-          return followedIdsCache.ids;
+          return cachedIds;
         },
-
-        toggleMvpVote: (matchId, playerId) =>
-          set((state) => {
-            const next = { ...state.mvpVotes };
-            if (next[matchId] === playerId) {
-              delete next[matchId];
-            } else {
-              next[matchId] = playerId;
-            }
-            return { mvpVotes: next };
-          }),
-
-        hasVotedFor: (matchId, playerId) => get().mvpVotes[matchId] === playerId,
       };
     },
     {
       name: 'ligue-amateur-app-store',
+      version: STORE_VERSION,
       storage: createJSONStorage(() => AsyncStorage),
+      migrate: (persisted, version) => migrateAppState(persisted, version),
       partialize: (state) => ({
         themeMode: state.themeMode,
         follows: state.follows,
-        mvpVotes: state.mvpVotes,
       }),
     }
   )

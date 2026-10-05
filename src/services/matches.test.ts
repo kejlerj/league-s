@@ -1,24 +1,42 @@
-import { getMyFixtures, getMatch } from './matches';
-import { fixtures } from '../data/fixtures';
+import { getFollowedFixtures } from './matches';
+import type { ApiMatch } from '@/src/types';
 
-test('getMyFixtures returns one row per fixture for every followed team, newest kickoff first', async () => {
-  const rows = await getMyFixtures(['fc-vallonnais', 'as-riverain']);
-  expect(rows.length).toBeGreaterThanOrEqual(6);
+function match(id: string, kickoff: string | null, home: string, away: string): ApiMatch {
+  return {
+    id,
+    season_id: 's',
+    home_team: { id: home, name: home, logo: null },
+    away_team: { id: away, name: away, logo: null },
+    matchday: 1,
+    kickoff_at: kickoff,
+    status: 'scheduled',
+    home_score: null,
+    away_score: null,
+    venue: null,
+    referee: null,
+    convocation_at: null,
+    video_url: null,
+  };
+}
 
-  const kickoffOf = (matchId: string) =>
-    new Date(fixtures.find((m) => m.id === matchId)!.kickoff).getTime();
-  const timestamps = rows.map((r) => kickoffOf(r.matchId));
-  expect(timestamps).toEqual([...timestamps].sort((a, b) => b - a));
+const byTeam: Record<string, ApiMatch[]> = {
+  a: [match('old', '2026-08-01T10:00:00Z', 'a', 'x'), match('shared', '2026-09-01T10:00:00Z', 'a', 'b')],
+  b: [match('shared', '2026-09-01T10:00:00Z', 'a', 'b'), match('new', '2026-10-01T10:00:00Z', 'b', 'y')],
+};
+
+beforeEach(() => {
+  globalThis.fetch = jest.fn(async (url: string) => {
+    const team = new URL(url).searchParams.get('team') as string;
+    return { ok: true, status: 200, json: async () => byTeam[team] };
+  }) as unknown as typeof fetch;
 });
 
-test('getMyFixtures dedupes a fixture shared by two followed teams into a single row', async () => {
-  const rows = await getMyFixtures(['fc-vallonnais', 'us-coteaux']);
-  const sharedFixtureRows = rows.filter((r) => r.matchId === 'm-j4-vallonnais');
-  expect(sharedFixtureRows).toHaveLength(1);
+test('merges followed teams, keeps one row per match, newest first', async () => {
+  const rows = await getFollowedFixtures('season', ['a', 'b']);
+  expect(rows.map((row) => row.match.id)).toEqual(['new', 'shared', 'old']);
 });
 
-test('getMatch resolves a known match and rejects an unknown id', async () => {
-  const match = await getMatch('m-j3-vallonnais');
-  expect(match.homeScore).toBe(3);
-  await expect(getMatch('does-not-exist')).rejects.toThrow('Match introuvable');
+test('a shared match keeps the perspective of the first followed team', async () => {
+  const rows = await getFollowedFixtures('season', ['a', 'b']);
+  expect(rows.find((row) => row.match.id === 'shared')?.teamId).toBe('a');
 });
