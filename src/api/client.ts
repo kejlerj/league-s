@@ -26,3 +26,7 @@ export async function apiGet<T>(path: string, params: Query = {}): Promise<T> {
   }
   return (await response.json()) as T;
 }
+
+export function pathSegment(value: string): string {
+  return encodeURIComponent(value);
+}

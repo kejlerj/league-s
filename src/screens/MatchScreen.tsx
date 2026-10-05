@@ -13,6 +13,7 @@ import { useAsync } from '../hooks/useAsync';
 import { useCurrentSeason } from '../hooks/useCurrentSeason';
 import { getMatch } from '../services/matches';
 import { statusOf } from '../logic/results';
+import { isWebUrl } from '../logic/url';
 import { formatDateTime, formatTime, parseApiDate } from '../logic/dateTime';
 import { fr } from '../i18n/fr';
 import type { MatchStatus } from '../types';
@@ -37,6 +38,7 @@ export function MatchScreen({ id }: { id: string }) {
   const status = data ? statusOf(data) : null;
   const kickoff = data?.kickoff_at ? parseApiDate(data.kickoff_at) : null;
   const convocation = data?.convocation_at ? parseApiDate(data.convocation_at) : null;
+  const videoUrl = data?.video_url ?? null;
   const hasScore = data !== null && data.home_score !== null && data.away_score !== null;
 
   return (
@@ -92,8 +94,8 @@ export function MatchScreen({ id }: { id: string }) {
 
         {data && (
           <>
-            {data.video_url && (
-              <Pressable onPress={() => Linking.openURL(data.video_url as string)}>
+            {isWebUrl(videoUrl) && (
+              <Pressable onPress={() => Linking.openURL(videoUrl)}>
                 <Card>
                   <CardRow isFirst>
                     <ThemedText weight="medium" size={13.5} className="flex-1">{fr.match.videoLabel}</ThemedText>
