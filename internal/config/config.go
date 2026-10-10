@@ -17,6 +17,8 @@ type Config struct {
 	DatabaseURL string
 	LogFormat   string
 	LogLevel    slog.Level
+	Environment string
+	SentryDSN   string
 }
 
 func Load() (Config, error) {
@@ -75,5 +77,12 @@ func Load() (Config, error) {
 		RawQuery: url.Values{"sslmode": {"disable"}, "search_path": {schema}}.Encode(),
 	}
 
-	return Config{Port: port, DatabaseURL: dsn.String(), LogFormat: logFormat, LogLevel: logLevel}, nil
+	return Config{
+		Port:        port,
+		DatabaseURL: dsn.String(),
+		LogFormat:   logFormat,
+		LogLevel:    logLevel,
+		Environment: os.Getenv("APP_ENV"),
+		SentryDSN:   os.Getenv("SENTRY_DSN"),
+	}, nil
 }

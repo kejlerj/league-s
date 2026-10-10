@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -24,6 +25,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Use(logging.RequestID)
 	r.Use(logging.Requests(slog.Default()))
 	r.Use(middleware.Recoverer)
+	r.Use(sentryhttp.New(sentryhttp.Options{Repanic: true}).Handle)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"https://*", "http://*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
