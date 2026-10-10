@@ -81,10 +81,10 @@ func TestNew_ReportsOnlyErrorsWithACause(t *testing.T) {
 func TestNew_KeepsRequestSecretsOutOfReports(t *testing.T) {
 	ctx, transport := sentryContext(t)
 
-	body := strings.NewReader(`{"password": "body-secret"}`)
-	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/auth/login?token=query-secret", body)
-	req.Header.Set("Authorization", "Bearer header-secret")
-	req.Header.Set("Cookie", "session=cookie-secret")
+	body := strings.NewReader(`{"name": "body-secret"}`)
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/auth/login?next=query-secret", body)
+	req.Header.Set("X-Forwarded-Note", "header-secret")
+	req.Header.Set("Cookie", "theme=cookie-secret")
 	req.Header.Set("Content-Type", "application/json")
 	sentry.GetHubFromContext(ctx).Scope().SetRequest(req)
 	if _, err := io.ReadAll(req.Body); err != nil {
