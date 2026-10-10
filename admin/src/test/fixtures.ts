@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import type { League, Me } from '@/api/types'
+import type { League, Me, Player, Team } from '@/api/types'
 import { API, server } from './server'
 
 export const leagueL1: League = { id: 'L1', name: 'District Nord', logo: null }
@@ -48,3 +48,9 @@ export function mockLeague(league: League): void {
     http.get(`${API}/leagues/${league.id}/teams`, () => HttpResponse.json([])),
   )
 }
+
+export const teamA: Team = { id: 'T1', league_id: 'L1', name: 'AS Alpha', logo: null }
+export const teamB: Team = { id: 'T2', league_id: 'L1', name: 'FC Bravo', logo: 'https://img.test/bravo.png' }
+
+export const playerP1: Player = { id: 'P1', league_id: 'L1', firstname: 'Léo', lastname: 'Dupont', icon: null }
+export const playerP2: Player = { id: 'P2', league_id: 'L1', firstname: 'Max', lastname: 'Durand', icon: null }
