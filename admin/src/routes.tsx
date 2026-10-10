@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router'
 import { RequireAuth, RequireLeague } from '@/auth/guards'
+import { AcceptInvitationPage } from '@/features/admins/AcceptInvitationPage'
 import { AccountPage } from '@/features/auth/AccountPage'
 import { ForgotPasswordPage } from '@/features/auth/ForgotPasswordPage'
 import { LoginPage } from '@/features/auth/LoginPage'
@@ -11,6 +12,7 @@ export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
   { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/reset-password', element: <ResetPasswordPage /> },
+  { path: '/invitation', element: <AcceptInvitationPage /> },
   {
     element: <RequireAuth />,
     children: [

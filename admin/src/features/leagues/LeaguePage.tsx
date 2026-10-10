@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router'
 import { getLeague } from '@/api/leagues'
 import { useSession } from '@/auth/SessionProvider'
+import { AdminsTab } from '@/features/admins/AdminsTab'
 import { PlayersTab } from '@/features/players/PlayersTab'
 import { SeasonsTab } from '@/features/seasons/SeasonsTab'
 import { TeamsTab } from '@/features/teams/TeamsTab'
@@ -35,7 +36,7 @@ export function LeaguePage() {
               { id: 'teams', label: 'Équipes', content: <TeamsTab leagueId={leagueId} /> },
               { id: 'players', label: 'Joueurs', content: <PlayersTab leagueId={leagueId} /> },
               { id: 'seasons', label: 'Saisons', content: <SeasonsTab leagueId={leagueId} /> },
-              { id: 'admins', label: 'Admins', content: null },
+              { id: 'admins', label: 'Admins', content: <AdminsTab leagueId={leagueId} leagueName={league.name} /> },
             ]}
           />
           <Modal title="Modifier la ligue" open={editing} onClose={() => setEditing(false)}>
