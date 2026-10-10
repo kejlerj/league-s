@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import type { League, Me, Player, Team } from '@/api/types'
+import type { League, Me, Player, Season, Team } from '@/api/types'
 import { API, server } from './server'
 
 export const leagueL1: League = { id: 'L1', name: 'District Nord', logo: null }
@@ -54,3 +54,15 @@ export const teamB: Team = { id: 'T2', league_id: 'L1', name: 'FC Bravo', logo: 
 
 export const playerP1: Player = { id: 'P1', league_id: 'L1', firstname: 'Léo', lastname: 'Dupont', icon: null }
 export const playerP2: Player = { id: 'P2', league_id: 'L1', firstname: 'Max', lastname: 'Durand', icon: null }
+
+export const seasonS1: Season = {
+  id: 'S1',
+  league_id: 'L1',
+  name: '2026-2027',
+  start_on: '2026-09-01T00:00:00Z',
+  end_on: '2027-06-30T00:00:00Z',
+  match_win_pts: 3,
+  match_draw_pts: 1,
+  match_loss_pts: 0,
+  tie_breakers: ['goal_difference', 'goals_scored'],
+}

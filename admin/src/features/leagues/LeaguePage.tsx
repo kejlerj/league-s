@@ -4,6 +4,7 @@ import { useParams } from 'react-router'
 import { getLeague } from '@/api/leagues'
 import { useSession } from '@/auth/SessionProvider'
 import { PlayersTab } from '@/features/players/PlayersTab'
+import { SeasonsTab } from '@/features/seasons/SeasonsTab'
 import { TeamsTab } from '@/features/teams/TeamsTab'
 import { Button } from '@/ui/Button'
 import { Modal } from '@/ui/Modal'
@@ -33,7 +34,7 @@ export function LeaguePage() {
             tabs={[
               { id: 'teams', label: 'Équipes', content: <TeamsTab leagueId={leagueId} /> },
               { id: 'players', label: 'Joueurs', content: <PlayersTab leagueId={leagueId} /> },
-              { id: 'seasons', label: 'Saisons', content: null },
+              { id: 'seasons', label: 'Saisons', content: <SeasonsTab leagueId={leagueId} /> },
               { id: 'admins', label: 'Admins', content: null },
             ]}
           />
