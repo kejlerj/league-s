@@ -8,7 +8,7 @@ Un back-office web pour gérer les ligues amateurs. Un admin doit pouvoir tenir 
 
 Deux rôles :
 
-- **Superadmin** : voit toutes les ligues, les crée et les supprime, crée les comptes et nomme les admins de ligue.
+- **Superadmin** : voit toutes les ligues, les crée et les supprime, invite et retire les admins de ligue.
 - **Admin** : ne voit que les ligues renvoyées par `GET /me` et y gère tout le reste.
 
 ## Décisions prises
@@ -20,12 +20,15 @@ Deux rôles :
 | Origine | Même origine que l'API. Pas de CORS en prod |
 | Session | Cookie `session` `httpOnly` posé par l'API. La webapp ne stocke aucun jeton |
 | Rôles | Admin par ligue, superadmin global |
-| Périmètre v1 | Tout, y compris la gestion des comptes admin |
+| Périmètre v1 | Tout, y compris l'invitation des admins |
+| Nouveaux admins | Invitation par lien à usage unique, valable 7 jours |
 | Langue | Interface en français |
 
 ## API
 
-L'API est dans `/Users/jeje/Documents/dev/go-blueprint/league-s` (session 6bb213). Tous les chemins commencent par `/api/v1`. Référence : `plan/endpoints.md` de ce repo.
+L'API est dans `/Users/jeje/Documents/dev/go-blueprint/league-s` (session 6bb213). Tous les chemins commencent par `/api/v1`.
+
+Conventions : JSON en snake_case, identifiants UUID, dates-heures en UTC (RFC 3339), dates simples `YYYY-MM-DD`.
 
 ### Auth (existant)
 
@@ -65,11 +68,13 @@ Toutes les erreurs ont la forme `{"error": "message"}`.
 
 | Méthode | Chemin | Accès | Corps | Réponse |
 |---|---|---|---|---|
-| `POST` | `/users` | superadmin | `{email, name}` | 201 `{id, email, name, is_superadmin}` ; 409 e-mail déjà pris |
-| `GET` | `/users` | superadmin | — | 200 liste de `{id, email, name, is_superadmin}` |
 | `GET` | `/leagues/{leagueID}/admins` | admin | — | 200 liste de `{id, email, name}` |
-| `POST` | `/leagues/{leagueID}/admins` | superadmin | `{user_id}` | 204 |
 | `DELETE` | `/leagues/{leagueID}/admins/{userID}` | superadmin | — | 204 |
+| `POST` | `/leagues/{leagueID}/invitations` | superadmin | `{email}` | 201 `{id, email, expires_at}` ; 409 déjà admin de la ligue |
+| `GET` | `/leagues/{leagueID}/invitations` | superadmin | — | 200 liste des invitations en attente `{id, email, expires_at}` |
+| `DELETE` | `/leagues/{leagueID}/invitations/{invitationID}` | superadmin | — | 204 |
+| `GET` | `/invitations/{token}` | public | — | 200 `{email, league: {id, name}, account_exists}` ; 404 lien invalide ou expiré |
+| `POST` | `/invitations/{token}/accept` | public | `{name, password}` si nouveau compte, vide sinon | 204 ; 404 lien invalide ; 422 règle de mot de passe |
 | `PATCH` | `/leagues/{leagueID}` | admin | `{name?, logo?}` | 200 League |
 | `PATCH` | `/leagues/{leagueID}/teams/{teamID}` | admin | `{name?, logo?}` | 200 Team |
 | `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | — | 204 ; 409 si historique |
@@ -79,7 +84,7 @@ Toutes les erreurs ont la forme `{"error": "message"}`.
 | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | champs de Season, tous optionnels | 200 Season |
 | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | — | 204 ; 409 si elle a des matchs |
 
-Hypothèse sur le premier mot de passe : `POST /users` ne prend pas de mot de passe. L'API envoie un e-mail de réinitialisation et le nouvel admin choisit son mot de passe sur `/admin/reset-password`.
+Invitation : le superadmin invite une adresse sur une ligue. L'API envoie par e-mail un lien `{ADMIN_URL}/invitations/{token}`, à usage unique, valable 7 jours. La personne choisit son nom et son mot de passe. Si l'adresse a déjà un compte, accepter rattache simplement la ligue à ce compte. Il n'y a pas de `POST /users`.
 
 Les écrans qui dépendent de ces endpoints sont codés contre ce contrat et testés avec des mocks. Ils fonctionnent en réel quand l'API les fournit.
 
@@ -87,9 +92,9 @@ Les écrans qui dépendent de ces endpoints sont codés contre ce contrat et tes
 
 ### Emplacement
 
-Sources dans `go-blueprint/league-s/admin/`, avec son propre `package.json`. `go:embed` exige que `dist` soit dans le module Go, d'où ce choix. À confirmer avec 6bb213.
+Sources dans `go-blueprint/league-s/admin/`, avec son propre `package.json`. `go:embed` exige que `dist` soit dans le module Go, d'où ce choix. Voir les points ouverts.
 
-Côté Go (écrit par 6bb213) : `admin/embed.go` avec `//go:embed all:dist`, et une route `GET /admin/*` qui sert les fichiers et retombe sur `index.html` pour les routes de la SPA.
+Côté Go, écrit par 6bb213 et pas par cette session : `admin/embed.go` avec `//go:embed all:dist`, et une route `GET /admin/*` qui sert les fichiers et retombe sur `index.html` pour les routes de la SPA.
 
 ### Dev et prod
 
@@ -129,7 +134,7 @@ Toutes sous `/admin`.
 | `/reset-password?token=` | Nouveau mot de passe | public |
 | `/` | Liste des ligues | connecté |
 | `/account` | Changer son mot de passe | connecté |
-| `/users` | Comptes | superadmin |
+| `/invitations/:token` | Accepter une invitation | public |
 | `/leagues/:leagueId` | Ligue : équipes, joueurs, saisons, admins | admin de la ligue |
 | `/leagues/:leagueId/seasons/:seasonId` | Saison : équipes inscrites, matchs, classement | admin de la ligue |
 | `/leagues/:leagueId/seasons/:seasonId/teams/:teamId` | Effectif | admin de la ligue |
@@ -153,7 +158,7 @@ Toutes sous `/admin`.
 
 - **Équipes** et **joueurs** : liste, création, modification, suppression.
 - **Saisons** : liste, création (dates, barème de points, départages), modification, suppression.
-- **Admins** : liste visible par tous les admins de la ligue. Ajout (choix d'un compte existant) et retrait par le superadmin.
+- **Admins** : liste visible par tous les admins de la ligue. Le superadmin invite une adresse e-mail, voit et annule les invitations en attente, et retire un admin.
 
 ### Dans une saison
 
@@ -165,10 +170,12 @@ Toutes sous `/admin`.
   - `finished`, `postponed`, `cancelled` : les actions que l'API accepte, à relever dans `internal/app/match/service.go` au moment du plan.
 - **Classement** : lecture seule, rafraîchi après chaque action sur un match.
 
-### Comptes (superadmin)
+### Accepter une invitation
 
-- Liste des comptes, création (`email`, `name`).
-- Après création, message : « un e-mail a été envoyé pour choisir le mot de passe ».
+- La page charge `GET /invitations/{token}` et affiche la ligue et l'adresse invitée.
+- Nouveau compte : formulaire nom + mot de passe, puis redirection vers la connexion.
+- Compte existant : un bouton « rejoindre la ligue », puis redirection vers la connexion.
+- Lien invalide ou expiré : message clair, sans formulaire.
 
 ## Erreurs
 
@@ -201,7 +208,8 @@ Une fois la webapp terminée et l'API à jour :
 
 ## Points ouverts
 
-1. Emplacement `go-blueprint/league-s/admin/` : attente de l'accord de 6bb213.
-2. Contrat des endpoints manquants : proposé ci-dessus, à valider par 6bb213.
-3. Premier mot de passe d'un admin : hypothèse « e-mail de réinitialisation ».
-4. Valeur de `ADMIN_URL` avec le préfixe `/admin`.
+1. Emplacement `go-blueprint/league-s/admin/` : 6bb213 n'y touche pas, mais l'accord pour y écrire doit venir de l'utilisateur.
+2. Embarqué dans le binaire ou origine séparée : l'utilisateur a choisi l'embarqué dans cette session, une webapp séparée dans celle de 6bb213. À confirmer.
+3. Contrat des endpoints manquants : proposé ci-dessus, 6bb213 valide puis implémente.
+
+Réglé : `ADMIN_URL` accepte un chemin, donc `http://localhost:5173/admin` donne un lien vers `/admin/reset-password`.
