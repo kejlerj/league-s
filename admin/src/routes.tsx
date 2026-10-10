@@ -8,6 +8,7 @@ import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { LeaguePage } from '@/features/leagues/LeaguePage'
 import { LeaguesPage } from '@/features/leagues/LeaguesPage'
 import { SeasonPage } from '@/features/seasons/SeasonPage'
+import { SquadPage } from '@/features/squad/SquadPage'
 
 export const routes: RouteObject[] = [
   { path: '/login', element: <LoginPage /> },
@@ -25,6 +26,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <LeaguePage /> },
           { path: 'seasons/:seasonId', element: <SeasonPage /> },
+          { path: 'seasons/:seasonId/teams/:teamId', element: <SquadPage /> },
         ],
       },
     ],
