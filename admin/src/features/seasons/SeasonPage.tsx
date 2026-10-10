@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router'
 import { getSeason } from '@/api/seasons'
+import { MatchesTab } from '@/features/matches/MatchesTab'
 import { formatDate } from '@/lib/dates'
 import { PageState } from '@/ui/PageState'
 import { Tabs } from '@/ui/Tabs'
@@ -25,7 +26,7 @@ export function SeasonPage() {
           <Tabs
             tabs={[
               { id: 'teams', label: 'Équipes', content: <SeasonTeamsTab leagueId={leagueId} seasonId={seasonId} /> },
-              { id: 'matches', label: 'Matchs', content: null },
+              { id: 'matches', label: 'Matchs', content: <MatchesTab leagueId={leagueId} seasonId={seasonId} /> },
               { id: 'standings', label: 'Classement', content: <StandingsTab leagueId={leagueId} seasonId={seasonId} /> },
             ]}
           />

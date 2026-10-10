@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import type { League, Me, Player, Season, Team } from '@/api/types'
+import type { League, Match, Me, Player, Season, Team } from '@/api/types'
 import { API, server } from './server'
 
 export const leagueL1: League = { id: 'L1', name: 'District Nord', logo: null }
@@ -76,4 +76,34 @@ export function mockSeason(season: Season = seasonS1): void {
     http.get(`${base}/standings`, () => HttpResponse.json([])),
     http.get(`${API}/leagues/${season.league_id}/teams`, () => HttpResponse.json([])),
   )
+}
+
+const alpha = { id: 'T1', name: 'AS Alpha', logo: null }
+const bravo = { id: 'T2', name: 'FC Bravo', logo: null }
+
+export const matchScheduled: Match = {
+  id: 'M1',
+  season_id: 'S1',
+  home_team: alpha,
+  away_team: bravo,
+  matchday: 1,
+  kickoff_at: '2026-10-11T13:00:00Z',
+  status: 'scheduled',
+  home_score: null,
+  away_score: null,
+  venue: null,
+  referee: null,
+  convocation_at: null,
+  video_url: null,
+}
+
+export const matchLive: Match = {
+  ...matchScheduled,
+  id: 'M2',
+  home_team: bravo,
+  away_team: alpha,
+  status: 'live',
+  home_score: 0,
+  away_score: 0,
+  venue: 'Stade Nord',
 }
