@@ -22,12 +22,16 @@
 - Dates-heures en UTC RFC 3339, dates simples `YYYY-MM-DD`.
 - Chaque segment d'URL dynamique passe par `seg()`.
 - Mot de passe : 10 caractères minimum, 72 octets maximum.
+- L'API refuse les champs inconnus (`DisallowUnknownFields`) : n'envoyer que les champs listés dans la spec. Un corps « vide » s'envoie comme `{}`.
+- Deux formes d'erreur : `{"error": "message"}` et, pour la validation des champs (422), `{"errors": {"<champ>": "<règle>"}}`.
+- Création : un champ optionnel vide part en `null`. Modification (`PATCH`) : un champ optionnel vide n'est pas envoyé du tout. Vider un champ existant n'est pas possible en v1.
+- `admin/dist` n'est pas versionné, sauf `admin/dist/.gitkeep`. Le fichier source est `admin/public/.gitkeep`, que Vite recopie dans `dist` à chaque build.
 - Toutes les commandes `npm` se lancent depuis `admin/`. Vérification de fin de tâche : `npm test -- --run && npx tsc --noEmit`.
 
 ## Review Focus
 
 1. **Session expirée pendant une saisie** : un 401 sur une écriture renvoie au login, puis ramène à la page d'origine. Testé en Task 4.
-2. **Champs optionnels vides** : un logo, une icône, un lieu ou un numéro laissé vide part en `null`, jamais en `""` (l'API rejette `""` comme URL). Testé en Task 6 et Task 12.
+2. **Champs optionnels vides** : un logo, une icône, un lieu ou un numéro laissé vide ne part jamais en `""` (l'API rejette `""` comme URL) : `null` en création, clé absente en modification. Testé en Task 6 et Task 12.
 3. **Fuseaux horaires** : un coup d'envoi saisi à 15:00 heure locale part en UTC et se réaffiche à 15:00. Testé en Task 2.
 4. **Double clic sur un bouton d'envoi** : une seule requête part. Testé en Task 3.
 5. **Lien profond rechargé** : `/admin/leagues/x/seasons/y` ouvert directement fonctionne pour un admin de la ligue et affiche « Accès refusé » pour un autre. Testé en Task 4.
@@ -97,7 +101,7 @@ Chaque fichier de test est à côté du fichier testé : `X.test.ts(x)`.
 
 - [ ] **Step 2: Configurer**
 
-`vite.config.ts` : `base: '/admin/'`, plugins `react()` et `tailwindcss()`, `server.proxy = { '/api': 'http://localhost:8080' }`, `test = { environment: 'jsdom', setupFiles: './src/test/setup.ts', globals: true }`. `tsconfig` : `strict: true`, alias `@/*` vers `src/*` (aussi dans `resolve.alias`). `index.html` : `lang="fr"`, titre « Ligue — Admin ». `.gitignore` : `node_modules` et `dist`. Script `"test": "vitest"`.
+`vite.config.ts` : `base: '/admin/'`, plugins `react()` et `tailwindcss()`, `server.proxy = { '/api': 'http://localhost:8080' }`, `test = { environment: 'jsdom', setupFiles: './src/test/setup.ts', globals: true }`. `tsconfig` : `strict: true`, alias `@/*` vers `src/*` (aussi dans `resolve.alias`). `index.html` : `lang="fr"`, titre « Ligue — Admin ». `.gitignore` : `node_modules`, `dist/*`, `!dist/.gitkeep`. Créer `public/.gitkeep` vide. Script `"test": "vitest"`.
 
 - [ ] **Step 3: Écrire le test du harnais**
 
@@ -115,7 +119,7 @@ test('renderRoute affiche la route demandée', async () => {
 - [ ] **Step 5: Vérifier**
 
 Run: `npm test -- --run && npx tsc --noEmit && npm run build`
-Expected: 1 test passe, aucun type en erreur, `dist/index.html` référence des fichiers sous `/admin/assets/`.
+Expected: 1 test passe, aucun type en erreur, `dist/index.html` référence des fichiers sous `/admin/assets/`, `dist/.gitkeep` existe.
 
 - [ ] **Step 6: Commit**
 
@@ -131,12 +135,12 @@ Expected: 1 test passe, aucun type en erreur, `dist/index.html` référence des 
 
 **Interfaces:**
 - Produces:
-  - `class ApiError extends Error { readonly status: number }` — `message` vaut le champ `error` de la réponse, ou `HTTP <status>` s'il manque. Panne réseau : `status === 0`.
+  - `class ApiError extends Error { readonly status: number; readonly fields: Record<string, string> | null }`, constructeur `(status, message, fields = null)` — `message` vaut le champ `error` de la réponse, ou `HTTP <status>` s'il manque. `fields` vaut le champ `errors` s'il est présent. Panne réseau : `status === 0`.
   - `api<T>(method: 'GET'|'POST'|'PUT'|'PATCH'|'DELETE', path: string, opts?: { body?: unknown; query?: Record<string, string | undefined> }): Promise<T>` — préfixe `/api/v1`, renvoie `undefined` sur 204.
   - `seg(value: string): string` — `encodeURIComponent`.
   - `onUnauthorized(handler: () => void): void` — appelé sur tout 401 sauf pour `GET /me` et `POST /auth/login`.
   - `dates.ts` : `dateToUtc(d: string): string` (`'2026-09-01'` → `'2026-09-01T00:00:00Z'`), `utcToDate(iso: string): string`, `localToUtc(v: string): string` (`'YYYY-MM-DDTHH:mm'` local → ISO UTC), `utcToLocal(iso: string): string`, `formatDateTime(iso: string | null): string` (fr-FR, `'—'` si `null`).
-  - `form.ts` : `emptyToNull(v: string): string | null` (trim), `toInt(v: string): number | null`.
+  - `form.ts` : `emptyToNull(v: string): string | null` (trim), `toInt(v: string): number | null`, `omitEmpty<T extends Record<string, unknown>>(o: T): Partial<T>` (retire les clés dont la valeur est `null`, `undefined` ou `''`).
   - `types.ts` : `User {id,email,name,is_superadmin}`, `Me = User & {leagues: {id,name}[]}`, `League {id,name,logo}`, `Team {id,league_id,name,logo}`, `Player {id,league_id,firstname,lastname,icon}`, `TieBreaker`, `Season`, `SeasonTeam {id,name,logo}`, `SquadMember`, `MatchStatus = 'scheduled'|'live'|'finished'|'postponed'|'cancelled'`, `Match`, `StandingRow`, `LeagueAdmin {id,email,name}`, `Invitation {id,email,expires_at}`, `InvitationPreview {email, league:{id,name}, account_exists}`. Champs exacts : section « Ressources existantes » de la spec. Tout champ optionnel de l'API est `T | null`.
 
 - [ ] **Step 1: Écrire les tests**
@@ -155,6 +159,10 @@ test('api renvoie undefined sur 204', async () => {
 test('api convertit {error} en ApiError', async () => {
   server.use(http.post(`${API}/x`, () => HttpResponse.json({ error: 'nope' }, { status: 409 })));
   await expect(api('POST', '/x')).rejects.toMatchObject({ status: 409, message: 'nope' });
+});
+test('api expose les erreurs de champs', async () => {
+  server.use(http.post(`${API}/x`, () => HttpResponse.json({ errors: { name: 'required' } }, { status: 422 })));
+  await expect(api('POST', '/x')).rejects.toMatchObject({ status: 422, fields: { name: 'required' } });
 });
 test('panne réseau donne status 0', async () => {
   server.use(http.get(`${API}/x`, () => HttpResponse.error()));
@@ -187,6 +195,7 @@ test('formatDateTime(null) rend un tiret', () => { expect(formatDateTime(null)).
 ```ts
 test('emptyToNull', () => { expect(emptyToNull('  ')).toBeNull(); expect(emptyToNull(' a ')).toBe('a'); });
 test('toInt', () => { expect(toInt('')).toBeNull(); expect(toInt('7')).toBe(7); expect(toInt('x')).toBeNull(); });
+test('omitEmpty', () => { expect(omitEmpty({ a: 'x', b: null, c: '', d: 0 })).toEqual({ a: 'x', d: 0 }); });
 ```
 
 - [ ] **Step 2: Vérifier l'échec** — Run: `npm test -- --run`. Expected: FAIL, modules introuvables.
@@ -205,7 +214,7 @@ test('toInt', () => { expect(toInt('')).toBeNull(); expect(toInt('7')).toBe(7); 
 **Interfaces:**
 - Consumes: `ApiError` (Task 2).
 - Produces:
-  - `errorMessage(err: unknown, overrides?: Record<number, string>): string` — ordre : `overrides[status]` ; status 0 ou ≥ 500 → `'Une erreur est survenue. Réessayez.'` ; 403 → `'Accès refusé.'` ; 429 → `'Trop de tentatives. Réessayez dans une minute.'` ; sinon `err.message`.
+  - `errorMessage(err: unknown, overrides?: Record<number, string>): string` — ordre : si `err.fields`, `'Champs invalides : '` suivi de `<champ> (<texte>)` séparés par des virgules, avec les textes `required` « obligatoire », `email` « e-mail invalide », `http_url` « URL http ou https attendue », `min` « trop petit », `max` « trop grand », autre règle « invalide » ; puis `overrides[status]` ; status 0 ou ≥ 500 → `'Une erreur est survenue. Réessayez.'` ; 403 → `'Accès refusé.'` ; 429 → `'Trop de tentatives. Réessayez dans une minute.'` ; sinon `err.message`.
   - `useSubmit<A extends unknown[]>(fn: (...a: A) => Promise<unknown>, overrides?: Record<number, string>): { submit: (...a: A) => Promise<boolean>; pending: boolean; error: string | null }` — ignore un appel pendant qu'un autre est en cours ; `submit` résout `true` si réussi.
   - `Button({ variant?: 'primary'|'secondary'|'danger', pending?: boolean, ...buttonProps })` — désactivé quand `pending`.
   - `Field({ label, error?, ...inputProps })` — `<label>` lié à l'`<input>`.
@@ -226,6 +235,7 @@ test.each([
   [new ApiError(409, 'déjà pris'), undefined, 'déjà pris'],
   [new ApiError(409, 'x'), { 409: 'Conflit.' }, 'Conflit.'],
   [new ApiError(403, 'x'), { 403: 'Mot de passe actuel incorrect.' }, 'Mot de passe actuel incorrect.'],
+  [new ApiError(422, 'x', { name: 'required', logo: 'http_url' }), { 422: 'Autre.' }, 'Champs invalides : name (obligatoire), logo (URL http ou https attendue)'],
 ])('errorMessage', (err, overrides, expected) => {
   expect(errorMessage(err, overrides)).toBe(expected);
 });
@@ -368,7 +378,7 @@ Textes fixes :
 **Interfaces:**
 - Consumes: `useSession`, `Tabs`, `DataTable`, `Modal`, `ConfirmDialog`, `PageState`, `emptyToNull`.
 - Produces:
-  - `leagues.ts` : `listLeagues(): Promise<League[]>`, `getLeague(id)`, `createLeague({name, logo})`, `updateLeague(id, {name?, logo?})` (PATCH), `deleteLeague(id)`.
+  - `leagues.ts` : `listLeagues(): Promise<League[]>`, `getLeague(id)`, `createLeague({name, logo})`, `updateLeague(id, {name?, logo?})` (PATCH, passé par `omitEmpty`), `deleteLeague(id)`.
   - Clés de requête, convention pour tout le plan : `['leagues']`, `['league', leagueId]`, puis `['league', leagueId, '<ressource>']` et `['season', seasonId, '<ressource>']`.
   - `LeagueForm({ initial?: League, onDone })` : champs « Nom » (requis, 50 max) et « Logo (URL) ».
   - `LeaguePage` : titre = nom de la ligue, bouton « Modifier », et `Tabs` avec les identifiants `teams`, `players`, `seasons`, `admins`. Les contenus sont des emplacements vides remplis par les tâches 7 à 9.
@@ -416,7 +426,7 @@ test('ligue inconnue affiche Introuvable.', async () => { /* GET /leagues/L1 →
 
 Comportement : tableau, bouton « Nouvelle équipe » / « Nouveau joueur », « Modifier » et « Supprimer » par ligne. Suppression 409 : « Cette équipe a un historique. » / « Ce joueur a un historique. » Joueurs : champ « Rechercher » qui renvoie `q` après 300 ms sans frappe. Champs : « Nom » + « Logo (URL) » ; « Prénom », « Nom », « Photo (URL) ».
 
-- [ ] **Step 1: Écrire les tests** — pour chaque onglet : liste affichée ; création envoie le bon corps avec champ URL vide en `null` ; modification envoie un PATCH sur le bon chemin ; suppression 409 affiche le texte fixe. Pour les joueurs en plus : taper « dup » déclenche une requête avec `q=dup`.
+- [ ] **Step 1: Écrire les tests** — pour chaque onglet : liste affichée ; création envoie le bon corps avec champ URL vide en `null` ; modification envoie un PATCH sur le bon chemin, sans la clé du champ URL s'il est vide ; suppression 409 affiche le texte fixe. Pour les joueurs en plus : taper « dup » déclenche une requête avec `q=dup`.
 - [ ] **Step 2: Vérifier l'échec.**
 - [ ] **Step 3: Implémenter et brancher dans `LeaguePage`.**
 - [ ] **Step 4: Vérifier.**
@@ -471,15 +481,15 @@ test('suppression 409', async () => { /* Cette saison a des matchs. */ });
 
 **Interfaces:**
 - Produces:
-  - `admins.ts` : `listAdmins(leagueId): Promise<LeagueAdmin[]>`, `removeAdmin(leagueId, userId)`, `listInvitations(leagueId): Promise<Invitation[]>`, `invite(leagueId, email): Promise<Invitation>`, `cancelInvitation(leagueId, invitationId)`, `getInvitation(token): Promise<InvitationPreview>`, `acceptInvitation(token, body?: { name: string; password: string })`.
+  - `admins.ts` : `listAdmins(leagueId): Promise<LeagueAdmin[]>`, `removeAdmin(leagueId, userId)`, `listInvitations(leagueId): Promise<Invitation[]>`, `invite(leagueId, email): Promise<Invitation & { link: string }>`, `cancelInvitation(leagueId, invitationId)`, `getInvitation(token): Promise<InvitationPreview>`, `acceptInvitation(token, body?: { name: string; password: string })` (envoie `{}` sans `body`).
   - Route publique `/invitations/:token`.
 
 Comportement :
 - `AdminsTab` : liste des admins pour tous. Pour le superadmin seulement : formulaire « Inviter un admin » (champ « E-mail »), liste « Invitations en attente » avec date d'expiration et bouton « Annuler », bouton « Retirer » par admin avec confirmation. Un admin simple n'appelle pas `GET .../invitations`.
-- Invitation 409 : « Cette personne est déjà admin de la ligue. » Succès : « Invitation envoyée à <email>. »
-- `AcceptInvitationPage` : titre « Rejoindre <nom de la ligue> », adresse invitée affichée. Si `account_exists` est faux : champs « Nom » et « Mot de passe » (`minLength={10}`), bouton « Créer mon compte ». Sinon : bouton « Rejoindre la ligue », corps de requête vide. Succès : « C'est fait. Vous pouvez vous connecter. » et lien vers `/login`. 404 au chargement ou à l'envoi : « Lien invalide ou expiré. », sans formulaire. 422 : « Le mot de passe doit contenir au moins 10 caractères. »
+- Invitation 409 : « Cette personne est déjà admin de la ligue. » Succès : « Invitation créée pour <email>. », le lien renvoyé (`link`) affiché dans un champ en lecture seule, et un bouton « Copier le lien ». Réinviter une adresse remplace l'invitation précédente : pas d'erreur à gérer.
+- `AcceptInvitationPage` : titre « Rejoindre <nom de la ligue> », adresse invitée affichée. Si `account_exists` est faux : champs « Nom » et « Mot de passe » (`minLength={10}`), bouton « Créer mon compte ». Sinon : bouton « Rejoindre la ligue », corps de requête `{}`. Succès : « C'est fait. Vous pouvez vous connecter. » et lien vers `/login`. 400 ou 404 au chargement ou à l'envoi : « Lien invalide ou expiré. », sans formulaire. 422 : « Le mot de passe doit contenir au moins 10 caractères. »
 
-- [ ] **Step 1: Écrire les tests** — `AdminsTab` : un admin simple voit la liste sans formulaire et aucune requête `invitations` ne part ; le superadmin invite et voit le message de succès ; 409 ; annulation d'une invitation ; retrait d'un admin. `AcceptInvitationPage` : nouveau compte envoie `{name, password}` ; compte existant envoie un corps vide ; 404 au chargement ; 422. Le jeton `a/b` est appelé sous `/invitations/a%2Fb`.
+- [ ] **Step 1: Écrire les tests** — `AdminsTab` : un admin simple voit la liste sans formulaire et aucune requête `invitations` ne part ; le superadmin invite, voit le message de succès et le lien renvoyé ; 409 ; annulation d'une invitation ; retrait d'un admin. `AcceptInvitationPage` : nouveau compte envoie `{name, password}` ; compte existant envoie `{}` ; 400 au chargement ; 422. Le jeton `a/b` est appelé sous `/invitations/a%2Fb`.
 - [ ] **Step 2: Vérifier l'échec.**
 - [ ] **Step 3: Implémenter.**
 - [ ] **Step 4: Vérifier.**
@@ -566,7 +576,7 @@ Table des actions, tirée de la machine d'états de l'API :
 Libellés : « Démarrer », « Score », « Terminer », « Reporter », « Annuler », « Reprogrammer », « Détails », « Supprimer ».
 
 - `reschedule` : journée et coup d'envoi (`PATCH` avec `matchday`, `kickoff_at`).
-- `details` : lieu, arbitre, heure de convocation, lien vidéo (`PATCH` avec `venue`, `referee`, `convocation_at`, `video_url`). Champ vide : `null`.
+- `details` : lieu, arbitre, heure de convocation, lien vidéo (`PATCH` avec `venue`, `referee`, `convocation_at`, `video_url`). Champ vide : clé absente (`omitEmpty`).
 - `postpone` : nouvelle date optionnelle.
 - `cancel`, `delete`, `finish` : confirmation.
 - Filtres en tête : « Journée » (nombre) et « Statut ». Tableau trié par journée puis coup d'envoi : « J », « Date », « Domicile », score, « Extérieur », « Statut », actions.
@@ -587,7 +597,7 @@ test.each([
 });
 ```
 
-`MatchesTab.test.tsx` : un match `live` montre « Score » et « Terminer » mais pas « Démarrer » ; la saisie 2–1 envoie `PUT .../score` avec `{ home: 2, away: 1 }` ; programmer sans coup d'envoi ni lieu envoie `kickoff_at: null, venue: null` ; un coup d'envoi saisi `2026-10-11T15:00` part égal à `localToUtc('2026-10-11T15:00')` ; mêmes équipes bloque l'envoi ; le filtre de statut déclenche une requête avec `status=live` ; « Détails » avec lien vidéo vide envoie `video_url: null` ; une erreur 409 de l'API sur « Démarrer » s'affiche.
+`MatchesTab.test.tsx` : un match `live` montre « Score » et « Terminer » mais pas « Démarrer » ; la saisie 2–1 envoie `PUT .../score` avec `{ home: 2, away: 1 }` ; programmer sans coup d'envoi ni lieu envoie `kickoff_at: null, venue: null` ; un coup d'envoi saisi `2026-10-11T15:00` part égal à `localToUtc('2026-10-11T15:00')` ; mêmes équipes bloque l'envoi ; le filtre de statut déclenche une requête avec `status=live` ; « Détails » avec lieu rempli et lien vidéo vide envoie un corps sans clé `video_url` ; une erreur 409 de l'API sur « Démarrer » s'affiche.
 
 - [ ] **Step 2: Vérifier l'échec.**
 - [ ] **Step 3: Implémenter et brancher dans `SeasonPage`.**

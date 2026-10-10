@@ -51,7 +51,9 @@ Règle de mot de passe : 10 caractères minimum, 72 octets maximum. Le login est
 
 ### Erreurs
 
-Toutes les erreurs ont la forme `{"error": "message"}`.
+Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"errors": {"<champ>": "<règle>"}}`. JSON illisible : 400. Corps trop gros : 413. L'API refuse les champs inconnus.
+
+`PATCH` : un champ absent n'est pas modifié. Vider un champ optionnel n'est pas possible en v1.
 
 ### Ressources existantes
 
@@ -64,17 +66,17 @@ Toutes les erreurs ont la forme `{"error": "message"}`.
 - **Match** : `{id, season_id, home_team, away_team, matchday, kickoff_at, status, home_score, away_score, venue, referee, convocation_at, video_url}`. Programmer `{home_team_id, away_team_id, matchday, kickoff_at?, venue?}`. Actions : `start`, `score` (`{home, away}`), `finish`, `postpone` (`{kickoff_at?}`), `cancel`.
 - **Classement** : lignes `{rank, team_id, team_name, played, won, drawn, lost, goals_for, goals_against, goal_difference, points}`.
 
-### Endpoints manquants (contrat proposé, à confirmer avec 6bb213)
+### Endpoints manquants (contrat validé par 6bb213, pas encore implémenté)
 
 | Méthode | Chemin | Accès | Corps | Réponse |
 |---|---|---|---|---|
 | `GET` | `/leagues/{leagueID}/admins` | admin | — | 200 liste de `{id, email, name}` |
 | `DELETE` | `/leagues/{leagueID}/admins/{userID}` | superadmin | — | 204 |
-| `POST` | `/leagues/{leagueID}/invitations` | superadmin | `{email}` | 201 `{id, email, expires_at}` ; 409 déjà admin de la ligue |
+| `POST` | `/leagues/{leagueID}/invitations` | superadmin | `{email}` | 201 `{id, email, expires_at, link}` ; 409 déjà admin de la ligue. Réinviter remplace l'invitation précédente |
 | `GET` | `/leagues/{leagueID}/invitations` | superadmin | — | 200 liste des invitations en attente `{id, email, expires_at}` |
 | `DELETE` | `/leagues/{leagueID}/invitations/{invitationID}` | superadmin | — | 204 |
-| `GET` | `/invitations/{token}` | public | — | 200 `{email, league: {id, name}, account_exists}` ; 404 lien invalide ou expiré |
-| `POST` | `/invitations/{token}/accept` | public | `{name, password}` si nouveau compte, vide sinon | 204 ; 404 lien invalide ; 422 règle de mot de passe |
+| `GET` | `/invitations/{token}` | public | — | 200 `{email, league: {id, name}, account_exists}` ; 400 lien invalide, expiré ou déjà utilisé |
+| `POST` | `/invitations/{token}/accept` | public | `{name, password}` si nouveau compte, `{}` sinon | 204 ; 400 lien invalide ; 422 règle de mot de passe |
 | `PATCH` | `/leagues/{leagueID}` | admin | `{name?, logo?}` | 200 League |
 | `PATCH` | `/leagues/{leagueID}/teams/{teamID}` | admin | `{name?, logo?}` | 200 Team |
 | `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | — | 204 ; 409 si historique |
@@ -84,7 +86,7 @@ Toutes les erreurs ont la forme `{"error": "message"}`.
 | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | champs de Season, tous optionnels | 200 Season |
 | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | — | 204 ; 409 si elle a des matchs |
 
-Invitation : le superadmin invite une adresse sur une ligue. L'API envoie par e-mail un lien `{ADMIN_URL}/invitations/{token}`, à usage unique, valable 7 jours. La personne choisit son nom et son mot de passe. Si l'adresse a déjà un compte, accepter rattache simplement la ligue à ce compte. Il n'y a pas de `POST /users`.
+Invitation : le superadmin invite une adresse sur une ligue. Le lien `{ADMIN_URL}/invitations/{token}` est à usage unique et valable 7 jours. L'API le renvoie dans `link` ; la webapp l'affiche avec un bouton « Copier le lien ». L'envoi par e-mail depuis l'API reste à confirmer côté 6bb213. La personne choisit son nom et son mot de passe. Si l'adresse a déjà un compte, accepter rattache la ligue à ce compte, sans être connecté. Retirer un admin retire le droit sur la ligue, pas le compte. Il n'y a pas de `POST /users`.
 
 Les écrans qui dépendent de ces endpoints sont codés contre ce contrat et testés avec des mocks. Ils fonctionnent en réel quand l'API les fournit.
 
@@ -92,7 +94,7 @@ Les écrans qui dépendent de ces endpoints sont codés contre ce contrat et tes
 
 ### Emplacement
 
-Sources dans `go-blueprint/league-s/admin/`, avec son propre `package.json`. `go:embed` exige que `dist` soit dans le module Go, d'où ce choix. Voir les points ouverts.
+Sources dans `go-blueprint/league-s/admin/`, avec son propre `package.json`. `go:embed` exige que `dist` soit dans le module Go, d'où ce choix.
 
 Côté Go, écrit par 6bb213 et pas par cette session : `admin/embed.go` avec `//go:embed all:dist`, et une route `GET /admin/*` qui sert les fichiers et retombe sur `index.html` pour les routes de la SPA.
 
@@ -208,8 +210,6 @@ Une fois la webapp terminée et l'API à jour :
 
 ## Points ouverts
 
-1. Emplacement `go-blueprint/league-s/admin/` : 6bb213 n'y touche pas, mais l'accord pour y écrire doit venir de l'utilisateur.
-2. Embarqué dans le binaire ou origine séparée : l'utilisateur a choisi l'embarqué dans cette session, une webapp séparée dans celle de 6bb213. À confirmer.
-3. Contrat des endpoints manquants : proposé ci-dessus, 6bb213 valide puis implémente.
+1. Envoi du lien d'invitation par e-mail depuis l'API : à confirmer dans la session 6bb213. La webapp affiche le lien dans tous les cas.
 
-Réglé : `ADMIN_URL` accepte un chemin, donc `http://localhost:5173/admin` donne un lien vers `/admin/reset-password`.
+Réglé : l'utilisateur a confirmé l'embarqué et l'écriture dans `go-blueprint/league-s/admin/`. `admin/dist` n'est pas versionné, sauf un `.gitkeep`. `ADMIN_URL` accepte un chemin, donc `http://localhost:5173/admin` donne un lien vers `/admin/reset-password`.
