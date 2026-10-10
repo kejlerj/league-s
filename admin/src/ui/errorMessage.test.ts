@@ -17,6 +17,8 @@ test.each([
   [new ApiError(422, 'x', { a: 'email', b: 'min', c: 'max', d: 'oneof' }), undefined,
     'Champs invalides : a (e-mail invalide), b (trop petit), c (trop grand), d (invalide)'],
   [new Error('boom'), undefined, 'Une erreur est survenue. Réessayez.'],
+  [new ApiError(405, 'HTTP 405'), undefined, 'Une erreur est survenue. Réessayez.'],
+  [new ApiError(404, 'HTTP 404'), { 404: 'Introuvable.' }, 'Introuvable.'],
 ])('errorMessage %#', (err, overrides, expected) => {
   expect(errorMessage(err, overrides)).toBe(expected)
 })

@@ -31,5 +31,8 @@ export function errorMessage(err: unknown, overrides: Record<number, string> = {
   if (err.status === 429) {
     return 'Trop de tentatives. Réessayez dans une minute.'
   }
+  if (err.message === `HTTP ${err.status}`) {
+    return GENERIC
+  }
   return err.message
 }

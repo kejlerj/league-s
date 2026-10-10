@@ -178,3 +178,19 @@ test('Terminer demande confirmation puis appelle finish', async () => {
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Terminer' }))
   await vi.waitFor(() => expect(sent.calls).toBe(1))
 })
+
+test('la confirmation nomme le match concerné', async () => {
+  const { user } = setup()
+  await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Supprimer' }))
+  expect(within(screen.getByRole('dialog')).getByText(/AS Alpha – FC Bravo, journée 1/)).toBeInTheDocument()
+})
+
+test("annuler un match : le bouton de confirmation n'est pas ambigu", async () => {
+  const sent: Sent = { calls: 0 }
+  const { user } = setup([], http.post(`${M}/M1/cancel`, capture(sent)))
+  await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Annuler' }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).queryByRole('button', { name: 'Annuler' })).not.toBeInTheDocument()
+  await user.click(within(dialog).getByRole('button', { name: 'Annuler le match' }))
+  await vi.waitFor(() => expect(sent.calls).toBe(1))
+})

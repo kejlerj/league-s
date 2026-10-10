@@ -14,7 +14,7 @@ type Props = {
   danger?: boolean
 }
 
-export function ConfirmDialog({ open, title, message, confirmLabel, onConfirm, onClose, errorOverrides, danger = true }: Props) {
+function ConfirmBody({ message, confirmLabel, onConfirm, onClose, errorOverrides, danger = true }: Omit<Props, 'open' | 'title'>) {
   const { submit, pending, error } = useSubmit(onConfirm, errorOverrides)
 
   const confirm = async () => {
@@ -24,7 +24,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel, onConfirm, o
   }
 
   return (
-    <Modal title={title} open={open} onClose={onClose}>
+    <>
       <p className="text-sm text-slate-700">{message}</p>
       <div className="mt-3">
         <FormError message={error} />
@@ -35,6 +35,14 @@ export function ConfirmDialog({ open, title, message, confirmLabel, onConfirm, o
           {confirmLabel}
         </Button>
       </div>
+    </>
+  )
+}
+
+export function ConfirmDialog({ open, title, onClose, ...body }: Props) {
+  return (
+    <Modal title={title} open={open} onClose={onClose}>
+      {open ? <ConfirmBody onClose={onClose} {...body} /> : null}
     </Modal>
   )
 }

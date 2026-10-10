@@ -27,12 +27,19 @@ const FORM_TITLES: Partial<Record<MatchAction, string>> = {
   postpone: 'Reporter le match',
 }
 
-const CONFIRMS: Record<ConfirmAction, { title: string; message: string; danger: boolean }> = {
-  start: { title: 'Démarrer le match', message: 'Le match passe en cours avec un score de 0 – 0.', danger: false },
-  finish: { title: 'Terminer le match', message: 'Le score devient définitif et compte au classement.', danger: false },
-  cancel: { title: 'Annuler le match', message: 'Un match annulé ne peut plus être joué ni reprogrammé.', danger: true },
-  delete: { title: 'Supprimer le match', message: 'Le match est retiré du calendrier.', danger: true },
+const CONFIRMS: Record<ConfirmAction, { title: string; message: string; label: string; danger: boolean }> = {
+  start: { title: 'Démarrer le match', message: 'Le match passe en cours avec un score de 0 – 0.', label: 'Démarrer', danger: false },
+  finish: { title: 'Terminer le match', message: 'Le score devient définitif et compte au classement.', label: 'Terminer', danger: false },
+  cancel: {
+    title: 'Annuler le match',
+    message: 'Un match annulé ne peut plus être joué ni reprogrammé.',
+    label: 'Annuler le match',
+    danger: true,
+  },
+  delete: { title: 'Supprimer le match', message: 'Le match est retiré du calendrier.', label: 'Supprimer', danger: true },
 }
+
+const describe = (match: Match) => `${match.home_team.name} – ${match.away_team.name}, journée ${match.matchday}`
 
 const isConfirm = (action: MatchAction): action is ConfirmAction => action in CONFIRMS
 
@@ -146,6 +153,7 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
         <ScheduleForm {...common} teams={teams.data ?? []} onCancel={() => setScheduling(false)} />
       </Modal>
       <Modal title={formTitle ?? ''} open={formTitle !== undefined} onClose={close}>
+        {pending !== null ? <p className="mb-4 text-sm text-slate-600">{describe(pending.match)}</p> : null}
         {pending?.action === 'score' ? <ScoreForm {...common} match={pending.match} /> : null}
         {pending?.action === 'reschedule' ? <RescheduleForm {...common} match={pending.match} /> : null}
         {pending?.action === 'details' ? <DetailsForm {...common} match={pending.match} /> : null}
@@ -154,8 +162,8 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
       <ConfirmDialog
         open={confirm !== null}
         title={confirm?.title ?? ''}
-        message={confirm?.message ?? ''}
-        confirmLabel={confirm !== null ? ACTION_LABELS[confirm.action] : ''}
+        message={confirm !== null && pending !== null ? `${describe(pending.match)}. ${confirm.message}` : ''}
+        confirmLabel={confirm?.label ?? ''}
         danger={confirm?.danger ?? false}
         onClose={close}
         onConfirm={async () => {

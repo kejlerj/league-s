@@ -38,3 +38,19 @@ test('ConfirmDialog fermé ne rend rien', () => {
   )
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
+
+test("ConfirmDialog rouvert n'affiche pas l'erreur précédente", async () => {
+  const props = {
+    title: 'Supprimer',
+    message: 'Sûr ?',
+    confirmLabel: 'Oui',
+    onConfirm: () => Promise.reject(new ApiError(409, 'refusé')),
+    onClose: () => {},
+  }
+  const { rerender } = render(<ConfirmDialog open {...props} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Oui' }))
+  expect(await screen.findByText('refusé')).toBeInTheDocument()
+  rerender(<ConfirmDialog open={false} {...props} />)
+  rerender(<ConfirmDialog open {...props} />)
+  expect(screen.queryByText('refusé')).not.toBeInTheDocument()
+})
