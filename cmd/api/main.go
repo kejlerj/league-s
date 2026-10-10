@@ -54,8 +54,7 @@ func main() {
 	slog.SetDefault(logging.New(os.Stdout, cfg.LogFormat, cfg.LogLevel))
 
 	if cfg.SentryDSN != "" {
-		err := sentry.Init(sentry.ClientOptions{Dsn: cfg.SentryDSN, Environment: cfg.Environment})
-		if err != nil {
+		if err := logging.InitSentry(cfg.SentryDSN, cfg.Environment); err != nil {
 			log.Fatalf("sentry: %v", err)
 		}
 	}

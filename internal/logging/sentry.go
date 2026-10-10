@@ -7,6 +7,32 @@ import (
 	"github.com/getsentry/sentry-go"
 )
 
+func sentryOptions(dsn, environment string) sentry.ClientOptions {
+	off := &sentry.KeyValueCollectionBehavior{Mode: sentry.CollectionOff}
+
+	return sentry.ClientOptions{
+		Dsn:         dsn,
+		Environment: environment,
+		DataCollection: &sentry.DataCollection{
+			UserInfo:    sentry.Set(false),
+			Cookies:     off,
+			QueryParams: off,
+			HTTPBodies:  []sentry.BodyType{},
+			HTTPHeaders: &sentry.HeaderCollectionConfig{
+				Request: &sentry.KeyValueCollectionBehavior{
+					Mode:  sentry.CollectionAllowList,
+					Terms: []string{"Accept", "Content-Type", "User-Agent"},
+				},
+				Response: off,
+			},
+		},
+	}
+}
+
+func InitSentry(dsn, environment string) error {
+	return sentry.Init(sentryOptions(dsn, environment))
+}
+
 func reportError(ctx context.Context, r slog.Record) {
 	var err error
 	fields := map[string]any{"message": r.Message}

@@ -3,8 +3,12 @@ package logging
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/getsentry/sentry-go"
@@ -14,10 +18,10 @@ func sentryContext(t *testing.T) (context.Context, *sentry.MockTransport) {
 	t.Helper()
 	transport := &sentry.MockTransport{}
 
-	client, err := sentry.NewClient(sentry.ClientOptions{
-		Dsn:       "https://public@sentry.invalid/1",
-		Transport: transport,
-	})
+	opts := sentryOptions("https://public@sentry.invalid/1", "test")
+	opts.Transport = transport
+
+	client, err := sentry.NewClient(opts)
 	if err != nil {
 		t.Fatalf("sentry.NewClient() error = %v", err)
 	}
@@ -71,5 +75,38 @@ func TestNew_ReportsOnlyErrorsWithACause(t *testing.T) {
 				t.Errorf("got %d events, want none", len(events))
 			}
 		})
+	}
+}
+
+func TestNew_KeepsRequestSecretsOutOfReports(t *testing.T) {
+	ctx, transport := sentryContext(t)
+
+	body := strings.NewReader(`{"password": "body-secret"}`)
+	req := httptest.NewRequestWithContext(ctx, http.MethodPost, "/api/v1/auth/login?token=query-secret", body)
+	req.Header.Set("Authorization", "Bearer header-secret")
+	req.Header.Set("Cookie", "session=cookie-secret")
+	req.Header.Set("Content-Type", "application/json")
+	sentry.GetHubFromContext(ctx).Scope().SetRequest(req)
+	if _, err := io.ReadAll(req.Body); err != nil {
+		t.Fatalf("read body: %v", err)
+	}
+
+	New(io.Discard, FormatJSON, slog.LevelInfo).ErrorContext(ctx, "login", "err", errors.New("connection refused"))
+
+	events := transport.Events()
+	if len(events) != 1 || events[0].Request == nil {
+		t.Fatalf("events = %+v, want one event carrying the request", events)
+	}
+
+	sent := events[0].Request
+	if sent.Headers["Content-Type"] != "application/json" {
+		t.Errorf("Content-Type header = %q, want it kept", sent.Headers["Content-Type"])
+	}
+
+	report := fmt.Sprintf("%+v", *sent)
+	for _, secret := range []string{"query-secret", "header-secret", "cookie-secret", "body-secret"} {
+		if strings.Contains(report, secret) {
+			t.Errorf("request sent to Sentry contains %q: %s", secret, report)
+		}
 	}
 }
