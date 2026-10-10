@@ -66,7 +66,7 @@ Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"
 - **Match** : `{id, season_id, home_team, away_team, matchday, kickoff_at, status, home_score, away_score, venue, referee, convocation_at, video_url}`. Programmer `{home_team_id, away_team_id, matchday, kickoff_at?, venue?}`. Actions : `start`, `score` (`{home, away}`), `finish`, `postpone` (`{kickoff_at?}`), `cancel`.
 - **Classement** : lignes `{rank, team_id, team_name, played, won, drawn, lost, goals_for, goals_against, goal_difference, points}`.
 
-### Endpoints manquants (contrat validé par 6bb213, pas encore implémenté)
+### Endpoints ajoutés pour la webapp (implémentés par 6bb213, vérifiés le 2026-10-10)
 
 | Méthode | Chemin | Accès | Corps | Réponse |
 |---|---|---|---|---|
@@ -88,7 +88,7 @@ Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"
 
 Invitation : le superadmin invite une adresse sur une ligue. Le lien `{ADMIN_URL}/invitation?token=...` est à usage unique et valable 7 jours. Le jeton passe en paramètre puis dans le corps des requêtes, jamais dans un chemin, pour ne pas finir dans les logs. L'API renvoie le lien dans `link`, une seule fois, à la création. L'API n'envoie pas de mail d'invitation : la webapp affiche le lien avec un bouton « Copier le lien » et un lien `mailto:` prérempli. La personne choisit son nom et son mot de passe. Si l'adresse a déjà un compte, accepter rattache la ligue à ce compte, sans être connecté. Retirer un admin retire le droit sur la ligue, pas le compte. Il n'y a pas de `POST /users`.
 
-Les écrans qui dépendent de ces endpoints sont codés contre ce contrat et testés avec des mocks. Ils fonctionnent en réel quand l'API les fournit.
+`PATCH /leagues/{leagueID}` est ouvert à l'admin de la ligue. Un `tie_breakers` fourni doit contenir au moins une valeur. Supprimer une saison sans match supprime aussi ses inscriptions et ses effectifs.
 
 ## Architecture
 
