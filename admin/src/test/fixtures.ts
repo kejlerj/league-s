@@ -66,3 +66,14 @@ export const seasonS1: Season = {
   match_loss_pts: 0,
   tie_breakers: ['goal_difference', 'goals_scored'],
 }
+
+export function mockSeason(season: Season = seasonS1): void {
+  const base = `${API}/leagues/${season.league_id}/seasons/${season.id}`
+  server.use(
+    http.get(base, () => HttpResponse.json(season)),
+    http.get(`${base}/teams`, () => HttpResponse.json([])),
+    http.get(`${base}/matches`, () => HttpResponse.json([])),
+    http.get(`${base}/standings`, () => HttpResponse.json([])),
+    http.get(`${API}/leagues/${season.league_id}/teams`, () => HttpResponse.json([])),
+  )
+}
