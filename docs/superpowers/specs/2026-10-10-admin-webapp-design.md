@@ -75,8 +75,8 @@ Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"
 | `POST` | `/leagues/{leagueID}/invitations` | superadmin | `{email}` | 201 `{id, email, expires_at, link}` ; 409 déjà admin de la ligue. Réinviter remplace l'invitation précédente |
 | `GET` | `/leagues/{leagueID}/invitations` | superadmin | — | 200 liste des invitations en attente `{id, email, expires_at}` |
 | `DELETE` | `/leagues/{leagueID}/invitations/{invitationID}` | superadmin | — | 204 |
-| `GET` | `/invitations/{token}` | public | — | 200 `{email, league: {id, name}, account_exists}` ; 400 lien invalide, expiré ou déjà utilisé |
-| `POST` | `/invitations/{token}/accept` | public | `{name, password}` si nouveau compte, `{}` sinon | 204 ; 400 lien invalide ; 422 règle de mot de passe |
+| `POST` | `/invitations/lookup` | public | `{token}` | 200 `{email, league: {id, name}, account_exists}` ; 400 lien invalide, expiré ou déjà utilisé |
+| `POST` | `/invitations/accept` | public | `{token, name, password}` si nouveau compte, `{token}` sinon | 204 ; 400 lien invalide ; 422 nom ou mot de passe manquant, ou règle de mot de passe |
 | `PATCH` | `/leagues/{leagueID}` | admin | `{name?, logo?}` | 200 League |
 | `PATCH` | `/leagues/{leagueID}/teams/{teamID}` | admin | `{name?, logo?}` | 200 Team |
 | `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | — | 204 ; 409 si historique |
@@ -86,7 +86,7 @@ Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"
 | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | champs de Season, tous optionnels | 200 Season |
 | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | — | 204 ; 409 si elle a des matchs |
 
-Invitation : le superadmin invite une adresse sur une ligue. Le lien `{ADMIN_URL}/invitations/{token}` est à usage unique et valable 7 jours. L'API le renvoie dans `link` ; la webapp l'affiche avec un bouton « Copier le lien ». L'envoi par e-mail depuis l'API reste à confirmer côté 6bb213. La personne choisit son nom et son mot de passe. Si l'adresse a déjà un compte, accepter rattache la ligue à ce compte, sans être connecté. Retirer un admin retire le droit sur la ligue, pas le compte. Il n'y a pas de `POST /users`.
+Invitation : le superadmin invite une adresse sur une ligue. Le lien `{ADMIN_URL}/invitation?token=...` est à usage unique et valable 7 jours. Le jeton passe en paramètre puis dans le corps des requêtes, jamais dans un chemin, pour ne pas finir dans les logs. L'API renvoie le lien dans `link`, une seule fois, à la création. L'API n'envoie pas de mail d'invitation : la webapp affiche le lien avec un bouton « Copier le lien » et un lien `mailto:` prérempli. La personne choisit son nom et son mot de passe. Si l'adresse a déjà un compte, accepter rattache la ligue à ce compte, sans être connecté. Retirer un admin retire le droit sur la ligue, pas le compte. Il n'y a pas de `POST /users`.
 
 Les écrans qui dépendent de ces endpoints sont codés contre ce contrat et testés avec des mocks. Ils fonctionnent en réel quand l'API les fournit.
 
@@ -136,7 +136,7 @@ Toutes sous `/admin`.
 | `/reset-password?token=` | Nouveau mot de passe | public |
 | `/` | Liste des ligues | connecté |
 | `/account` | Changer son mot de passe | connecté |
-| `/invitations/:token` | Accepter une invitation | public |
+| `/invitation?token=` | Accepter une invitation | public |
 | `/leagues/:leagueId` | Ligue : équipes, joueurs, saisons, admins | admin de la ligue |
 | `/leagues/:leagueId/seasons/:seasonId` | Saison : équipes inscrites, matchs, classement | admin de la ligue |
 | `/leagues/:leagueId/seasons/:seasonId/teams/:teamId` | Effectif | admin de la ligue |
@@ -174,7 +174,7 @@ Toutes sous `/admin`.
 
 ### Accepter une invitation
 
-- La page charge `GET /invitations/{token}` et affiche la ligue et l'adresse invitée.
+- La page appelle `POST /invitations/lookup` et affiche la ligue et l'adresse invitée.
 - Nouveau compte : formulaire nom + mot de passe, puis redirection vers la connexion.
 - Compte existant : un bouton « rejoindre la ligue », puis redirection vers la connexion.
 - Lien invalide ou expiré : message clair, sans formulaire.
@@ -210,6 +210,6 @@ Une fois la webapp terminée et l'API à jour :
 
 ## Points ouverts
 
-1. Envoi du lien d'invitation par e-mail depuis l'API : à confirmer dans la session 6bb213. La webapp affiche le lien dans tous les cas.
+Aucun.
 
 Réglé : l'utilisateur a confirmé l'embarqué et l'écriture dans `go-blueprint/league-s/admin/`. `admin/dist` n'est pas versionné, sauf un `.gitkeep`. `ADMIN_URL` accepte un chemin, donc `http://localhost:5173/admin` donne un lien vers `/admin/reset-password`.
