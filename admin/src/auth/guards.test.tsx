@@ -1,7 +1,7 @@
 import { act, screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { api } from '@/api/client'
-import { adminOne, mockMe, superadmin } from '@/test/fixtures'
+import { adminOne, leagueL1, mockLeague, mockMe, superadmin } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
@@ -16,16 +16,19 @@ test("un admin d'une autre ligue voit Accès refusé sur un lien profond", async
 })
 
 test('un admin accède à sa ligue par un lien profond', async () => {
+  mockLeague(leagueL1)
   renderRoute('/leagues/L1', { me: adminOne })
-  expect(await screen.findByText('Ligue')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
 })
 
 test("un superadmin accède à n'importe quelle ligue", async () => {
+  mockLeague({ id: 'L9', name: 'Neuvième', logo: null })
   renderRoute('/leagues/L9', { me: superadmin })
-  expect(await screen.findByText('Ligue')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Neuvième' })).toBeInTheDocument()
 })
 
 test('le gabarit affiche le nom et la déconnexion renvoie au login', async () => {
+  mockLeague(leagueL1)
   const { user } = renderRoute('/leagues/L1', { me: adminOne })
   expect(await screen.findByText('Admin Nord')).toBeInTheDocument()
   let called = false
@@ -41,8 +44,9 @@ test('le gabarit affiche le nom et la déconnexion renvoie au login', async () =
 })
 
 test('un 401 sur une écriture renvoie au login puis ramène à la page', async () => {
+  mockLeague(leagueL1)
   const { user } = renderRoute('/leagues/L1', { me: adminOne })
-  expect(await screen.findByText('Ligue')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
 
   server.use(
     http.post(`${API}/leagues/L1/teams`, () => HttpResponse.json({ error: 'authentication required' }, { status: 401 })),
@@ -57,5 +61,5 @@ test('un 401 sur une écriture renvoie au login puis ramène à la page', async 
   await user.type(screen.getByLabelText('E-mail'), 'nord@ligue.test')
   await user.type(screen.getByLabelText('Mot de passe'), 'motdepasse-long')
   await user.click(screen.getByRole('button', { name: 'Se connecter' }))
-  expect(await screen.findByText('Ligue')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
 })

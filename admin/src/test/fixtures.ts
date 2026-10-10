@@ -41,3 +41,10 @@ export function mockMe(me: Me | null): void {
     ),
   )
 }
+
+export function mockLeague(league: League): void {
+  server.use(
+    http.get(`${API}/leagues/${league.id}`, () => HttpResponse.json(league)),
+    http.get(`${API}/leagues/${league.id}/teams`, () => HttpResponse.json([])),
+  )
+}

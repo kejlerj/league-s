@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { adminOne, mockMe } from '@/test/fixtures'
+import { adminOne, adminTwo, leagueL1, mockLeague, mockMe } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
@@ -12,6 +12,7 @@ async function fillAndSubmit(user: ReturnType<typeof renderRoute>['user']) {
 
 test('connexion réussie ramène à la page demandée', async () => {
   let body: unknown
+  mockLeague(leagueL1)
   const { user } = renderRoute('/leagues/L1', { me: null })
   server.use(
     http.post(`${API}/auth/login`, async ({ request }) => {
@@ -21,7 +22,7 @@ test('connexion réussie ramène à la page demandée', async () => {
     }),
   )
   await fillAndSubmit(user)
-  expect(await screen.findByText('Ligue')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
   expect(body).toEqual({ email: 'nord@ligue.test', password: 'motdepasse-long' })
 })
 
@@ -40,6 +41,6 @@ test('trop de tentatives', async () => {
 })
 
 test('déjà connecté, /login redirige vers l\'accueil', async () => {
-  renderRoute('/login', { me: adminOne })
-  expect(await screen.findByText('Admin')).toBeInTheDocument()
+  renderRoute('/login', { me: adminTwo })
+  expect(await screen.findByRole('heading', { name: 'Ligues' })).toBeInTheDocument()
 })
