@@ -1,0 +1,46 @@
+# Review rules
+
+What the reviewer (`claude[bot]`, `.github/workflows/claude-review.yml`) checks. Authors read this before marking a PR ready.
+
+## What to check, in order
+
+1. **Scope.** The PR does what its issue (`Closes #N`) asks, and nothing else. It touches no file outside that scope without a reason given in the description.
+2. **Spec conformance.** Every acceptance criterion of the issue is met. Behaviour matches `docs/api/spec.md`, `docs/api/endpoints.md`, `docs/admin/*`, `docs/mobile/*`. A difference from the spec is a blocking comment, unless the PR description explains it and the spec doc is updated in the same PR.
+3. **Correctness.** Bugs, missing error cases, wrong status codes, race conditions (locks, transactions), off-by-one on dates (season bounds are inclusive, UTC).
+4. **League isolation.** Every new query filters on the URL's `leagueID`. Every new write route has the right guard (`LeagueAdminWrites`, `SuperadminWrites`, `Superadmin`).
+5. **Security.** No secret, token or reset link in logs or responses where it shouldn't be. Input validated. No raw database errors returned to the client.
+6. **Tests** (see `docs/agents/testing.md`):
+   - a spec test for each new or changed rule,
+   - a non-regression test for each bug fix,
+   - no test deleted or loosened without a spec change,
+   - mobile change: Maestro flow present and the simulator result in the description.
+7. **Docs.** Spec docs updated: ⚠️ → ✅, new routes, ticked checklist items.
+8. **Conventions** (`CLAUDE.md`): no code comments, French UI copy, snake_case JSON, existing package structure.
+
+Don't comment on formatting that the linters handle.
+
+## How to comment
+
+- One inline comment per problem, on the line concerned.
+- Start each comment with **`[blocking]`** or **`[nit]`**.
+  - `[blocking]`: the PR can't be merged as is (bug, spec difference, missing test, security, isolation).
+  - `[nit]`: an improvement that doesn't block.
+- Say what is wrong, why (point to the spec line or the code), and what would fix it.
+- No praise comments, and no summary of the diff.
+
+## Deciding
+
+- At least one `[blocking]` comment still open → **request changes**, with a short list of the blocking points.
+- None → **approve**, even if nits are left. Don't block on CI: branch protection already waits for it.
+
+## Later rounds
+
+1. Read the author's replies on your earlier threads.
+2. Resolve each thread that is fixed, or where the author's explanation is right.
+3. Reply in the thread when the answer doesn't convince you, and keep it open.
+4. Review only what changed since your last review, plus anything those changes break.
+5. Don't raise new nits on code that was already reviewed.
+
+## Round limit
+
+If this is the 4th review, and the 3 before it were "changes requested", and blocking comments are still open: add the `needs-human` label, post one comment that lists what is blocking, and stop.
