@@ -35,3 +35,7 @@ main
 
 # Personal planning notes
 plan/
+
+# Claude Code local state
+.claude/worktrees/
+.claude/settings.local.json
