@@ -38,7 +38,7 @@ Work only inside that worktree. Use `refs/remotes/origin/main`: a file named `ma
 
 Run every check of the parts you touched (`CLAUDE.md` › Commands). Everything has to pass. Docker must be running for `make itest`. If it isn't, say so to the user and wait, don't skip the step.
 
-If `mobile/` changed in a way the user can see, run the `simulator-check` skill. Keep its result and screenshot links for the PR body.
+Simulator checks are paused until PR-26: don't run the `simulator-check` skill. If `mobile/` changed in a way the user can see, list the affected screens in the PR's "Simulator check" section instead. After PR-26 is merged, run `simulator-check` and put its result and screenshot links in the PR body.
 
 Before going further, run the skill `superpowers:verification-before-completion`.
 

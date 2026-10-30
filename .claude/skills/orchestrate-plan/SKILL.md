@@ -1,6 +1,6 @@
 ---
 name: orchestrate-plan
-description: Drive the league-s plan to completion. Pick the open plan issues whose dependencies are merged, start one author session per issue (Opus 5.5, own worktree, ship-pr skill), at most 2 at a time, and track progress. Use when asked to continue, run or orchestrate the league-s plan, or to say what comes next.
+description: Drive the league-s plan to completion. Pick the open plan issues whose dependencies are merged, start one author session per issue (Opus 5.5, own worktree, ship-pr skill), as many as are ready, and track progress. Use when asked to continue, run or orchestrate the league-s plan, or to say what comes next.
 ---
 
 # Orchestrate the plan
@@ -21,8 +21,8 @@ For each open issue, read its `Depends on: #X, #Y` line. The issue is **ready** 
 
 ## 2. Decide what runs
 
-- At most **2** PRs in progress (open, not merged). Count the open PRs that close a plan issue.
-- Pick the ready issue with the lowest plan ID (`PR-05` before `PR-11`).
+- Start every ready issue. There is no limit on how many run at the same time. If the usage limit is hit, sessions wait for the reset: that is expected, not a failure.
+- Start them in plan ID order (`PR-05` before `PR-11`).
 - Don't run two issues at the same time if both add a migration, or if both touch the same files.
 - Phase 6 issues (product features) start with a design spec that the user approves. Never start their code PRs on your own.
 

@@ -52,7 +52,7 @@ How (done together, now, not by an autonomous agent):
 
 | Role | Who | Runs where |
 |---|---|---|
-| Orchestrator | One Claude Code session (desktop app), skill `orchestrate-plan` | Works through §5 in order. Starts one author session per PR, in its own worktree. At most 2 PRs at the same time (Pro plan). |
+| Orchestrator | One Claude Code session (desktop app), skill `orchestrate-plan` | Works through §5 in order. Starts one author session per PR, in its own worktree. No limit on parallel PRs: hitting the Pro usage limit is fine. |
 | Author | One Claude Code session per PR (Opus 5.5) | Writes the code and tests, runs every check, tests on the simulator, opens the PR, answers and fixes review comments. |
 | Reviewer | Claude Sonnet 5.5 in GitHub Actions (`anthropics/claude-code-action`, subscription token), as `claude[bot]` | Runs when a PR is marked ready, and on each later push. Skips drafts. Posts inline comments. Approves when nothing blocking is left. |
 
@@ -62,7 +62,7 @@ The reviewer has to be a different GitHub identity from the author: **GitHub ref
 
 1. The orchestrator picks the next PR whose dependencies are merged. It starts an author session with the PR's GitHub issue as the brief.
 2. The author creates `feat/<slug>` from `main`, writes the tests first (TDD), then the code.
-3. The author runs the local checks (§3.4). If the PR changes the mobile app, the author runs it in the iOS Simulator and runs the Maestro flows.
+3. The author runs the local checks (§3.4). Simulator checks are paused until PR-26: mobile changes rely on jest screen tests.
 4. The author opens the PR **as a draft** with the template (`Closes #<issue>`, what changed, the tests added, simulator proof).
 5. When CI is green, the author marks the PR ready. The reviewer action runs: it reads the issue, the diff and the specs, then posts inline comments, each marked **blocking** or **nit**.
 6. The desktop app's Auto-fix wakes the author on each comment. The author fixes or answers every thread, then pushes.
@@ -76,7 +76,7 @@ The reviewer has to be a different GitHub identity from the author: **GitHub ref
 - **Spec tests**: each new business rule has a test named after the rule (Go handler or service test, admin page test, mobile screen test).
 - **Non-regression tests**: a bug fix comes with a test that fails without the fix. Existing suites stay green.
 - API change: Go integration test plus an update to `docs/endpoints.md`. Once PR-08 lands, the OpenAPI file is updated too.
-- Mobile change: a Maestro flow added or updated, run on the simulator, with the result and a screenshot in the PR.
+- Mobile change: jest screen tests, and the affected screens listed in the PR. After PR-26: a Maestro flow too, run on the simulator, with the result and a screenshot.
 - Spec docs updated (`spec.md` ⚠️ → ✅, checklist ticked).
 - No code comments (your rule), French UI copy, conventional commit titles.
 
@@ -87,7 +87,7 @@ The reviewer has to be a different GitHub identity from the author: **GitHub ref
 | Go | `make lint && make test && make itest && make vuln` (Docker must be running) |
 | Admin | `npm --prefix admin test -- --run && npm --prefix admin run build` |
 | Mobile | `npm --prefix mobile test && npx --prefix mobile tsc --noEmit` |
-| Mobile E2E | `make dev-up seed` then `maestro test mobile/e2e/` on a booted iPhone simulator |
+| Mobile E2E | paused until PR-26, then `make dev-up seed` and `maestro test mobile/e2e/` |
 | Admin E2E | `make dev-up seed` then `npm --prefix admin run e2e` (Playwright, after PR-07) |
 
 ### 3.5 Test layers
@@ -150,7 +150,7 @@ These come from the v5 design. They were out of scope or were removed when the a
 
 Each line becomes one GitHub issue (label `plan`, with dependencies). The orchestrator runs them in order and in parallel where the dependencies allow.
 
-**🧪** = needs simulator testing. **B / A / M** = touches back / admin / mobile.
+**🧪** = needs simulator testing. Paused: these screens are checked together in PR-26. **B / A / M** = touches back / admin / mobile.
 
 ### Phase 0: land the existing work (with you, before going autonomous)
 
@@ -167,10 +167,10 @@ Each line becomes one GitHub issue (label `plan`, with dependencies). The orches
 |---|---|---|---|
 | PR-05 | **CI for every part.** `admin` job (vitest, tsc, build) and `mobile` job (jest, tsc), with path filters. Fix the 2 mobile TS errors. Required checks on `main`. | A M | PR-04 |
 | PR-06 | **Local stack and seed.** `cmd/seed` from the leftover worktree, plus `make dev-up` (Postgres, migrations, API) and `make seed`. Fixed seed IDs so E2E tests are stable. `mobile/.env.example`. | B | PR-04 |
-| PR-07 | **E2E harness.** Maestro flows in `mobile/e2e/` for the current screens (Suivi, Classement, Team follow, Match, theme toggle). Playwright in `admin/e2e/` (login, create a season, schedule and finish a match). `make e2e`. | A M 🧪 | PR-06 |
+| PR-07 | **Admin E2E harness.** Playwright in `admin/e2e/` against the real API and seeded data (login, create a season, schedule and finish a match). `make e2e`. The mobile half moved to PR-26. | A | PR-06 |
 | PR-08 | **OpenAPI contract.** `docs/openapi.yaml` for every route. A Go test fails if a router route is missing from it. TS types generated for admin and mobile, plus a CI check that they are up to date. | B A M | PR-05 |
 | PR-09 | **Scenario tests.** `internal/scenario`: a full season up to the standings, a mid-season transfer, a postponed then rescheduled match. Seeder helpers `SquadMember` and `Match`. | B | PR-01 |
-| PR-10 | **Mobile E2E in CI** (optional). macOS runner (free on a public repo), simulator build, API with Postgres, Maestro. Lets the reviewer see real simulator proof. | M 🧪 | PR-07 |
+| PR-10 | **Mobile E2E in CI** (optional, after PR-26). macOS runner (free on a public repo), simulator build, API with Postgres, Maestro. Lets the reviewer see real simulator proof. | M 🧪 | PR-26 |
 
 ### Phase 2: API debt (small PRs, each with its admin follow-up)
 
@@ -189,7 +189,7 @@ Each line becomes one GitHub issue (label `plan`, with dependencies). The orches
 | PR | Content | Parts | Depends on |
 |---|---|---|---|
 | PR-18 | Task 13: `make build` builds the admin before the Go binary. One binary serves `/admin` and `/api`. Playwright runs against it. | B A | PR-07 |
-| PR-19 | Final check from the admin spec: a Playwright scenario builds a full league through the admin, then a Maestro flow checks that the mobile app shows it (Suivi, Classement, Team, Match). | A M 🧪 | PR-18 |
+| PR-19 | Final check from the admin spec, admin half: a Playwright scenario builds a full league through the admin. The mobile half (the app shows it) is in PR-26. | A | PR-18 |
 
 ### Phase 4: finish the mobile app (specified scope)
 
@@ -199,6 +199,7 @@ Each line becomes one GitHub issue (label `plan`, with dependencies). The orches
 | PR-21 | **Player screen.** "Voir l'effectif complet", player detail with career. | M 🧪 | PR-17, PR-20 |
 | PR-22 | **Team history.** Seasons played by the team, past seasons' standings. | M 🧪 | PR-17, PR-20 |
 | PR-23 | **Production config.** `app.config.ts`, API address per profile, EAS profiles, ATS limited to dev. | M 🧪 | PR-20 |
+| PR-26 | **Final simulator pass.** Maestro set up in `mobile/e2e/`, one flow per screen (Suivi, Classement, Team follow, Match, Moi theme, league picker, player, team history), plus the PR-19 data set from the admin shown in the app. Run on the iOS Simulator against seeded data. Fix what fails, each fix with a jest non-regression test. Then simulator checks become mandatory again (`docs/agents/testing.md`). | M 🧪 | PR-19 to PR-23 |
 
 ### Phase 5: deployment (needs the hosting decision)
 
@@ -224,8 +225,9 @@ Each needs a short design spec first. The orchestrator writes it with the `super
 PR-01 ─┬─ PR-02 ── PR-04 ─┬─ PR-05 ─┬─ PR-11..16 (in parallel)
        ├─ PR-03           │         └─ PR-08 ── PR-17 ─┬─ PR-21
        └─ PR-09           └─ PR-06 ── PR-07 ─┬─ PR-18 ── PR-19
-                                             ├─ PR-20 ─┴─ PR-22, PR-23
-                                             └─ PR-10
+                                             └─ PR-20 ─┴─ PR-22, PR-23
+
+PR-19, PR-21, PR-22, PR-23 ── PR-26 (final simulator pass) ── PR-10
 ```
 
 PRs in Phase 2 touch different packages, so they can run in parallel. Two PRs that both add a migration must merge one after the other: the second rebases and renumbers its migration.
