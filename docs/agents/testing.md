@@ -25,7 +25,15 @@ Every PR adds tests. The reviewer refuses a behaviour change without one.
 - Check the JSON body and the status code, not only the status code.
 - Isolation: for every new route that reads by ID, add a test that a resource of another league is a 404.
 
-## Simulator (mobile)
+## Simulator (mobile): paused until PR-26
+
+To save usage, simulator checks are paused. Until the final simulator pass (PR-26):
+
+- a mobile change is covered by jest screen tests: loading, error and data states, plus the interaction that changed,
+- don't run the simulator or Maestro, and don't write Maestro flows,
+- in the PR body, under "Simulator check", list the screens the change affects, so PR-26 knows what to cover.
+
+PR-26 writes the Maestro flows for every screen, runs them on the simulator against seeded data, and fixes what it finds. After PR-26, the rules below apply to every mobile PR.
 
 A mobile change that the user can see needs:
 
