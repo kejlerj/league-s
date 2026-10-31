@@ -14,6 +14,10 @@ const LABELS: Record<string, string> = {
   profile: fr.tabs.profile,
 };
 
+function tabKey(routeName: string): string {
+  return routeName.split('/')[0];
+}
+
 export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   return (
@@ -26,7 +30,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
         return (
           <Pressable
             key={route.key}
-            testID={`tab-${route.name}`}
+            testID={`tab-${tabKey(route.name)}`}
             onPress={() => navigation.navigate(route.name)}
             className="flex-1 items-center gap-1.5"
             accessibilityRole="tab"
@@ -43,7 +47,7 @@ export function TabBar({ state, navigation }: TabBarProps) {
               tone={focused ? 'accent' : 'muted'}
               className="uppercase tracking-wide"
             >
-              {LABELS[route.name] ?? route.name}
+              {LABELS[tabKey(route.name)] ?? route.name}
             </ThemedText>
           </Pressable>
         );

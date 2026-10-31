@@ -37,6 +37,19 @@ test('shows a skeleton while loading', async () => {
   await waitFor(() => expect(screen.getByText('David Benali')).toBeTruthy());
 });
 
+test('players are listed by shirt number', async () => {
+  jest.mocked(leagueService.getSquad).mockResolvedValue([
+    member('p3', 'Chris', 'Three', 3, null),
+    member('p1', 'Alex', 'One', 1, null),
+    member('p2', 'Bob', 'Two', 2, null),
+  ]);
+  render(<SquadScreen teamId={TEAM_ID} origin="standings" />);
+  await waitFor(() => expect(screen.getByText('Alex One')).toBeTruthy());
+
+  const names = screen.getAllByText(/^(Alex One|Bob Two|Chris Three)$/).map((node) => node.props.children);
+  expect(names).toEqual(['Alex One', 'Bob Two', 'Chris Three']);
+});
+
 test('lists the current players and the departures of the season', async () => {
   render(<SquadScreen teamId={TEAM_ID} origin="standings" />);
 

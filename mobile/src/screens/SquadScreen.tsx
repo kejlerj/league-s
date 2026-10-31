@@ -15,6 +15,7 @@ import { useCurrentSeason } from '../hooks/useCurrentSeason';
 import { useLeagueId } from '../hooks/useLeagueId';
 import { getSquad, getTeam } from '../services/league';
 import { formatCalendarDate } from '../logic/dateTime';
+import { byShirtNumber } from '../logic/squad';
 import { fr } from '../i18n/fr';
 import type { SquadRow, TabOrigin } from '../types';
 
@@ -30,7 +31,7 @@ export function SquadScreen({ teamId, origin }: { teamId: string; origin: TabOri
 
   const loading = team.loading || season.loading || squad.loading;
   const error = team.error ?? season.error ?? squad.error;
-  const members = squad.data ?? [];
+  const members = byShirtNumber(squad.data ?? []);
   const current = members.filter((member) => member.left_on === null);
   const departed = members.filter((member) => member.left_on !== null);
 
