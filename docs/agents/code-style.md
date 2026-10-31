@@ -52,7 +52,7 @@ How they apply here, in order of importance.
 ## TypeScript (admin and mobile)
 
 - `strict` mode. No `any`, no `as` casts to silence the compiler, no non-null `!` without a reason the types can't express. Use `unknown` and narrow.
-- Types for API data come from one place: `src/types` today, the OpenAPI-generated types after PR-08. Don't redeclare an API shape inside a component.
+- Types for API data come from one place: `src/types` today, the types generated from `docs/openapi.yaml` after #66. Don't redeclare an API shape inside a component.
 - Function components and hooks only. One component per file when it's exported. Props typed with a `type` or `interface` next to the component.
 - Keep logic out of components. Pure functions go in `src/logic` (mobile) or next to the feature (admin), with unit tests.
 - Named exports, except where the framework requires a default export (Expo Router route files).

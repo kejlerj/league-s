@@ -37,7 +37,7 @@ jobs:
           }
 
           go=false
-          touched '(\.go$|^go\.(mod|sum)$|^Makefile$|^\.golangci\.yml$|^sqlc\.yaml$|^migrations/|^internal/)' && go=true
+          touched '(\.go$|^go\.(mod|sum)$|^Makefile$|^\.golangci\.yml$|^sqlc\.yaml$|^migrations/|^internal/|^docs/openapi\.yaml$)' && go=true
 
           admin=false
           [ -f admin/package.json ] && touched '^admin/' && admin=true

@@ -2,6 +2,8 @@
 
 Tous les chemins commencent par `/api/v1`.
 
+The request and response shapes are in `docs/openapi.yaml`. A new or changed route updates both files; `internal/server/openapi_test.go` fails when a router route is missing from the OpenAPI file.
+
 **Légende**
 - Statut : ✅ fait, 🔜 prévu
 - Accès (une fois l'authentification en place) : **public** (sans connexion), **admin** (admin de la ligue de l'URL, ou superadmin), **superadmin**
