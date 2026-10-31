@@ -1,4 +1,4 @@
-import { formatDateTime, formatDayMonth, formatTime, parseApiDate, toLocalDateParam } from './dateTime';
+import { formatCalendarDate, formatDateTime, formatDayMonth, formatTime, parseApiDate, toLocalDateParam } from './dateTime';
 
 test('parseApiDate reads microsecond timestamps', () => {
   expect(parseApiDate('2026-10-05T18:09:28.963698Z').toISOString()).toBe('2026-10-05T18:09:28.963Z');
@@ -22,4 +22,9 @@ test('formatDateTime joins the day and the time', () => {
 
 test('toLocalDateParam builds a YYYY-MM-DD string from the local date', () => {
   expect(toLocalDateParam(new Date(2026, 9, 5, 23, 59))).toBe('2026-10-05');
+});
+
+test('formatCalendarDate gives a French day, month and year for a YYYY-MM-DD date', () => {
+  expect(formatCalendarDate('2026-08-29')).toBe('29 août 2026');
+  expect(formatCalendarDate('2027-01-05')).toBe('5 janv. 2027');
 });
