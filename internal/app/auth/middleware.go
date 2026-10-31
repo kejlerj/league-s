@@ -39,6 +39,7 @@ func (s *Service) Identify(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		w.Header().Set("Cache-Control", "no-store")
 
 		user, err := s.Authenticate(r.Context(), token)
 		if errors.Is(err, ErrSessionNotFound) {
