@@ -68,7 +68,7 @@ export function PlayerScreen({ id }: { id: string }) {
                   <CardRow key={entry.membership_id} isFirst={index === 0}>
                     <Crest size={26} uri={entry.team.logo} />
                     <View className="flex-1">
-                      <ThemedText weight="medium" size={14.5}>{`${entry.team.name} · ${fr.player.number(entry.number)}`}</ThemedText>
+                      <ThemedText weight="medium" size={14.5}>{entry.number === null ? entry.team.name : `${entry.team.name} · ${fr.player.number(entry.number)}`}</ThemedText>
                       <ThemedText tone="muted" size={12} className="mt-0.5">{stintDates(entry)}</ThemedText>
                     </View>
                     <ThemedText tone="faint" mono size={12}>{entry.season.name}</ThemedText>

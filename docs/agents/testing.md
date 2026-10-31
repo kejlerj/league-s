@@ -36,7 +36,18 @@ Rules:
 | Cross-domain flow (season → matches → standings) | `internal/scenario` (after PR-09) | Playwright in `admin/e2e/` (`make e2e`) | Maestro in `mobile/e2e/` (after PR-07) |
 | Page or screen | none | Page test with MSW: the normal path and one error | Screen test with a mocked `fetch`: loading, error, data |
 | Pure logic | none | Unit test | Unit test in `src/logic` |
-| API contract | `docs/openapi.yaml` updated, `TestOpenAPIDescribesEveryRoute` passes | Generated types updated (after #66) | Generated types updated (after #66) |
+| API contract | `docs/openapi.yaml` updated, `TestOpenAPIDescribesEveryRoute` passes | `npm --prefix admin run api-types`, commit `src/api/schema.ts` | `npm --prefix mobile run api-types`, commit `src/types/api.ts` |
+
+## Generated API types
+
+The admin and the mobile app take their API types from `docs/openapi.yaml`, through `openapi-typescript`. After any change to the spec, regenerate both files and commit them:
+
+```bash
+npm --prefix admin run api-types
+npm --prefix mobile run api-types
+```
+
+The generated files are `admin/src/api/schema.ts` and `mobile/src/types/api.ts`. Never edit them by hand. `admin/src/api/types.ts` and `mobile/src/types/index.ts` give the schemas short names. The `Admin` and `Mobile` CI jobs regenerate the files and fail when the committed copy differs.
 
 ## Go conventions
 

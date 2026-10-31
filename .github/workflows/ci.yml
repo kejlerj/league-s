@@ -40,10 +40,10 @@ jobs:
           touched '(\.go$|^go\.(mod|sum)$|^Makefile$|^\.golangci\.yml$|^sqlc\.yaml$|^migrations/|^internal/|^docs/openapi\.yaml$)' && go=true
 
           admin=false
-          [ -f admin/package.json ] && touched '^admin/' && admin=true
+          [ -f admin/package.json ] && touched '(^admin/|^docs/openapi\.yaml$)' && admin=true
 
           mobile=false
-          [ -f mobile/package.json ] && touched '^mobile/' && mobile=true
+          [ -f mobile/package.json ] && touched '(^mobile/|^docs/openapi\.yaml$)' && mobile=true
 
           {
             echo "go=$go"
@@ -138,6 +138,11 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: API types are up to date
+        run: |
+          npm run api-types
+          git diff --exit-code -- src/api/schema.ts
+
       - name: Tests
         run: npm test -- --run
 
@@ -218,6 +223,11 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: API types are up to date
+        run: |
+          npm run api-types
+          git diff --exit-code -- src/types/api.ts
 
       - name: Tests
         run: npm test -- --ci

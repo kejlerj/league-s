@@ -1,8 +1,9 @@
 import { pickCurrentSeason } from './season';
 import type { Season } from '@/src/types';
+import { season } from '../test/fixtures';
 
-const recent: Season = { id: 'b', league_id: 'l', name: '2026-2027', start_on: '2026-08-29', end_on: '2027-05-30' };
-const previous: Season = { id: 'a', league_id: 'l', name: '2025-2026', start_on: '2025-08-30', end_on: '2026-05-31' };
+const recent: Season = season({ id: 'b', league_id: 'l', name: '2026-2027', start_on: '2026-08-29', end_on: '2027-05-30' });
+const previous: Season = season({ id: 'a', league_id: 'l', name: '2025-2026', start_on: '2025-08-30', end_on: '2026-05-31' });
 const seasons = [recent, previous];
 
 test('picks the season whose dates contain now', () => {

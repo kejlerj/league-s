@@ -6,6 +6,7 @@ import * as leagueService from '../services/league';
 import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
 import type { ApiMatch } from '../types';
+import { season } from '../test/fixtures';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -14,7 +15,7 @@ jest.mock('expo-router', () => ({
 jest.mock('../services/matches');
 jest.mock('../services/league');
 
-const SEASON = { id: 'season-1', league_id: 'l', name: '2026-2027', start_on: '2026-08-29', end_on: '2027-05-30' };
+const SEASON = season({ id: 'season-1', league_id: 'l', name: '2026-2027', start_on: '2026-08-29', end_on: '2027-05-30' });
 const TEAM = '01a10d58-8ae5-723e-b3d1-8d75cbe828bb';
 
 function apiMatch(id: string, status: ApiMatch['status'], home: string, away: string): ApiMatch {
