@@ -75,3 +75,10 @@ test('shows the error state and retries', async () => {
 
   await waitFor(() => expect(screen.getByText('David Benali')).toBeTruthy());
 });
+
+test('a stint without a shirt number shows the team only', async () => {
+  jest.mocked(leagueService.getPlayerCareer).mockResolvedValue([{ ...CAREER[1], number: null }]);
+  render(<PlayerScreen id="p1" />);
+  await waitFor(() => expect(screen.getByText('AS Belleville')).toBeTruthy());
+  expect(screen.queryByText(/N° null/)).toBeNull();
+});
