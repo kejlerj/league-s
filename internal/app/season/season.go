@@ -96,7 +96,7 @@ func (e UpdateError) Error() string { return string(e) }
 const (
 	ErrUpdateNotFound     UpdateError = "season not found"
 	ErrUpdateNameTaken    UpdateError = "season name is already taken"
-	ErrUpdateInvalidDates UpdateError = "end_on must be after start_on"
+	ErrUpdateInvalidDates UpdateError = "season must end after it starts"
 )
 
 type DeleteError string

@@ -1920,10 +1920,10 @@ components:
           maxLength: 50
         start_on:
           type: [string, "null"]
-          format: date-time
+          format: date
         end_on:
           type: [string, "null"]
-          format: date-time
+          format: date
         match_win_pts:
           type: [integer, "null"]
           format: int32

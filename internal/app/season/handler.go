@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -46,8 +47,8 @@ type createSeasonRequest struct {
 
 type updateSeasonRequest struct {
 	Name         *string    `json:"name" validate:"omitnil,min=1,max=50"`
-	StartOn      *time.Time `json:"start_on"`
-	EndOn        *time.Time `json:"end_on"`
+	StartOn      *string    `json:"start_on" validate:"omitnil,datetime=2006-01-02"`
+	EndOn        *string    `json:"end_on" validate:"omitnil,datetime=2006-01-02"`
 	MatchWinPts  *int32     `json:"match_win_pts" validate:"omitnil,min=0"`
 	MatchDrawPts *int32     `json:"match_draw_pts" validate:"omitnil,min=0"`
 	MatchLossPts *int32     `json:"match_loss_pts" validate:"omitnil,min=0"`
@@ -309,7 +310,17 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.store.Update(r.Context(), leagueID, id, Update(req))
+	update := Update{
+		Name:         req.Name,
+		StartOn:      optionalDate(req.StartOn),
+		EndOn:        optionalDate(req.EndOn),
+		MatchWinPts:  req.MatchWinPts,
+		MatchDrawPts: req.MatchDrawPts,
+		MatchLossPts: req.MatchLossPts,
+		TieBreakers:  req.TieBreakers,
+	}
+
+	res, err := h.store.Update(r.Context(), leagueID, id, update)
 	if updateErr, ok := errors.AsType[UpdateError](err); ok {
 		switch updateErr {
 		case ErrUpdateNotFound:
@@ -319,7 +330,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 			httpx.Error(w, http.StatusConflict, updateErr.Error())
 			return
 		case ErrUpdateInvalidDates:
-			httpx.Error(w, http.StatusUnprocessableEntity, updateErr.Error())
+			httpx.FieldErrors(w, map[string]string{"end_on": "doit être après start_on"})
 			return
 		}
 	}
@@ -357,4 +368,11 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func optionalDate(v *string) *time.Time {
+	if v == nil {
+		return nil
+	}
+	return new(httpx.MustDate(*v))
 }
