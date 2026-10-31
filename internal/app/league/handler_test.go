@@ -5,6 +5,7 @@ package league
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"slices"
 	"strings"
@@ -104,6 +105,30 @@ func TestCreateLeague_Errors(t *testing.T) {
 				t.Errorf("status = %d, want %d, body = %s", rec.Code, tt.wantStatus, rec.Body)
 			}
 		})
+	}
+}
+
+func TestCreateLeague_ExplainsEachInvalidField(t *testing.T) {
+	testdb.New(t, testPool)
+	body := `{"name": "` + strings.Repeat("a", 51) + `", "logo": "not a url"}`
+
+	rec := testhttp.Do(t, newTestRouter(), http.MethodPost, "/api/v1/leagues", body)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusUnprocessableEntity, rec.Body)
+	}
+
+	var got struct {
+		Errors map[string]string `json:"errors"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	want := map[string]string{
+		"name": "50 caractères maximum",
+		"logo": "doit être une URL http ou https",
+	}
+	if !maps.Equal(got.Errors, want) {
+		t.Errorf("errors = %v, want %v", got.Errors, want)
 	}
 }
 

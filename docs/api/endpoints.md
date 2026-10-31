@@ -8,6 +8,24 @@ The request and response shapes are in `docs/openapi.yaml`. A new or changed rou
 - Statut : ✅ fait, 🔜 prévu
 - Accès (une fois l'authentification en place) : **public** (sans connexion), **admin** (admin de la ligue de l'URL, ou superadmin), **superadmin**
 
+## Validation errors
+
+A body that fails validation gets a 422 with one readable French message per field: `{"errors": {"<field>": "<message>"}}`. The key is the JSON field name (`tie_breakers[0]` for an item of a list).
+
+| Rule | Message |
+|---|---|
+| `required` | `obligatoire` |
+| `min` / `max` on text | `<n> caractères minimum` / `<n> caractères maximum` |
+| `min` / `max` on a number | `doit être au moins <n>` / `doit être au plus <n>` |
+| `http_url` | `doit être une URL http ou https` |
+| `email` | `doit être une adresse e-mail valide` |
+| `uuid` | `doit être un identifiant valide` |
+| `datetime=2006-01-02` | `doit être une date au format AAAA-MM-JJ` |
+| `gtfield` | `doit être après <other field>` |
+| `nefield` | `doit être différent de <other field>` |
+| `oneof` | `doit valoir <a>, <b> ou <c>` |
+| any other rule | `invalide` |
+
 ## Santé
 
 | Statut | Méthode | Chemin | Accès | Description |
