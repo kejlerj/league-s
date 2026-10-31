@@ -29,7 +29,7 @@ make dev-up
 make seed
 ```
 
-`make seed` replaces the demo league and everything in it, and leaves other leagues alone. Run it again at any time to reset the demo data.
+`make seed` replaces the demo league and everything in it, and the "Ligue de vérification" league of the admin final check. Other leagues are left alone. Run it again at any time to reset the demo data.
 
 For the mobile app, copy `mobile/.env.example` to `mobile/.env`. `EXPO_PUBLIC_API_URL` points the app at the local API.
 
@@ -64,9 +64,12 @@ IDs are fixed, so E2E tests can use them. The league ID is fixed; the mobile app
 | Match | `05` | 2025-2026 first, then 2026-2027, by matchday and kickoff |
 | User | `06` | the demo admin is `…-8006-000000000001` |
 
-The seed also creates a demo admin of the league, to log in to the admin at http://localhost:8080/admin: `demo-admin@league-s.test`, password `demo-admin-password`. It is a test account for the local stack only.
+The seed also creates two test accounts, for the local stack only, to log in to the admin at http://localhost:8080/admin:
 
-`make seed` prints the league, admin, season and team IDs.
+- `demo-admin@league-s.test`, password `demo-admin-password`: admin of the demo league.
+- `demo-superadmin@league-s.test`, password `demo-superadmin-password`: superadmin, who can create leagues.
+
+`make seed` prints the league, accounts, season and team IDs. It also deletes the league built by the admin final check (below), so every E2E run starts from the same state.
 
 ### Admin E2E tests
 
@@ -84,6 +87,12 @@ make e2e
 ```
 
 `make e2e` starts Postgres and Mailpit, then `make e2e-run` migrates, builds the binary (`make build`), reseeds and runs the tests. Playwright starts the binary `./main`, or reuses an API already listening on `PORT`. CI runs `make e2e-run` against a Postgres service container, so the tests run on the same binary as production.
+
+### Admin final check data set
+
+`admin/e2e/full-league.spec.ts` builds a second league only through the admin, as the superadmin: "Ligue de vérification", season 2026-2027, 6 teams of 8 numbered players, and 3 matchdays. Matchday 1 is finished (one match with a video link), matchday 2 has one live, one postponed and one cancelled match, matchday 3 is scheduled. The exact data is in `admin/e2e/checkLeague.ts`.
+
+After `make e2e`, the league stays in the database, so the mobile app can be checked against data entered through the admin. It has generated IDs: find it by name in `GET /api/v1/leagues`. The next `make seed` or `make e2e` replaces it.
 
 ## Database schema
 

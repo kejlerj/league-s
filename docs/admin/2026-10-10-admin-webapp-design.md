@@ -200,7 +200,7 @@ All under `/admin`.
 
 Once the webapp is finished and the API up to date:
 
-1. Create a real data set through the webapp: a league, a season, teams, players, squads, matches with scores.
+1. Create a real data set through the webapp: a league, a season, teams, players, squads, matches with scores. Automated by `admin/e2e/full-league.spec.ts` (`make e2e`), which leaves the « Ligue de vérification » league in the database.
 2. Check that the mobile app shows this data correctly: following, standings, team, match.
 
 ## Out of v1 scope
