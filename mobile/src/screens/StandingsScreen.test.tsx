@@ -19,9 +19,9 @@ function row(team_id: string, team_name: string, rank: number): StandingRow {
 }
 
 beforeEach(() => {
-  useAppStore.setState({ themeMode: 'system', follows: {} });
+  useAppStore.setState({ themeMode: 'system', leagueId: 'l', followsByLeague: {} });
   jest.mocked(leagueService.listSeasons).mockResolvedValue([RECENT, PREVIOUS]);
-  jest.mocked(leagueService.getStandings).mockImplementation(async (seasonId: string) =>
+  jest.mocked(leagueService.getStandings).mockImplementation(async (_leagueId: string, seasonId: string) =>
     seasonId === RECENT.id ? [row('a', 'Team A', 1), row('b', 'Team B', 2)] : [row('c', 'Team C', 1)]
   );
 });
@@ -29,7 +29,7 @@ beforeEach(() => {
 test('shows the standings of the current season by default', async () => {
   render(<StandingsScreen />);
   await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
-  expect(leagueService.getStandings).toHaveBeenCalledWith(RECENT.id);
+  expect(leagueService.getStandings).toHaveBeenCalledWith('l', RECENT.id);
 });
 
 test('switching the season loads that season standings', async () => {
@@ -39,11 +39,11 @@ test('switching the season loads that season standings', async () => {
   fireEvent.press(screen.getByTestId('segmented-tab-2025-2026'));
 
   await waitFor(() => expect(screen.getByText('Team C')).toBeTruthy());
-  expect(leagueService.getStandings).toHaveBeenCalledWith(PREVIOUS.id);
+  expect(leagueService.getStandings).toHaveBeenCalledWith('l', PREVIOUS.id);
 });
 
 test('a followed team row gets the follow tint', async () => {
-  useAppStore.setState({ follows: { a: { notifyLevel: 'full' } } });
+  useAppStore.setState({ followsByLeague: { l: { a: { notifyLevel: 'full' } } } });
   render(<StandingsScreen />);
   await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
 

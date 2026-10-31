@@ -10,6 +10,7 @@ import { Crest } from '../components/Avatar';
 import { Skeleton } from '../components/Skeleton';
 import { ErrorState } from '../components/ErrorState';
 import { useAsync } from '../hooks/useAsync';
+import { useLeagueId } from '../hooks/useLeagueId';
 import { useAppStore } from '../store/useAppStore';
 import { getStandings, listSeasons } from '../services/league';
 import { pickCurrentSeason } from '../logic/season';
@@ -18,13 +19,14 @@ import { fr } from '../i18n/fr';
 export function StandingsScreen() {
   const router = useRouter();
   const followedTeamIds = useAppStore((s) => s.followedTeamIds());
-  const seasons = useAsync(listSeasons, []);
+  const leagueId = useLeagueId();
+  const seasons = useAsync(() => listSeasons(leagueId), [leagueId]);
   const currentSeason = seasons.data ? pickCurrentSeason(seasons.data, new Date()) : undefined;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const activeId = selectedId ?? currentSeason?.id ?? null;
   const standings = useAsync(
-    () => (activeId ? getStandings(activeId) : Promise.resolve([])),
-    [activeId]
+    () => (activeId ? getStandings(leagueId, activeId) : Promise.resolve([])),
+    [leagueId, activeId]
   );
 
   const seasonList = seasons.data ?? [];

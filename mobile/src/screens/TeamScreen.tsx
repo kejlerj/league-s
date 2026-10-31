@@ -12,6 +12,7 @@ import { Skeleton } from '../components/Skeleton';
 import { ErrorState } from '../components/ErrorState';
 import { useAsync } from '../hooks/useAsync';
 import { useCurrentSeason } from '../hooks/useCurrentSeason';
+import { useLeagueId } from '../hooks/useLeagueId';
 import { useAppStore } from '../store/useAppStore';
 import { getSquad, getStandings, getTeam } from '../services/league';
 import { listMatches } from '../services/matches';
@@ -22,19 +23,20 @@ import { fr } from '../i18n/fr';
 export function TeamScreen({ id }: { id: string }) {
   const isFollowing = useAppStore((s) => s.isFollowing(id));
   const toggleFollow = useAppStore((s) => s.toggleFollow);
-  const team = useAsync(() => getTeam(id), [id]);
+  const leagueId = useLeagueId();
+  const team = useAsync(() => getTeam(leagueId, id), [leagueId, id]);
   const season = useCurrentSeason();
   const detail = useAsync(async () => {
     if (!season.season) return null;
     const seasonId = season.season.id;
     const [finished, scheduled, squad, standings] = await Promise.all([
-      listMatches(seasonId, { team: id, status: 'finished' }),
-      listMatches(seasonId, { team: id, status: 'scheduled', from: toLocalDateParam(new Date()) }),
-      getSquad(seasonId, id),
-      getStandings(seasonId),
+      listMatches(leagueId, seasonId, { team: id, status: 'finished' }),
+      listMatches(leagueId, seasonId, { team: id, status: 'scheduled', from: toLocalDateParam(new Date()) }),
+      getSquad(leagueId, seasonId, id),
+      getStandings(leagueId, seasonId),
     ]);
     return buildTeamDetail({ teamId: id, standings, finished, scheduled, squad });
-  }, [season.season?.id, id]);
+  }, [leagueId, season.season?.id, id]);
 
   const loading = team.loading || season.loading || detail.loading;
   const error = team.error ?? season.error ?? detail.error;

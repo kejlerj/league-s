@@ -32,11 +32,11 @@ beforeEach(() => {
 });
 
 test('merges followed teams, keeps one row per match, newest first', async () => {
-  const rows = await getFollowedFixtures('season', ['a', 'b']);
+  const rows = await getFollowedFixtures('league', 'season', ['a', 'b']);
   expect(rows.map((row) => row.match.id)).toEqual(['new', 'shared', 'old']);
 });
 
 test('a shared match keeps the perspective of the first followed team', async () => {
-  const rows = await getFollowedFixtures('season', ['a', 'b']);
+  const rows = await getFollowedFixtures('league', 'season', ['a', 'b']);
   expect(rows.find((row) => row.match.id === 'shared')?.teamId).toBe('a');
 });

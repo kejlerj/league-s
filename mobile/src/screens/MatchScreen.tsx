@@ -11,6 +11,7 @@ import { Skeleton } from '../components/Skeleton';
 import { ErrorState } from '../components/ErrorState';
 import { useAsync } from '../hooks/useAsync';
 import { useCurrentSeason } from '../hooks/useCurrentSeason';
+import { useLeagueId } from '../hooks/useLeagueId';
 import { getMatch } from '../services/matches';
 import { statusOf } from '../logic/results';
 import { isWebUrl } from '../logic/url';
@@ -26,10 +27,11 @@ const STATUS_LABEL: Record<MatchStatus, string> = {
 };
 
 export function MatchScreen({ id }: { id: string }) {
+  const leagueId = useLeagueId();
   const season = useCurrentSeason();
   const match = useAsync(
-    () => (season.season ? getMatch(season.season.id, id) : Promise.resolve(null)),
-    [season.season?.id, id]
+    () => (season.season ? getMatch(leagueId, season.season.id, id) : Promise.resolve(null)),
+    [leagueId, season.season?.id, id]
   );
 
   const loading = season.loading || match.loading;

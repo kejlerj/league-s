@@ -31,7 +31,7 @@ const scheduled: ApiMatch = {
 };
 
 beforeEach(() => {
-  useAppStore.setState({ themeMode: 'system', follows: {} });
+  useAppStore.setState({ themeMode: 'system', leagueId: 'l', followsByLeague: {} });
   jest.mocked(leagueService.listSeasons).mockResolvedValue([SEASON]);
   jest.mocked(leagueService.getTeam).mockResolvedValue({ id: TEAM_ID, league_id: 'l', name: 'US Bastille', logo: null });
   jest.mocked(leagueService.getStandings).mockResolvedValue([
@@ -40,7 +40,7 @@ beforeEach(() => {
   jest.mocked(leagueService.getSquad).mockResolvedValue([
     { membership_id: 'x', player_id: 'p', firstname: 'David', lastname: 'Benali', icon: null, number: 4, joined_on: '2026-08-29', left_on: null },
   ]);
-  jest.mocked(matchesService.listMatches).mockImplementation(async (_seasonId, query) =>
+  jest.mocked(matchesService.listMatches).mockImplementation(async (_leagueId, _seasonId, query) =>
     query?.status === 'finished' ? [finished] : [scheduled]
   );
 });

@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react-native';
 import { MatchScreen } from './MatchScreen';
 import * as leagueService from '../services/league';
 import * as matchesService from '../services/matches';
+import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
 import type { ApiMatch } from '../types';
 
@@ -24,6 +25,7 @@ const liveMatch: ApiMatch = {
 };
 
 beforeEach(() => {
+  useAppStore.setState({ leagueId: 'l' });
   jest.mocked(leagueService.listSeasons).mockResolvedValue([SEASON]);
   jest.mocked(matchesService.getMatch).mockResolvedValue(liveMatch);
 });
@@ -32,7 +34,7 @@ test('shows the live match with its score, venue and referee', async () => {
   render(<MatchScreen id="m-live" />);
 
   await waitFor(() => expect(screen.getByText(fr.match.live)).toBeTruthy());
-  expect(matchesService.getMatch).toHaveBeenCalledWith(SEASON.id, 'm-live');
+  expect(matchesService.getMatch).toHaveBeenCalledWith('l', SEASON.id, 'm-live');
   expect(screen.getByText('S. Lambert')).toBeTruthy();
   expect(screen.getAllByText(/Le Five Paris 18/).length).toBeGreaterThan(0);
 });
