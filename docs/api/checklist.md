@@ -62,7 +62,7 @@
 - [x] **La taille maximale de l'effectif** : `Service.Join` verrouille `season_team`, compte les actifs, puis décide (`ErrJoinSquadFull`)
   - `left_on` après `joined_on` : déjà garanti par la contrainte `squad_membership_left_after_joined`, traduite en `ErrLeaveBeforeJoining`
 - [x] **Des tests de store directs** pour les transferts, là où l'API seule est pénible à préparer
-- [ ] Optionnel : le club actuel dans `GET /players/{playerID}` (requête avec `LEFT JOIN`, pas `LATERAL`)
+- [x] Optionnel : le club actuel dans `GET /players/{playerID}` (requête avec `LEFT JOIN`, pas `LATERAL`)
 
 ## 🥅 Match
 

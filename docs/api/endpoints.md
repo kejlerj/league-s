@@ -59,7 +59,7 @@ A body that fails validation gets a 422 with one readable French message per fie
 | ✅ | `GET` | `/leagues/{leagueID}/teams/{teamID}` | public | Lire une équipe |
 | ✅ | `PATCH` | `/leagues/{leagueID}/teams/{teamID}` | admin | Modifier le nom ou le logo |
 | ✅ | `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | Supprimer (refusé si elle a un historique) |
-| 🔜 | `GET` | `/leagues/{leagueID}/teams/{teamID}/seasons` | public | Saisons jouées par l'équipe |
+| ✅ | `GET` | `/leagues/{leagueID}/teams/{teamID}/seasons` | public | Saisons où l'équipe est inscrite, la plus récente d'abord. Équipe inconnue ou d'une autre ligue → 404 |
 
 ## Joueurs
 
@@ -67,10 +67,10 @@ A body that fails validation gets a 422 with one readable French message per fie
 |---|---|---|---|---|
 | ✅ | `POST` | `/leagues/{leagueID}/players` | admin | Créer un joueur |
 | ✅ | `GET` | `/leagues/{leagueID}/players` | public | Lister les joueurs de la ligue, triés par nom puis prénom. `q` cherche dans « prénom nom » et « nom prénom », sans tenir compte de la casse. Ligue inconnue → 404 |
-| ✅ | `GET` | `/leagues/{leagueID}/players/{playerID}` | public | Lire un joueur (plus tard : avec son club actuel) |
+| ✅ | `GET` | `/leagues/{leagueID}/players/{playerID}` | public | Lire un joueur, avec son club actuel (`current_team` : l'équipe de son passage en cours dans la saison la plus récente, sinon `null`) |
 | ✅ | `PATCH` | `/leagues/{leagueID}/players/{playerID}` | admin | Modifier le nom ou l'icône |
 | ✅ | `DELETE` | `/leagues/{leagueID}/players/{playerID}` | admin | Supprimer (refusé s'il a un historique) |
-| 🔜 | `GET` | `/leagues/{leagueID}/players/{playerID}/career` | public | Tous ses passages en club |
+| ✅ | `GET` | `/leagues/{leagueID}/players/{playerID}/career` | public | Tous ses passages en club (saison, équipe, numéro, dates), le plus récent d'abord. Joueur inconnu ou d'une autre ligue → 404 |
 
 ## Saisons
 

@@ -594,6 +594,30 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /api/v1/leagues/{leagueID}/teams/{teamID}/seasons:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/TeamID"
+    get:
+      operationId: listTeamSeasons
+      summary: Seasons the team is registered in, most recent first
+      description: "Access: public. A team of another league is a 404."
+      tags: [teams]
+      security: []
+      responses:
+        "200":
+          description: The team's seasons.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Season"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/v1/leagues/{leagueID}/players:
     parameters:
       - $ref: "#/components/parameters/LeagueID"
@@ -661,8 +685,10 @@ paths:
       - $ref: "#/components/parameters/PlayerID"
     get:
       operationId: getPlayer
-      summary: Read a player
-      description: "Access: public."
+      summary: Read a player, with their current club
+      description: |
+        Access: public. `current_team` is the team of the player's active squad
+        membership in the most recent season, or `null` when they are in no squad.
       tags: [players]
       security: []
       responses:
@@ -671,7 +697,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Player"
+                $ref: "#/components/schemas/PlayerDetail"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -722,6 +748,30 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+
+  /api/v1/leagues/{leagueID}/players/{playerID}/career:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/PlayerID"
+    get:
+      operationId: getPlayerCareer
+      summary: Every squad stint of the player, most recent first
+      description: "Access: public. A player of another league is a 404."
+      tags: [players]
+      security: []
+      responses:
+        "200":
+          description: The player's stints.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CareerEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/leagues/{leagueID}/seasons:
     parameters:
@@ -1799,6 +1849,44 @@ components:
         icon:
           type: [string, "null"]
           format: uri
+    PlayerDetail:
+      allOf:
+        - $ref: "#/components/schemas/Player"
+        - type: object
+          required: [current_team]
+          properties:
+            current_team:
+              oneOf:
+                - $ref: "#/components/schemas/TeamRef"
+                - type: "null"
+    SeasonRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    CareerEntry:
+      type: object
+      required: [membership_id, season, team, number, joined_on, left_on]
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        season:
+          $ref: "#/components/schemas/SeasonRef"
+        team:
+          $ref: "#/components/schemas/TeamRef"
+        number:
+          $ref: "#/components/schemas/ShirtNumber"
+        joined_on:
+          type: string
+          format: date
+        left_on:
+          type: [string, "null"]
+          format: date
     CreatePlayerRequest:
       type: object
       required: [firstname, lastname]
