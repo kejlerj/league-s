@@ -45,7 +45,7 @@ Stacked PR: use `refs/remotes/origin/<parent-branch>` instead of `refs/remotes/o
 
 ## 4. Check locally
 
-Run every check of the parts you touched (`CLAUDE.md` › Commands). Everything has to pass. Docker must be running for `make itest`. If it isn't, say so to the user and wait, don't skip the step.
+Run every check of the parts you touched (`CLAUDE.md` › Commands). Everything has to pass. Docker must be running for `make itest`. If it isn't, don't skip the check: say so to the user, and leave the PR as a draft (section 6).
 
 Simulator checks are paused until PR-26: don't run the `simulator-check` skill. If `mobile/` changed in a way the user can see, list the affected screens in the PR's "Simulator check" section instead. After PR-26 is merged, run `simulator-check` and put its result and screenshot links in the PR body.
 
@@ -62,11 +62,11 @@ Stacked PR: add `--base <parent-branch>`.
 
 Fill in every section of `.github/pull_request_template.md`. The body has to contain `Closes #<N>`, and `Stacked on #<parent PR>` for a stacked PR.
 
-In the desktop app, bind the PR to the session and turn on Auto-fix (ccd_pr tools). The app then wakes you on review comments, CI failures and conflicts.
+In the desktop app, bind the PR to the session and turn on Auto-fix (ccd_pr tools). The app then wakes you on review comments, CI failures and conflicts. It never wakes you on green CI, so don't end your turn waiting for it.
 
-## 6. Mark it ready
+## 6. Mark it ready, in the same turn
 
-When CI is green on the draft:
+When every local check passed, mark the PR ready right after `gh pr create`, in the same turn, without waiting for CI:
 
 ```bash
 gh pr ready <PR>
@@ -78,7 +78,11 @@ That starts the reviewer. If the PR's base is `main`, turn on auto-merge:
 gh pr merge <PR> --auto --squash
 ```
 
+Auto-merge waits for green CI and the approval. A CI failure wakes you through Auto-fix.
+
 Never turn on auto-merge for a stacked PR: it would merge into the parent branch. Never turn it on for a Phase 6 design spec PR either: add the `needs-decision` label, since the user approves the spec by merging it.
+
+**A local check could not run** (Docker down, for example): leave the PR as a draft, and end your report with "draft: <check> not run locally, needs a nudge". Nothing wakes you to mark it ready: the orchestrator does.
 
 ## 7. Answer the review
 
