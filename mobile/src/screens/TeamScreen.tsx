@@ -15,7 +15,7 @@ import { useAsync } from '../hooks/useAsync';
 import { useCurrentSeason } from '../hooks/useCurrentSeason';
 import { useLeagueId } from '../hooks/useLeagueId';
 import { useAppStore } from '../store/useAppStore';
-import { getSquad, getStandings, getTeam } from '../services/league';
+import { getSquad, getStandings, getTeam, listTeamSeasons } from '../services/league';
 import { listMatches } from '../services/matches';
 import { buildTeamDetail } from '../logic/teamDetail';
 import { formatDateTime, formatTime, toLocalDateParam } from '../logic/dateTime';
@@ -28,6 +28,7 @@ export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
   const toggleFollow = useAppStore((s) => s.toggleFollow);
   const leagueId = useLeagueId();
   const team = useAsync(() => getTeam(leagueId, id), [leagueId, id]);
+  const seasons = useAsync(() => listTeamSeasons(leagueId, id), [leagueId, id]);
   const season = useCurrentSeason();
   const detail = useAsync(async () => {
     if (!season.season) return null;
@@ -41,13 +42,14 @@ export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
     return buildTeamDetail({ teamId: id, standings, finished, scheduled, squad });
   }, [leagueId, season.season?.id, id]);
 
-  const loading = team.loading || season.loading || detail.loading;
-  const error = team.error ?? season.error ?? detail.error;
+  const loading = team.loading || season.loading || detail.loading || seasons.loading;
+  const error = team.error ?? season.error ?? detail.error ?? seasons.error;
 
   function reload() {
     team.reload();
     season.reload();
     detail.reload();
+    seasons.reload();
   }
 
   return (
@@ -158,18 +160,10 @@ export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
                     </CardRow>
                   ))
                 )}
-                <Pressable onPress={() => router.push(`/${origin}/squad/${id}`)} accessibilityRole="button">
-                  <CardRow isFirst={false}>
-                    <ThemedText tone="accent" weight="medium" size={13.5} className="flex-1">
-                      {fr.team.fullSquad}
-                    </ThemedText>
-                    <ThemedText tone="accent" size={13.5}>›</ThemedText>
-                  </CardRow>
-                </Pressable>
               </Card>
             </View>
 
-            <View className="gap-2.5">
+            <View className="gap-2.5" testID="team-squad">
               <SectionLabel>{fr.team.squad(detail.data.squad.length)}</SectionLabel>
               <Card>
                 {detail.data.squad.length === 0 ? (
@@ -187,8 +181,40 @@ export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
                     </CardRow>
                   ))
                 )}
+                <Pressable onPress={() => router.push(`/${origin}/squad/${id}`)} accessibilityRole="button">
+                  <CardRow isFirst={false}>
+                    <ThemedText tone="accent" weight="medium" size={13.5} className="flex-1">
+                      {fr.team.fullSquad}
+                    </ThemedText>
+                    <ThemedText tone="accent" size={13.5}>›</ThemedText>
+                  </CardRow>
+                </Pressable>
               </Card>
             </View>
+
+            {seasons.data && (
+              <View className="gap-2.5" testID="team-seasons">
+                <SectionLabel>{fr.team.seasons}</SectionLabel>
+                <Card>
+                  {seasons.data.length === 0 ? (
+                    <ThemedText tone="muted" size={13.5} className="p-4">{fr.team.noSeasons}</ThemedText>
+                  ) : (
+                    seasons.data.map((teamSeason, index) => (
+                      <Pressable
+                        key={teamSeason.id}
+                        onPress={() => router.push(`/${origin}/season/${teamSeason.id}?team=${id}`)}
+                        accessibilityRole="button"
+                      >
+                        <CardRow isFirst={index === 0}>
+                          <ThemedText weight="medium" size={14.5} className="flex-1">{teamSeason.name}</ThemedText>
+                          <ThemedText tone="faint" size={13.5}>›</ThemedText>
+                        </CardRow>
+                      </Pressable>
+                    ))
+                  )}
+                </Card>
+              </View>
+            )}
           </>
         )}
       </View>
