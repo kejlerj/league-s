@@ -13,14 +13,14 @@ const toUtc = (value: string) => (value === '' ? null : localToUtc(value))
 const toLocal = (value: string | null) => (value === null ? '' : utcToLocal(value))
 
 function useFormSubmit(action: () => Promise<unknown>, onDone: () => void) {
-  const { submit, pending, error } = useSubmit(action)
+  const { submit, pending, error, field } = useSubmit(action)
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (await submit()) {
       onDone()
     }
   }
-  return { onSubmit, pending, error }
+  return { onSubmit, pending, error, field }
 }
 
 export function ScheduleForm({ leagueId, seasonId, teams, onDone, onCancel }: Common & { teams: SeasonTeam[] }) {
@@ -30,7 +30,7 @@ export function ScheduleForm({ leagueId, seasonId, teams, onDone, onCancel }: Co
   const [kickoff, setKickoff] = useState('')
   const [venue, setVenue] = useState('')
   const [invalid, setInvalid] = useState<string | null>(null)
-  const { submit, pending, error } = useSubmit(() =>
+  const { submit, pending, error, field } = useSubmit(() =>
     scheduleMatch(leagueId, seasonId, {
       home_team_id: home,
       away_team_id: away,
@@ -61,20 +61,20 @@ export function ScheduleForm({ leagueId, seasonId, teams, onDone, onCancel }: Co
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <SelectField label="Domicile" required value={home} onChange={(e) => setHome(e.target.value)}>
+        <SelectField label="Domicile" {...field('home_team_id')} required value={home} onChange={(e) => setHome(e.target.value)}>
           <option value="">Choisir…</option>
           {options}
         </SelectField>
-        <SelectField label="Extérieur" required value={away} onChange={(e) => setAway(e.target.value)}>
+        <SelectField label="Extérieur" {...field('away_team_id')} required value={away} onChange={(e) => setAway(e.target.value)}>
           <option value="">Choisir…</option>
           {options}
         </SelectField>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Journée" type="number" min={1} required value={matchday} onChange={(e) => setMatchday(e.target.value)} />
-        <Field label="Coup d'envoi" type="datetime-local" value={kickoff} onChange={(e) => setKickoff(e.target.value)} />
+        <Field label="Journée" {...field('matchday')} type="number" min={1} required value={matchday} onChange={(e) => setMatchday(e.target.value)} />
+        <Field label="Coup d'envoi" {...field('kickoff_at')} type="datetime-local" value={kickoff} onChange={(e) => setKickoff(e.target.value)} />
       </div>
-      <Field label="Lieu" maxLength={100} value={venue} onChange={(e) => setVenue(e.target.value)} />
+      <Field label="Lieu" {...field('venue')} maxLength={100} value={venue} onChange={(e) => setVenue(e.target.value)} />
       <FormActions error={invalid ?? error} pending={pending} onCancel={onCancel} submitLabel="Programmer" />
     </form>
   )
@@ -106,6 +106,7 @@ export function EditForm({ leagueId, seasonId, match, onDone, onCancel }: Common
       <div className="grid grid-cols-2 gap-3">
         <Field
           label="Journée"
+          {...form.field('matchday')}
           type="number"
           min={1}
           required
@@ -115,6 +116,7 @@ export function EditForm({ leagueId, seasonId, match, onDone, onCancel }: Common
         />
         <Field
           label="Coup d'envoi"
+          {...form.field('kickoff_at')}
           type="datetime-local"
           disabled={!canReschedule}
           value={kickoff}
@@ -124,10 +126,10 @@ export function EditForm({ leagueId, seasonId, match, onDone, onCancel }: Common
       {canReschedule ? null : (
         <p className="text-sm text-slate-600">La journée et le coup d'envoi ne changent plus une fois le match démarré.</p>
       )}
-      <Field label="Lieu" maxLength={100} value={venue} onChange={(e) => setVenue(e.target.value)} />
-      <Field label="Arbitre" maxLength={100} value={referee} onChange={(e) => setReferee(e.target.value)} />
-      <Field label="Convocation" type="datetime-local" value={convocation} onChange={(e) => setConvocation(e.target.value)} />
-      <Field label="Lien vidéo (URL)" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
+      <Field label="Lieu" {...form.field('venue')} maxLength={100} value={venue} onChange={(e) => setVenue(e.target.value)} />
+      <Field label="Arbitre" {...form.field('referee')} maxLength={100} value={referee} onChange={(e) => setReferee(e.target.value)} />
+      <Field label="Convocation" {...form.field('convocation_at')} type="datetime-local" value={convocation} onChange={(e) => setConvocation(e.target.value)} />
+      <Field label="Lien vidéo (URL)" {...form.field('video_url')} type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
       <FormActions error={form.error} pending={form.pending} onCancel={onCancel} />
     </form>
   )
@@ -140,7 +142,7 @@ export function PostponeForm({ leagueId, seasonId, match, onDone, onCancel }: Co
   return (
     <form onSubmit={form.onSubmit} className="space-y-4">
       <p className="text-sm text-slate-700">Sans nouvelle date, le match reste « Reporté » jusqu'à sa reprogrammation.</p>
-      <Field label="Nouvelle date" type="datetime-local" value={kickoff} onChange={(e) => setKickoff(e.target.value)} />
+      <Field label="Nouvelle date" {...form.field('kickoff_at')} type="datetime-local" value={kickoff} onChange={(e) => setKickoff(e.target.value)} />
       <FormActions error={form.error} pending={form.pending} onCancel={onCancel} submitLabel="Reporter" />
     </form>
   )

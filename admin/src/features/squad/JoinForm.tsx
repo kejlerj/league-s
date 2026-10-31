@@ -30,7 +30,7 @@ export function JoinForm({ leagueId, seasonId, teamId, excludedPlayerIds, onDone
     queryFn: () => listPlayers(leagueId, q),
     placeholderData: (previous) => previous,
   })
-  const { submit, pending, error } = useSubmit(() =>
+  const { submit, pending, error, field } = useSubmit(() =>
     joinSquad(leagueId, seasonId, teamId, { player_id: playerId, number: toInt(number), joined_on: joinedOn }),
   )
 
@@ -46,7 +46,7 @@ export function JoinForm({ leagueId, seasonId, teamId, excludedPlayerIds, onDone
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Field label="Rechercher" type="search" value={search} onChange={(e) => setSearch(e.target.value)} />
-      <SelectField label="Joueur" required value={playerId} onChange={(e) => setPlayerId(e.target.value)}>
+      <SelectField label="Joueur" {...field('player_id')} required value={playerId} onChange={(e) => setPlayerId(e.target.value)}>
         <option value="">Choisir…</option>
         {available.map((player) => (
           <option key={player.id} value={player.id}>
@@ -65,8 +65,8 @@ export function JoinForm({ leagueId, seasonId, teamId, excludedPlayerIds, onDone
         </p>
       ) : null}
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Numéro" type="number" min={1} max={99} value={number} onChange={(e) => setNumber(e.target.value)} />
-        <Field label="Date d'arrivée" type="date" required value={joinedOn} onChange={(e) => setJoinedOn(e.target.value)} />
+        <Field label="Numéro" {...field('number')} type="number" min={1} max={99} value={number} onChange={(e) => setNumber(e.target.value)} />
+        <Field label="Date d'arrivée" {...field('joined_on')} type="date" required value={joinedOn} onChange={(e) => setJoinedOn(e.target.value)} />
       </div>
       <FormActions error={error} pending={pending} onCancel={onCancel} submitLabel="Ajouter" />
     </form>

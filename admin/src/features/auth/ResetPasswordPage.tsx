@@ -12,7 +12,7 @@ export function ResetPasswordPage() {
   const token = params.get('token') ?? ''
   const [password, setPassword] = useState('')
   const [done, setDone] = useState(false)
-  const { submit, pending, error } = useSubmit(() => confirmPasswordReset(token, password), {
+  const { submit, pending, error, field } = useSubmit(() => confirmPasswordReset(token, password), {
     400: INVALID_LINK,
     422: PASSWORD_RULE,
   })
@@ -50,6 +50,7 @@ export function ResetPasswordPage() {
       <form onSubmit={onSubmit} className="space-y-4">
         <Field
           label="Nouveau mot de passe"
+          {...field('password')}
           type="password"
           autoComplete="new-password"
           required

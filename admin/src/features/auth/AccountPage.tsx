@@ -13,7 +13,7 @@ export function AccountPage() {
   const [confirm, setConfirm] = useState('')
   const [mismatch, setMismatch] = useState(false)
   const [done, setDone] = useState(false)
-  const { submit, pending, error } = useSubmit(() => changePassword(current, next), {
+  const { submit, pending, error, field } = useSubmit(() => changePassword(current, next), {
     403: 'Mot de passe actuel incorrect.',
     422: PASSWORD_RULE,
   })
@@ -41,6 +41,7 @@ export function AccountPage() {
       <form onSubmit={onSubmit} className="space-y-4">
         <Field
           label="Mot de passe actuel"
+          {...field('current_password')}
           type="password"
           autoComplete="current-password"
           required
@@ -49,6 +50,7 @@ export function AccountPage() {
         />
         <Field
           label="Nouveau mot de passe"
+          {...field('new_password')}
           type="password"
           autoComplete="new-password"
           required

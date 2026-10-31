@@ -23,7 +23,7 @@ function InviteForm({ leagueId, leagueName, onInvited }: Props & { onInvited: ()
   const [email, setEmail] = useState('')
   const [created, setCreated] = useState<CreatedInvitation | null>(null)
   const [copied, setCopied] = useState(false)
-  const { submit, pending, error } = useSubmit(
+  const { submit, pending, error, field } = useSubmit(
     async () => {
       setCreated(await invite(leagueId, email.trim()))
       setCopied(false)
@@ -50,7 +50,7 @@ function InviteForm({ leagueId, leagueName, onInvited }: Props & { onInvited: ()
     <section className="mt-8">
       <h2 className="mb-2 text-base font-semibold text-slate-900">Inviter un admin</h2>
       <form onSubmit={onSubmit} className="flex items-end gap-3">
-        <Field label="E-mail" type="email" required className="w-72" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field label="E-mail" {...field('email')} type="email" required className="w-72" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Button type="submit" variant="primary" pending={pending}>
           Inviter
         </Button>

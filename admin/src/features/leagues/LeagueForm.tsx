@@ -15,7 +15,7 @@ type Props = {
 export function LeagueForm({ initial, onDone, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? '')
   const [logo, setLogo] = useState(initial?.logo ?? '')
-  const { submit, pending, error } = useSubmit(() => {
+  const { submit, pending, error, field } = useSubmit(() => {
     const input = { name: name.trim(), logo: emptyToNull(logo) }
     return initial ? updateLeague(initial.id, input) : createLeague(input)
   })
@@ -29,8 +29,8 @@ export function LeagueForm({ initial, onDone, onCancel }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Nom" required maxLength={50} value={name} onChange={(e) => setName(e.target.value)} />
-      <Field label="Logo (URL)" type="url" value={logo} onChange={(e) => setLogo(e.target.value)} />
+      <Field label="Nom" {...field('name')} required maxLength={50} value={name} onChange={(e) => setName(e.target.value)} />
+      <Field label="Logo (URL)" {...field('logo')} type="url" value={logo} onChange={(e) => setLogo(e.target.value)} />
       <FormError message={error} />
       <div className="flex justify-end gap-2">
         <Button onClick={onCancel}>Fermer</Button>

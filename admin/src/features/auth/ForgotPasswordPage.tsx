@@ -9,7 +9,7 @@ import { AuthCard } from './AuthCard'
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
-  const { submit, pending, error } = useSubmit(() => requestPasswordReset(email))
+  const { submit, pending, error, field } = useSubmit(() => requestPasswordReset(email))
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -24,7 +24,7 @@ export function ForgotPasswordPage() {
         <p className="text-sm text-slate-700">Si un compte existe pour cette adresse, un e-mail vient d'être envoyé.</p>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
-          <Field label="E-mail" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Field label="E-mail" {...field('email')} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <FormError message={error} />
           <Button type="submit" variant="primary" pending={pending} className="w-full">
             Envoyer le lien

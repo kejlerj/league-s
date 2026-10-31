@@ -15,7 +15,7 @@ function AcceptForm({ token, preview }: { token: string; preview: InvitationPrev
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [done, setDone] = useState(false)
-  const { submit, pending, error } = useSubmit(
+  const { submit, pending, error, field } = useSubmit(
     () => acceptInvitation(token, preview.account_exists ? undefined : { name: name.trim(), password }),
     { 400: INVALID_LINK, 422: PASSWORD_RULE },
   )
@@ -46,9 +46,10 @@ function AcceptForm({ token, preview }: { token: string; preview: InvitationPrev
         <p className="text-sm text-slate-700">Un compte existe déjà pour cette adresse. La ligue y sera ajoutée.</p>
       ) : (
         <>
-          <Field label="Nom" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+          <Field label="Nom" {...field('name')} required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
           <Field
             label="Mot de passe"
+            {...field('password')}
             type="password"
             autoComplete="new-password"
             required

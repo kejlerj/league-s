@@ -22,11 +22,11 @@ type Dialog =
   | { kind: 'leave'; member: SquadMember }
   | { kind: 'transfer'; member: SquadMember }
 
-type InlineProps = { label: string; type: 'number' | 'date'; initial: string; save: (value: string) => Promise<unknown>; onDone: () => void; onCancel: () => void }
+type InlineProps = { label: string; name: string; type: 'number' | 'date'; initial: string; save: (value: string) => Promise<unknown>; onDone: () => void; onCancel: () => void }
 
-function SingleFieldForm({ label, type, initial, save, onDone, onCancel }: InlineProps) {
+function SingleFieldForm({ label, name, type, initial, save, onDone, onCancel }: InlineProps) {
   const [value, setValue] = useState(initial)
-  const { submit, pending, error } = useSubmit(() => save(value))
+  const { submit, pending, error, field } = useSubmit(() => save(value))
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault()
@@ -39,6 +39,7 @@ function SingleFieldForm({ label, type, initial, save, onDone, onCancel }: Inlin
     <form onSubmit={onSubmit} className="space-y-4">
       <Field
         label={label}
+        {...field(name)}
         type={type}
         min={type === 'number' ? 1 : undefined}
         max={type === 'number' ? 99 : undefined}
@@ -150,6 +151,7 @@ export function SquadPage() {
         {dialog?.kind === 'number' ? (
           <SingleFieldForm
             label="Numéro"
+            name="number"
             type="number"
             initial={dialog.member.number === null ? '' : String(dialog.member.number)}
             save={(value) => changeNumber(leagueId, seasonId, teamId, dialog.member.membership_id, toInt(value))}
@@ -160,6 +162,7 @@ export function SquadPage() {
         {dialog?.kind === 'leave' ? (
           <SingleFieldForm
             label="Date de départ"
+            name="left_on"
             type="date"
             initial={today()}
             save={(value) => leaveSquad(leagueId, seasonId, teamId, dialog.member.membership_id, value)}

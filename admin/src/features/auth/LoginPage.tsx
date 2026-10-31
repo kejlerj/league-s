@@ -14,7 +14,7 @@ export function LoginPage() {
   const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const { submit, pending, error } = useSubmit(
+  const { submit, pending, error, field } = useSubmit(
     async () => {
       await login(email, password)
       await refresh()
@@ -38,9 +38,10 @@ export function LoginPage() {
   return (
     <AuthCard title="Connexion">
       <form onSubmit={onSubmit} className="space-y-4">
-        <Field label="E-mail" type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Field label="E-mail" {...field('email')} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <Field
           label="Mot de passe"
+          {...field('password')}
           type="password"
           autoComplete="current-password"
           required

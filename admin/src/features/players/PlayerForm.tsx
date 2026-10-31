@@ -12,7 +12,7 @@ export function PlayerForm({ leagueId, initial, onDone, onCancel }: Props) {
   const [firstname, setFirstname] = useState(initial?.firstname ?? '')
   const [lastname, setLastname] = useState(initial?.lastname ?? '')
   const [icon, setIcon] = useState(initial?.icon ?? '')
-  const { submit, pending, error } = useSubmit(() => {
+  const { submit, pending, error, field } = useSubmit(() => {
     const input = { firstname: firstname.trim(), lastname: lastname.trim(), icon: emptyToNull(icon) }
     return initial ? updatePlayer(leagueId, initial.id, input) : createPlayer(leagueId, input)
   })
@@ -26,9 +26,9 @@ export function PlayerForm({ leagueId, initial, onDone, onCancel }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Prénom" required maxLength={50} value={firstname} onChange={(e) => setFirstname(e.target.value)} />
-      <Field label="Nom" required maxLength={50} value={lastname} onChange={(e) => setLastname(e.target.value)} />
-      <Field label="Photo (URL)" type="url" value={icon} onChange={(e) => setIcon(e.target.value)} />
+      <Field label="Prénom" {...field('firstname')} required maxLength={50} value={firstname} onChange={(e) => setFirstname(e.target.value)} />
+      <Field label="Nom" {...field('lastname')} required maxLength={50} value={lastname} onChange={(e) => setLastname(e.target.value)} />
+      <Field label="Photo (URL)" {...field('icon')} type="url" value={icon} onChange={(e) => setIcon(e.target.value)} />
       <FormActions error={error} pending={pending} onCancel={onCancel} />
     </form>
   )

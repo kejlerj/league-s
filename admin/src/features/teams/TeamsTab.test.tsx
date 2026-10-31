@@ -57,3 +57,31 @@ test('delete refused', async () => {
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Supprimer' }))
   expect(await screen.findByText('Cette équipe a un historique.')).toBeInTheDocument()
 })
+
+test('a 422 shows each message under its field, and editing a field clears its message', async () => {
+  server.use(
+    http.post(`${API}/leagues/L1/teams`, () =>
+      HttpResponse.json(
+        { errors: { name: '50 caractères maximum', logo: 'doit être une URL http ou https' } },
+        { status: 422 },
+      ),
+    ),
+  )
+  const { user } = setup()
+  await user.click(await screen.findByRole('button', { name: 'Nouvelle équipe' }))
+  const dialog = screen.getByRole('dialog')
+  await user.type(within(dialog).getByLabelText('Nom'), 'US Charlie')
+  await user.click(within(dialog).getByRole('button', { name: 'Enregistrer' }))
+
+  const name = within(dialog).getByLabelText('Nom')
+  const logo = within(dialog).getByLabelText('Logo (URL)')
+  expect(await within(dialog).findByText('50 caractères maximum')).toBeInTheDocument()
+  expect(name).toHaveAccessibleDescription('50 caractères maximum')
+  expect(name).toBeInvalid()
+  expect(logo).toHaveAccessibleDescription('doit être une URL http ou https')
+  expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
+
+  await user.type(name, 'x')
+  expect(name).not.toHaveAccessibleDescription()
+  expect(logo).toHaveAccessibleDescription('doit être une URL http ou https')
+})

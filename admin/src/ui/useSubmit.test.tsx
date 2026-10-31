@@ -50,3 +50,41 @@ test('useSubmit applies the overrides and clears the error on the next success',
   expect(ok).toBe(true)
   expect(result.current.error).toBeNull()
 })
+
+test('useSubmit puts each field error on its registered field and the rest in the form error', async () => {
+  const fields = { name: '50 caractères maximum', 'tie_breakers[0]': 'doit valoir goal_difference', other: 'invalide' }
+  const { result } = renderHook(() => useSubmit(() => Promise.reject(new ApiError(422, 'validation', fields))))
+  result.current.field('name')
+  result.current.field('tie_breakers')
+  await act(async () => {
+    await result.current.submit()
+  })
+  expect(result.current.field('name').error).toBe('50 caractères maximum')
+  expect(result.current.field('tie_breakers').error).toBe('doit valoir goal_difference')
+  expect(result.current.error).toBe('Champs invalides : other (invalide)')
+})
+
+test('useSubmit clears a field error when that field is edited, and every error on a new submit', async () => {
+  let fail = true
+  const { result } = renderHook(() =>
+    useSubmit(() =>
+      fail ? Promise.reject(new ApiError(422, 'validation', { name: 'obligatoire', logo: 'doit être une URL http ou https' })) : Promise.resolve(),
+    ),
+  )
+  result.current.field('name')
+  result.current.field('logo')
+  await act(async () => {
+    await result.current.submit()
+  })
+  act(() => {
+    result.current.field('name').onInput()
+  })
+  expect(result.current.field('name').error).toBeNull()
+  expect(result.current.field('logo').error).toBe('doit être une URL http ou https')
+
+  fail = false
+  await act(async () => {
+    await result.current.submit()
+  })
+  expect(result.current.field('logo').error).toBeNull()
+})

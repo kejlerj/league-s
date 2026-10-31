@@ -2,12 +2,9 @@ import { ApiError } from '@/api/client'
 
 const GENERIC = 'Une erreur est survenue. Réessayez.'
 
-const RULES: Record<string, string> = {
-  required: 'obligatoire',
-  email: 'e-mail invalide',
-  http_url: 'URL http ou https attendue',
-  min: 'trop petit',
-  max: 'trop grand',
+export function fieldsMessage(fields: Record<string, string>): string {
+  const parts = Object.entries(fields).map(([field, message]) => `${field} (${message})`)
+  return `Champs invalides : ${parts.join(', ')}`
 }
 
 export function errorMessage(err: unknown, overrides: Record<number, string> = {}): string {
@@ -15,8 +12,7 @@ export function errorMessage(err: unknown, overrides: Record<number, string> = {
     return GENERIC
   }
   if (err.fields !== null) {
-    const parts = Object.entries(err.fields).map(([field, rule]) => `${field} (${RULES[rule] ?? 'invalide'})`)
-    return `Champs invalides : ${parts.join(', ')}`
+    return fieldsMessage(err.fields)
   }
   const override = overrides[err.status]
   if (override !== undefined) {

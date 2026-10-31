@@ -11,7 +11,7 @@ type Props = { leagueId: string; initial?: Team; onDone: () => void; onCancel: (
 export function TeamForm({ leagueId, initial, onDone, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? '')
   const [logo, setLogo] = useState(initial?.logo ?? '')
-  const { submit, pending, error } = useSubmit(() => {
+  const { submit, pending, error, field } = useSubmit(() => {
     const input = { name: name.trim(), logo: emptyToNull(logo) }
     return initial ? updateTeam(leagueId, initial.id, input) : createTeam(leagueId, input)
   })
@@ -25,8 +25,8 @@ export function TeamForm({ leagueId, initial, onDone, onCancel }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <Field label="Nom" required maxLength={50} value={name} onChange={(e) => setName(e.target.value)} />
-      <Field label="Logo (URL)" type="url" value={logo} onChange={(e) => setLogo(e.target.value)} />
+      <Field label="Nom" {...field('name')} required maxLength={50} value={name} onChange={(e) => setName(e.target.value)} />
+      <Field label="Logo (URL)" {...field('logo')} type="url" value={logo} onChange={(e) => setLogo(e.target.value)} />
       <FormActions error={error} pending={pending} onCancel={onCancel} />
     </form>
   )

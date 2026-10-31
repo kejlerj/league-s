@@ -11,7 +11,7 @@ type Props = { leagueId: string; seasonId: string; match: Match; onDone: () => v
 export function ScoreForm({ leagueId, seasonId, match, onDone, onCancel }: Props) {
   const [home, setHome] = useState(String(match.home_score ?? 0))
   const [away, setAway] = useState(String(match.away_score ?? 0))
-  const { submit, pending, error } = useSubmit(() =>
+  const { submit, pending, error, field } = useSubmit(() =>
     setScore(leagueId, seasonId, match.id, toInt(home) ?? 0, toInt(away) ?? 0),
   )
 
@@ -25,8 +25,8 @@ export function ScoreForm({ leagueId, seasonId, match, onDone, onCancel }: Props
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <Field label={match.home_team.name} type="number" min={0} required value={home} onChange={(e) => setHome(e.target.value)} />
-        <Field label={match.away_team.name} type="number" min={0} required value={away} onChange={(e) => setAway(e.target.value)} />
+        <Field label={match.home_team.name} {...field('home')} type="number" min={0} required value={home} onChange={(e) => setHome(e.target.value)} />
+        <Field label={match.away_team.name} {...field('away')} type="number" min={0} required value={away} onChange={(e) => setAway(e.target.value)} />
       </div>
       <FormActions error={error} pending={pending} onCancel={onCancel} />
     </form>

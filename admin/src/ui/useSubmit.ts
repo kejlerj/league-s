@@ -1,13 +1,43 @@
 import { useCallback, useRef, useState } from 'react'
-import { errorMessage } from './errorMessage'
+import { ApiError } from '@/api/client'
+import { errorMessage, fieldsMessage } from './errorMessage'
+
+type FieldErrors = Record<string, string>
+
+export type FieldProps = { error: string | null; onInput: () => void }
+
+function baseName(key: string): string {
+  return key.split(/[.[]/)[0]
+}
+
+function splitFieldErrors(fields: FieldErrors, known: Set<string>): { matched: FieldErrors; rest: FieldErrors } {
+  const matched: FieldErrors = {}
+  const rest: FieldErrors = {}
+  for (const [key, message] of Object.entries(fields)) {
+    const name = baseName(key)
+    if (known.has(name)) {
+      matched[name] ??= message
+    } else {
+      rest[key] = message
+    }
+  }
+  return { matched, rest }
+}
 
 export function useSubmit<A extends unknown[]>(
   fn: (...args: A) => Promise<unknown>,
   overrides?: Record<number, string>,
-): { submit: (...args: A) => Promise<boolean>; pending: boolean; error: string | null } {
+): {
+  submit: (...args: A) => Promise<boolean>
+  pending: boolean
+  error: string | null
+  field: (name: string) => FieldProps
+} {
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const busy = useRef(false)
+  const known = useRef(new Set<string>())
   const latest = useRef({ fn, overrides })
   latest.current = { fn, overrides }
 
@@ -18,11 +48,18 @@ export function useSubmit<A extends unknown[]>(
     busy.current = true
     setPending(true)
     setError(null)
+    setFieldErrors({})
     try {
       await latest.current.fn(...args)
       return true
     } catch (err) {
-      setError(errorMessage(err, latest.current.overrides))
+      if (err instanceof ApiError && err.fields !== null) {
+        const { matched, rest } = splitFieldErrors(err.fields, known.current)
+        setFieldErrors(matched)
+        setError(Object.keys(rest).length > 0 ? fieldsMessage(rest) : null)
+      } else {
+        setError(errorMessage(err, latest.current.overrides))
+      }
       return false
     } finally {
       busy.current = false
@@ -30,5 +67,24 @@ export function useSubmit<A extends unknown[]>(
     }
   }, [])
 
-  return { submit, pending, error }
+  const field = useCallback(
+    (name: string): FieldProps => {
+      known.current.add(name)
+      return {
+        error: fieldErrors[name] ?? null,
+        onInput: () =>
+          setFieldErrors((current) => {
+            if (!(name in current)) {
+              return current
+            }
+            const next = { ...current }
+            delete next[name]
+            return next
+          }),
+      }
+    },
+    [fieldErrors],
+  )
+
+  return { submit, pending, error, field }
 }
