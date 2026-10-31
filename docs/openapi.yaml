@@ -176,6 +176,70 @@ paths:
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
 
+  /api/v1/invitations/lookup:
+    post:
+      operationId: lookUpInvitation
+      summary: Read a pending invitation from its link
+      description: |
+        Access: public. Tells the invited person which league invites them, and
+        whether an account already exists for their email. Rate limited with the
+        `/auth` routes.
+      tags: [invitations]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationTokenRequest"
+      responses:
+        "200":
+          description: The pending invitation.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PendingInvitation"
+        "400":
+          description: Invalid JSON body, or the link is unknown, used, cancelled or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /api/v1/invitations/accept:
+    post:
+      operationId: acceptInvitation
+      summary: Accept an invitation
+      description: |
+        Access: public. Makes the invited email an admin of the league. Without an
+        account for that email, `name` and `password` are required and the account is
+        created. With one, they are ignored. The link works once.
+      tags: [invitations]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptInvitationRequest"
+      responses:
+        "204":
+          description: Accepted.
+        "400":
+          description: Invalid JSON body, or the link is unknown, used, cancelled or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
   /api/v1/leagues:
     get:
       operationId: listLeagues
@@ -257,6 +321,129 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+
+  /api/v1/leagues/{leagueID}/invitations:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+    get:
+      operationId: listInvitations
+      summary: List the league's pending invitations
+      description: "Access: superadmin. Used, cancelled and expired invitations are left out. The links are never returned again."
+      tags: [invitations]
+      responses:
+        "200":
+          description: The pending invitations, oldest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+    post:
+      operationId: inviteLeagueAdmin
+      summary: Invite someone to administer the league
+      description: |
+        Access: superadmin. Returns the link once; it is valid 7 days and works once.
+        A new invitation to the same email replaces the pending one. Refused (409) when
+        the email is already an admin of the league.
+      tags: [invitations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InviteRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedInvitation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/invitations/{invitationID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/InvitationID"
+    delete:
+      operationId: cancelInvitation
+      summary: Cancel a pending invitation
+      description: "Access: superadmin. Its link stops working."
+      tags: [invitations]
+      responses:
+        "204":
+          description: Cancelled.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/leagues/{leagueID}/admins:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+    get:
+      operationId: listLeagueAdmins
+      summary: List the league's admins, sorted by name
+      description: "Access: league admin."
+      tags: [invitations]
+      responses:
+        "200":
+          description: The league's admins.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeagueAdmin"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/leagues/{leagueID}/admins/{userID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/UserID"
+    delete:
+      operationId: removeLeagueAdmin
+      summary: Remove an admin from the league
+      description: "Access: superadmin. The account is kept."
+      tags: [invitations]
+      responses:
+        "204":
+          description: Removed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /api/v1/leagues/{leagueID}/teams:
     parameters:
@@ -1068,6 +1255,20 @@ components:
       schema:
         type: string
         format: uuid
+    InvitationID:
+      name: invitationID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserID:
+      name: userID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   responses:
     MatchOK:
@@ -1115,7 +1316,7 @@ components:
               - $ref: "#/components/schemas/ValidationErrors"
               - $ref: "#/components/schemas/Error"
     TooManyRequests:
-      description: Too many requests to `/auth` from this IP.
+      description: Too many requests to `/auth` or `/invitations` from this IP.
       content:
         text/plain:
           schema:
@@ -1212,6 +1413,79 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/LeagueRef"
+
+    InviteRequest:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+    InvitationTokenRequest:
+      type: object
+      required: [token]
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+    AcceptInvitationRequest:
+      type: object
+      required: [token]
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+        name:
+          type: string
+          maxLength: 100
+          description: Required when no account exists for the invited email.
+        password:
+          type: string
+          description: Required when no account exists for the invited email. 10 characters to 72 bytes (422 otherwise).
+    Invitation:
+      type: object
+      required: [id, email, expires_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+    CreatedInvitation:
+      allOf:
+        - $ref: "#/components/schemas/Invitation"
+        - type: object
+          required: [link]
+          properties:
+            link:
+              type: string
+              format: uri
+              description: Link to the admin web app with the token. Returned only here.
+    PendingInvitation:
+      type: object
+      required: [email, league, account_exists]
+      properties:
+        email:
+          type: string
+        league:
+          $ref: "#/components/schemas/LeagueRef"
+        account_exists:
+          type: boolean
+    LeagueAdmin:
+      type: object
+      required: [id, email, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
 
     LeagueRef:
       type: object

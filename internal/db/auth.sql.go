@@ -12,6 +12,32 @@ import (
 	"github.com/google/uuid"
 )
 
+const acceptInvitation = `-- name: AcceptInvitation :one
+UPDATE invitation
+SET accepted_at = $2::timestamptz
+WHERE token_hash = $1
+  AND accepted_at IS NULL
+  AND expires_at > $2::timestamptz
+RETURNING league_id, email
+`
+
+type AcceptInvitationParams struct {
+	TokenHash []byte
+	Now       time.Time
+}
+
+type AcceptInvitationRow struct {
+	LeagueID uuid.UUID
+	Email    string
+}
+
+func (q *Queries) AcceptInvitation(ctx context.Context, arg AcceptInvitationParams) (AcceptInvitationRow, error) {
+	row := q.db.QueryRow(ctx, acceptInvitation, arg.TokenHash, arg.Now)
+	var i AcceptInvitationRow
+	err := row.Scan(&i.LeagueID, &i.Email)
+	return i, err
+}
+
 const addLeagueAdmin = `-- name: AddLeagueAdmin :exec
 INSERT INTO league_admin (user_id, league_id)
 VALUES ($1, $2)
@@ -26,6 +52,39 @@ type AddLeagueAdminParams struct {
 func (q *Queries) AddLeagueAdmin(ctx context.Context, arg AddLeagueAdminParams) error {
 	_, err := q.db.Exec(ctx, addLeagueAdmin, arg.UserID, arg.LeagueID)
 	return err
+}
+
+const createInvitation = `-- name: CreateInvitation :one
+INSERT INTO invitation (league_id, email, token_hash, expires_at)
+VALUES ($1, $2, $3, $4)
+RETURNING id, league_id, email, token_hash, expires_at, accepted_at, created_at
+`
+
+type CreateInvitationParams struct {
+	LeagueID  uuid.UUID
+	Email     string
+	TokenHash []byte
+	ExpiresAt time.Time
+}
+
+func (q *Queries) CreateInvitation(ctx context.Context, arg CreateInvitationParams) (Invitation, error) {
+	row := q.db.QueryRow(ctx, createInvitation,
+		arg.LeagueID,
+		arg.Email,
+		arg.TokenHash,
+		arg.ExpiresAt,
+	)
+	var i Invitation
+	err := row.Scan(
+		&i.ID,
+		&i.LeagueID,
+		&i.Email,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.AcceptedAt,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const createPasswordReset = `-- name: CreatePasswordReset :exec
@@ -116,6 +175,39 @@ func (q *Queries) DeletePasswordResets(ctx context.Context, userID uuid.UUID) er
 	return err
 }
 
+const deletePendingInvitation = `-- name: DeletePendingInvitation :execrows
+DELETE FROM invitation
+WHERE id = $1 AND league_id = $2 AND accepted_at IS NULL
+`
+
+type DeletePendingInvitationParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) DeletePendingInvitation(ctx context.Context, arg DeletePendingInvitationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deletePendingInvitation, arg.ID, arg.LeagueID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deletePendingInvitations = `-- name: DeletePendingInvitations :exec
+DELETE FROM invitation
+WHERE league_id = $1 AND email = $2 AND accepted_at IS NULL
+`
+
+type DeletePendingInvitationsParams struct {
+	LeagueID uuid.UUID
+	Email    string
+}
+
+func (q *Queries) DeletePendingInvitations(ctx context.Context, arg DeletePendingInvitationsParams) error {
+	_, err := q.db.Exec(ctx, deletePendingInvitations, arg.LeagueID, arg.Email)
+	return err
+}
+
 const deleteSession = `-- name: DeleteSession :exec
 DELETE FROM session WHERE token_hash = $1
 `
@@ -146,6 +238,33 @@ type ExtendSessionParams struct {
 func (q *Queries) ExtendSession(ctx context.Context, arg ExtendSessionParams) error {
 	_, err := q.db.Exec(ctx, extendSession, arg.TokenHash, arg.ExpiresAt)
 	return err
+}
+
+const getPendingInvitation = `-- name: GetPendingInvitation :one
+SELECT invitation.email, league.id AS league_id, league.name AS league_name
+FROM invitation
+JOIN league ON league.id = invitation.league_id
+WHERE invitation.token_hash = $1
+  AND invitation.accepted_at IS NULL
+  AND invitation.expires_at > $2::timestamptz
+`
+
+type GetPendingInvitationParams struct {
+	TokenHash []byte
+	Now       time.Time
+}
+
+type GetPendingInvitationRow struct {
+	Email      string
+	LeagueID   uuid.UUID
+	LeagueName string
+}
+
+func (q *Queries) GetPendingInvitation(ctx context.Context, arg GetPendingInvitationParams) (GetPendingInvitationRow, error) {
+	row := q.db.QueryRow(ctx, getPendingInvitation, arg.TokenHash, arg.Now)
+	var i GetPendingInvitationRow
+	err := row.Scan(&i.Email, &i.LeagueID, &i.LeagueName)
+	return i, err
 }
 
 const getSessionUser = `-- name: GetSessionUser :one
@@ -249,6 +368,99 @@ func (q *Queries) ListAdminLeagues(ctx context.Context, userID uuid.UUID) ([]Lis
 		return nil, err
 	}
 	return items, nil
+}
+
+const listLeagueAdmins = `-- name: ListLeagueAdmins :many
+SELECT app_user.id, app_user.email, app_user.name, app_user.password_hash, app_user.is_superadmin, app_user.created_at, app_user.updated_at FROM app_user
+JOIN league_admin ON league_admin.user_id = app_user.id
+WHERE league_admin.league_id = $1
+ORDER BY app_user.name, app_user.email
+`
+
+func (q *Queries) ListLeagueAdmins(ctx context.Context, leagueID uuid.UUID) ([]AppUser, error) {
+	rows, err := q.db.Query(ctx, listLeagueAdmins, leagueID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AppUser
+	for rows.Next() {
+		var i AppUser
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Name,
+			&i.PasswordHash,
+			&i.IsSuperadmin,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPendingInvitations = `-- name: ListPendingInvitations :many
+SELECT id, league_id, email, token_hash, expires_at, accepted_at, created_at FROM invitation
+WHERE league_id = $1
+  AND accepted_at IS NULL
+  AND expires_at > $2::timestamptz
+ORDER BY created_at
+`
+
+type ListPendingInvitationsParams struct {
+	LeagueID uuid.UUID
+	Now      time.Time
+}
+
+func (q *Queries) ListPendingInvitations(ctx context.Context, arg ListPendingInvitationsParams) ([]Invitation, error) {
+	rows, err := q.db.Query(ctx, listPendingInvitations, arg.LeagueID, arg.Now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Invitation
+	for rows.Next() {
+		var i Invitation
+		if err := rows.Scan(
+			&i.ID,
+			&i.LeagueID,
+			&i.Email,
+			&i.TokenHash,
+			&i.ExpiresAt,
+			&i.AcceptedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const removeLeagueAdmin = `-- name: RemoveLeagueAdmin :execrows
+DELETE FROM league_admin WHERE user_id = $1 AND league_id = $2
+`
+
+type RemoveLeagueAdminParams struct {
+	UserID   uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) RemoveLeagueAdmin(ctx context.Context, arg RemoveLeagueAdminParams) (int64, error) {
+	result, err := q.db.Exec(ctx, removeLeagueAdmin, arg.UserID, arg.LeagueID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const resetPassword = `-- name: ResetPassword :one

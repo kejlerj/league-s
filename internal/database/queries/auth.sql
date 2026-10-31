@@ -69,3 +69,48 @@ SET password_hash = sqlc.arg(password_hash), updated_at = now()
 FROM consumed
 WHERE app_user.id = consumed.user_id
 RETURNING app_user.id;
+
+-- name: ListLeagueAdmins :many
+SELECT app_user.* FROM app_user
+JOIN league_admin ON league_admin.user_id = app_user.id
+WHERE league_admin.league_id = $1
+ORDER BY app_user.name, app_user.email;
+
+-- name: RemoveLeagueAdmin :execrows
+DELETE FROM league_admin WHERE user_id = $1 AND league_id = $2;
+
+-- name: DeletePendingInvitations :exec
+DELETE FROM invitation
+WHERE league_id = $1 AND email = $2 AND accepted_at IS NULL;
+
+-- name: CreateInvitation :one
+INSERT INTO invitation (league_id, email, token_hash, expires_at)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+
+-- name: ListPendingInvitations :many
+SELECT * FROM invitation
+WHERE league_id = $1
+  AND accepted_at IS NULL
+  AND expires_at > sqlc.arg(now)::timestamptz
+ORDER BY created_at;
+
+-- name: DeletePendingInvitation :execrows
+DELETE FROM invitation
+WHERE id = $1 AND league_id = $2 AND accepted_at IS NULL;
+
+-- name: GetPendingInvitation :one
+SELECT invitation.email, league.id AS league_id, league.name AS league_name
+FROM invitation
+JOIN league ON league.id = invitation.league_id
+WHERE invitation.token_hash = $1
+  AND invitation.accepted_at IS NULL
+  AND invitation.expires_at > sqlc.arg(now)::timestamptz;
+
+-- name: AcceptInvitation :one
+UPDATE invitation
+SET accepted_at = sqlc.arg(now)::timestamptz
+WHERE token_hash = $1
+  AND accepted_at IS NULL
+  AND expires_at > sqlc.arg(now)::timestamptz
+RETURNING league_id, email;
