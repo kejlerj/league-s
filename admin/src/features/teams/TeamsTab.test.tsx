@@ -85,3 +85,10 @@ test('a 422 shows each message under its field, and editing a field clears its m
   expect(name).not.toHaveAccessibleDescription()
   expect(logo).toHaveAccessibleDescription('doit être une URL http ou https')
 })
+
+test('an unknown league answers 404 on the list, and the tab shows Introuvable.', async () => {
+  mockLeague(leagueL1)
+  server.use(http.get(`${API}/leagues/L1/teams`, () => HttpResponse.json({ error: 'league not found' }, { status: 404 })))
+  renderRoute('/leagues/L1?tab=teams', { me: adminOne })
+  expect(await screen.findByText('Introuvable.')).toBeInTheDocument()
+})

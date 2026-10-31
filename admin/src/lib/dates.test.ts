@@ -1,9 +1,4 @@
-import { dateToUtc, formatDateTime, localToUtc, today, utcToDate, utcToLocal } from '@/lib/dates'
-
-test('dateToUtc / utcToDate', () => {
-  expect(dateToUtc('2026-09-01')).toBe('2026-09-01T00:00:00Z')
-  expect(utcToDate('2026-09-01T00:00:00Z')).toBe('2026-09-01')
-})
+import { formatDateTime, localToUtc, today, utcToLocal } from '@/lib/dates'
 
 test('localToUtc gives a UTC instant', () => {
   expect(localToUtc('2026-10-11T15:00')).toBe(new Date(2026, 9, 11, 15, 0).toISOString())

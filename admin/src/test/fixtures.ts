@@ -60,12 +60,13 @@ export const seasonS1: Season = {
   id: 'S1',
   league_id: 'L1',
   name: '2026-2027',
-  start_on: '2026-09-01T00:00:00Z',
-  end_on: '2027-06-30T00:00:00Z',
+  start_on: '2026-09-01',
+  end_on: '2027-06-30',
   match_win_pts: 3,
   match_draw_pts: 1,
   match_loss_pts: 0,
   tie_breakers: ['goal_difference', 'goals_scored'],
+  max_squad_size: null,
 }
 
 export function mockSeason(season: Season = seasonS1): void {

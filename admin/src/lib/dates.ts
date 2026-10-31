@@ -6,14 +6,6 @@ function localDate(d: Date): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-export function dateToUtc(date: string): string {
-  return `${date}T00:00:00Z`
-}
-
-export function utcToDate(iso: string): string {
-  return iso.slice(0, 10)
-}
-
 export function localToUtc(value: string): string {
   return new Date(value).toISOString()
 }

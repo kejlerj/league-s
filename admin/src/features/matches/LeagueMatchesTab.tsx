@@ -3,15 +3,15 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { listSeasons } from '@/api/seasons'
 import type { Season } from '@/api/types'
+import { today } from '@/lib/dates'
 import { SelectField } from '@/ui/Field'
 import { PageState } from '@/ui/PageState'
 import { MatchesTab } from './MatchesTab'
 
-export function currentSeason(seasons: Season[], now: Date): Season | undefined {
-  const time = now.getTime()
+export function currentSeason(seasons: Season[], day: string): Season | undefined {
   const byStart = [...seasons].sort((a, b) => a.start_on.localeCompare(b.start_on))
-  const running = byStart.find((season) => Date.parse(season.start_on) <= time && time <= Date.parse(season.end_on))
-  const next = byStart.find((season) => Date.parse(season.start_on) > time)
+  const running = byStart.find((season) => season.start_on <= day && day <= season.end_on)
+  const next = byStart.find((season) => season.start_on > day)
   return running ?? next ?? byStart[byStart.length - 1]
 }
 
@@ -22,7 +22,7 @@ export function LeagueMatchesTab({ leagueId }: { leagueId: string }) {
   return (
     <PageState query={seasons}>
       {(rows) => {
-        const season = rows.find((item) => item.id === chosen) ?? currentSeason(rows, new Date())
+        const season = rows.find((item) => item.id === chosen) ?? currentSeason(rows, today())
         if (season === undefined) {
           return (
             <p className="text-sm text-slate-700">

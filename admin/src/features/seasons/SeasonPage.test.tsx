@@ -39,7 +39,7 @@ test('the list offers only unregistered teams and registers the chosen one', asy
   server.use(
     http.post(`${S}/teams/:teamId`, ({ params }) => {
       called = String(params.teamId)
-      return new HttpResponse(null, { status: 204 })
+      return HttpResponse.json({ message: 'team added to season' }, { status: 201 })
     }),
   )
   const { user } = setup()
@@ -49,6 +49,22 @@ test('the list offers only unregistered teams and registers the chosen one', asy
   await user.selectOptions(select, 'T2')
   await user.click(screen.getByRole('button', { name: 'Inscrire' }))
   await vi.waitFor(() => expect(called).toBe('T2'))
+})
+
+test('unregistering a team: the API answers 204 with no body', async () => {
+  let called = false
+  server.use(
+    http.delete(`${S}/teams/T1`, () => {
+      called = true
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  const { user } = setup()
+  const row = (await screen.findByRole('link', { name: 'AS Alpha' })).closest('tr')!
+  await user.click(within(row).getByRole('button', { name: 'Désinscrire' }))
+  await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Désinscrire' }))
+  await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  expect(called).toBe(true)
 })
 
 test('unregistering refused', async () => {

@@ -6,12 +6,11 @@ import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 import { currentSeason } from './LeagueMatchesTab'
 
-const DAY = 24 * 60 * 60 * 1000
-const iso = (offsetDays: number) => new Date(Date.now() + offsetDays * DAY).toISOString()
+const TODAY = '2026-11-15'
 
-const past: Season = { ...seasonS1, id: 'S0', name: 'Saison passée', start_on: iso(-400), end_on: iso(-100) }
-const running: Season = { ...seasonS1, id: 'S1', name: 'Saison en cours', start_on: iso(-30), end_on: iso(200) }
-const upcoming: Season = { ...seasonS1, id: 'S2', name: 'Saison à venir', start_on: iso(300), end_on: iso(600) }
+const past: Season = { ...seasonS1, id: 'S0', name: 'Saison passée', start_on: '2025-09-01', end_on: '2026-06-30' }
+const running: Season = { ...seasonS1, id: 'S1', name: 'Saison en cours', start_on: '2026-09-01', end_on: '2027-06-30' }
+const upcoming: Season = { ...seasonS1, id: 'S2', name: 'Saison à venir', start_on: '2027-09-01', end_on: '2028-06-30' }
 
 function setup(seasons: Season[], requested: string[] = [], ...handlers: Parameters<typeof server.use>) {
   mockLeague(leagueL1)
@@ -37,11 +36,17 @@ test.each([
   ['otherwise the next season', [past, upcoming], 'S2'],
   ['otherwise the last season', [past], 'S0'],
 ])('currentSeason picks %s', (_, seasons, expected) => {
-  expect(currentSeason(seasons, new Date())?.id).toBe(expected)
+  expect(currentSeason(seasons, TODAY)?.id).toBe(expected)
+})
+
+test('currentSeason counts the first and the last day of a season', () => {
+  expect(currentSeason([past, running, upcoming], '2026-09-01')?.id).toBe('S1')
+  expect(currentSeason([past, running, upcoming], '2027-06-30')?.id).toBe('S1')
+  expect(currentSeason([past, running, upcoming], '2027-07-01')?.id).toBe('S2')
 })
 
 test('currentSeason without a season', () => {
-  expect(currentSeason([], new Date())).toBeUndefined()
+  expect(currentSeason([], TODAY)).toBeUndefined()
 })
 
 test('a league page opens on the matches of the current season', async () => {

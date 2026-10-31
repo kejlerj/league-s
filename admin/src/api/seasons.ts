@@ -9,7 +9,10 @@ export type SeasonInput = {
   match_draw_pts: number
   match_loss_pts: number
   tie_breakers: TieBreaker[]
+  max_squad_size?: number
 }
+
+export type SeasonPatch = Omit<SeasonInput, 'max_squad_size'>
 
 const base = (leagueId: string) => `/leagues/${seg(leagueId)}/seasons`
 const one = (leagueId: string, seasonId: string) => `${base(leagueId)}/${seg(seasonId)}`
@@ -26,7 +29,7 @@ export function createSeason(leagueId: string, input: SeasonInput): Promise<Seas
   return api<Season>('POST', base(leagueId), { body: input })
 }
 
-export function updateSeason(leagueId: string, seasonId: string, input: SeasonInput): Promise<Season> {
+export function updateSeason(leagueId: string, seasonId: string, input: SeasonPatch): Promise<Season> {
   return api<Season>('PATCH', one(leagueId, seasonId), { body: input })
 }
 

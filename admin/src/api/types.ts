@@ -33,6 +33,7 @@ export type Season = {
   match_draw_pts: number
   match_loss_pts: number
   tie_breakers: TieBreaker[]
+  max_squad_size: number | null
 }
 
 export type SeasonTeam = { id: string; name: string; logo: string | null }
