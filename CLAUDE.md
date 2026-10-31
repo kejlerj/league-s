@@ -10,7 +10,9 @@ Three parts in one repository:
 | `admin/` | Back-office for league admins, served by the Go binary under `/admin` (`go:embed`) | Vite, React 19, TypeScript, Tailwind, TanStack Query, Vitest, MSW |
 | `mobile/` | Supporter app (iOS first) | Expo, React Native, Expo Router, NativeWind, Zustand, jest-expo |
 
-`mobile/` arrives with PR-04 of the plan. Until then, the mobile app lives in `/Users/jeje/Documents/dev/league-s`.
+Each part has its own `package.json` or `go.mod`. There is no npm workspace: run npm commands with `--prefix admin` or `--prefix mobile`.
+
+Older docs in `docs/admin/` and `docs/mobile/` mention `go-blueprint/league-s` and a separate mobile repo. Those folders no longer exist: everything is in this repository now.
 
 ## Read first
 
