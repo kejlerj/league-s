@@ -14,11 +14,14 @@ import (
 )
 
 const (
-	AdminEmail     = "demo-admin@league-s.test"
-	AdminPassword  = "demo-admin-password"
-	LeagueName     = "District Five Demo"
-	playersPerTeam = 8
-	liveFor        = 25 * time.Minute
+	AdminEmail         = "demo-admin@league-s.test"
+	AdminPassword      = "demo-admin-password"
+	SuperadminEmail    = "demo-superadmin@league-s.test"
+	SuperadminPassword = "demo-superadmin-password"
+	LeagueName         = "District Five Demo"
+	CheckLeagueName    = "Ligue de vérification"
+	playersPerTeam     = 8
+	liveFor            = 25 * time.Minute
 )
 
 const (
@@ -33,6 +36,7 @@ const (
 var (
 	LeagueID         = uuid.MustParse("01a10d58-8ae3-7c66-ac38-c7cac896cc65")
 	AdminID          = id(kindUser, 1)
+	SuperadminID     = id(kindUser, 2)
 	PreviousSeasonID = id(kindSeason, 1)
 	CurrentSeasonID  = id(kindSeason, 2)
 )
@@ -88,7 +92,7 @@ func Seed(ctx context.Context, pool *pgxpool.Pool, now time.Time) error {
 
 	return pgx.BeginFunc(ctx, pool, func(tx pgx.Tx) error {
 		w := &writer{tx: tx, paris: paris, now: now, teams: Teams()}
-		if err := w.deleteLeague(ctx); err != nil {
+		if err := w.deleteLeagues(ctx); err != nil {
 			return err
 		}
 		return w.seed(ctx)
@@ -112,7 +116,16 @@ func (w *writer) exec(ctx context.Context, what, sql string, args ...any) error 
 	return nil
 }
 
-func (w *writer) deleteLeague(ctx context.Context) error {
+func (w *writer) deleteLeagues(ctx context.Context) error {
+	rows, err := w.tx.Query(ctx, `SELECT id FROM league WHERE id = $1 OR name = $2`, LeagueID, CheckLeagueName)
+	if err != nil {
+		return fmt.Errorf("find leagues to reset: %w", err)
+	}
+	ids, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	if err != nil {
+		return fmt.Errorf("find leagues to reset: %w", err)
+	}
+
 	statements := []string{
 		`DELETE FROM match USING season WHERE match.season_id = season.id AND season.league_id = $1`,
 		`DELETE FROM squad_membership WHERE league_id = $1`,
@@ -122,19 +135,22 @@ func (w *writer) deleteLeague(ctx context.Context) error {
 		`DELETE FROM team WHERE league_id = $1`,
 		`DELETE FROM league WHERE id = $1`,
 	}
-	for _, stmt := range statements {
-		if err := w.exec(ctx, "delete demo league", stmt, LeagueID); err != nil {
-			return err
+	for _, leagueID := range ids {
+		for _, stmt := range statements {
+			if err := w.exec(ctx, "reset league "+leagueID.String(), stmt, leagueID); err != nil {
+				return err
+			}
 		}
 	}
-	return w.exec(ctx, "delete demo admin", `DELETE FROM app_user WHERE id = $1 OR email = $2`, AdminID, AdminEmail)
+	return w.exec(ctx, "delete demo users", `DELETE FROM app_user WHERE id = ANY($1) OR email = ANY($2)`,
+		[]uuid.UUID{AdminID, SuperadminID}, []string{AdminEmail, SuperadminEmail})
 }
 
 func (w *writer) seed(ctx context.Context) error {
 	if err := w.exec(ctx, "create league", `INSERT INTO league (id, name) VALUES ($1, $2)`, LeagueID, LeagueName); err != nil {
 		return err
 	}
-	if err := w.admin(ctx); err != nil {
+	if err := w.users(ctx); err != nil {
 		return err
 	}
 
@@ -166,17 +182,25 @@ func (w *writer) seed(ctx context.Context) error {
 	return nil
 }
 
-func (w *writer) admin(ctx context.Context) error {
-	hash, err := auth.HashPassword(AdminPassword)
-	if err != nil {
-		return fmt.Errorf("hash demo admin password: %w", err)
+func (w *writer) users(ctx context.Context) error {
+	if err := w.user(ctx, AdminID, AdminEmail, "Demo Admin", AdminPassword, false); err != nil {
+		return err
 	}
-	if err := w.exec(ctx, "create demo admin",
-		`INSERT INTO app_user (id, email, name, password_hash) VALUES ($1, $2, 'Demo Admin', $3)`, AdminID, AdminEmail, hash); err != nil {
+	if err := w.user(ctx, SuperadminID, SuperadminEmail, "Demo Superadmin", SuperadminPassword, true); err != nil {
 		return err
 	}
 	return w.exec(ctx, "make demo admin an admin of the demo league",
 		`INSERT INTO league_admin (user_id, league_id) VALUES ($1, $2)`, AdminID, LeagueID)
+}
+
+func (w *writer) user(ctx context.Context, id uuid.UUID, email, name, password string, superadmin bool) error {
+	hash, err := auth.HashPassword(password)
+	if err != nil {
+		return fmt.Errorf("hash password of %s: %w", email, err)
+	}
+	return w.exec(ctx, "create "+email,
+		`INSERT INTO app_user (id, email, name, password_hash, is_superadmin) VALUES ($1, $2, $3, $4, $5)`,
+		id, email, name, hash, superadmin)
 }
 
 func (w *writer) season(ctx context.Context, s season) error {

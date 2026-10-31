@@ -210,3 +210,38 @@ func TestSeed_DemoAdminLogsInAndAdministersTheDemoLeague(t *testing.T) {
 		t.Errorf("IsLeagueAdmin() = %t, %v, want true", admin, err)
 	}
 }
+
+func TestSeed_DemoSuperadminLogsIn(t *testing.T) {
+	testdb.New(t, testPool)
+	seed(t, seedNow)
+	seed(t, seedNow)
+
+	_, user, err := auth.NewService(auth.NewPostgresStore(testPool), auth.EmailNotifier{Mailer: mailer.Disabled{}}).Login(t.Context(), SuperadminEmail, SuperadminPassword)
+	if err != nil {
+		t.Fatalf("Login(%s) error = %v", SuperadminEmail, err)
+	}
+	if !user.IsSuperadmin {
+		t.Error("demo superadmin is not a superadmin")
+	}
+}
+
+func TestSeed_ClearsTheLeagueOfTheAdminCheck(t *testing.T) {
+	s := testdb.New(t, testPool)
+	check := s.CreateLeague(testdb.LeagueParams{Name: CheckLeagueName})
+	season := s.CreateSeason(testdb.SeasonParams{League: &check})
+	home := s.CreateTeam(testdb.TeamParams{League: &check})
+	away := s.CreateTeam(testdb.TeamParams{League: &check})
+	s.RegisterTeams(season, home, away)
+	s.CreateMatch(testdb.MatchParams{Season: season, Home: home, Away: away})
+	player := s.CreatePlayer(testdb.PlayerParams{League: &check})
+	s.CreateSquadMember(testdb.SquadMemberParams{Season: season, Team: home, Player: player, Number: 9})
+
+	seed(t, seedNow)
+
+	if got := count(t, `SELECT count(*) FROM league WHERE name = $1`, CheckLeagueName); got != 0 {
+		t.Errorf("leagues named %q = %d, want 0", CheckLeagueName, got)
+	}
+	if got := count(t, `SELECT count(*) FROM league WHERE id = $1`, LeagueID); got != 1 {
+		t.Errorf("demo leagues = %d, want 1", got)
+	}
+}
