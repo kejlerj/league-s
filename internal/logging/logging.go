@@ -36,6 +36,9 @@ func (h contextHandler) Handle(ctx context.Context, r slog.Record) error {
 	if id, ok := ctx.Value(requestIDKey{}).(string); ok {
 		r.AddAttrs(slog.String("request_id", id))
 	}
+	if r.Level >= slog.LevelError {
+		reportError(ctx, r)
+	}
 	return h.Handler.Handle(ctx, r)
 }
 

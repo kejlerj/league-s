@@ -141,15 +141,16 @@
 
 ## 📡 Observabilité
 
-- [ ] **Intégrer Sentry** (`github.com/getsentry/sentry-go`)
+- [x] **Intégrer Sentry** (`github.com/getsentry/sentry-go`, `internal/logging/sentry.go`)
   - `SENTRY_DSN` dans la config, optionnel : pas de DSN en local ni en test, donc rien n'est envoyé
-  - `Environment` depuis `APP_ENV`, et `Release` depuis le commit (injecté au build avec `-ldflags`)
-  - le middleware `sentryhttp` à la place de `middleware.Recoverer`, pour remonter les panics
-  - envoyer les `slog.ErrorContext` vers Sentry via son intégration `slog` : les 500 des handlers remontent sans toucher aux handlers
-  - vérifier ce qui part : pas de body de requête, pas de headers `Authorization` ni de cookies (`SendDefaultPII: false`)
-  - appeler `sentry.Flush` au shutdown, sinon les dernières erreurs sont perdues
+  - `Environment` depuis `APP_ENV`. `Release` : celle que le SDK trouve (variable `SENTRY_RELEASE`, sinon le commit git quand le binaire tourne dans un dépôt)
+  - le middleware `sentryhttp` (avec `Repanic`) après `middleware.Recoverer` : il remonte les panics, puis le `Recoverer` répond 500 comme avant
+  - chaque `slog.ErrorContext` qui porte une erreur part vers Sentry, avec le message et les attributs de la ligne : les 500 des handlers remontent sans toucher aux handlers
+  - ce qui part : pas de body, pas de cookies, pas de query string, seulement les headers `Accept`, `Content-Type` et `User-Agent`
+  - les liens de réinitialisation et d'invitation ne partent jamais : `BeforeSend` remplace toute valeur `token=` par `[Filtered]`, et les attributs `token`, `password`, `secret`… sont masqués
+  - `sentry.Flush` au shutdown, sinon les dernières erreurs sont perdues
 - [x] **Des logs `slog` en JSON** et un request ID (`internal/logging`, `LOG_FORMAT`, `LOG_LEVEL`)
-  - reste à reprendre le request ID dans les événements Sentry, pour relier une erreur à ses logs
+  - le request ID part dans les événements Sentry (contexte `log`), pour relier une erreur à ses logs
 
 ## 🚀 Plus tard
 

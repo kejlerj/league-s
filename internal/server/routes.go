@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -33,6 +34,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Use(logging.RequestID)
 	r.Use(logging.Requests(slog.Default()))
 	r.Use(middleware.Recoverer)
+	r.Use(sentryhttp.New(sentryhttp.Options{Repanic: true}).Handle)
 	r.Use(cors.Handler(cors.Options{
 		AllowOriginFunc: func(_ *http.Request, origin string) bool {
 			return slices.Contains(s.corsOrigins, origin)
