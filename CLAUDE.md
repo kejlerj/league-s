@@ -38,6 +38,7 @@ The `plan/` folder at the root is the old, git-ignored copy of `docs/api/`. Don'
 | Go | new migration | `migrations/000NN_<name>.sql` (goose), next free number |
 | Admin | tests | `npm --prefix admin test -- --run` |
 | Admin | types and build | `npm --prefix admin run build` |
+| Admin, Mobile | `docs/openapi.yaml` changed | `npm --prefix admin run api-types` and `npm --prefix mobile run api-types`, then commit the generated files |
 | Mobile | tests | `npm --prefix mobile test` |
 | Mobile | types | `cd mobile && npx tsc --noEmit` |
 | Mobile | simulator (paused until PR-26) | skill `simulator-check` |

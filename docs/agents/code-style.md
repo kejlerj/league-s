@@ -17,7 +17,7 @@ How they apply here, in order of importance.
 - Pagination, caching, configuration: only when the spec asks for them.
 
 ### DRY, with judgement
-- Remove duplication of **knowledge**: one business rule lives in one place (the entity or the service), one constant has one definition, one API type has one source (OpenAPI, after PR-08).
+- Remove duplication of **knowledge**: one business rule lives in one place (the entity or the service), one constant has one definition, one API type has one source (`docs/openapi.yaml`).
 - Duplicated **code** can stay until the third copy (rule of three). Two similar handlers are better than one handler full of conditions.
 - A wrong abstraction costs more than duplication. If a shared helper starts taking flags to behave differently per caller, split it back.
 
@@ -52,7 +52,7 @@ How they apply here, in order of importance.
 ## TypeScript (admin and mobile)
 
 - `strict` mode. No `any`, no `as` casts to silence the compiler, no non-null `!` without a reason the types can't express. Use `unknown` and narrow.
-- Types for API data come from one place: `src/types` today, the types generated from `docs/openapi.yaml` after #66. Don't redeclare an API shape inside a component.
+- Types for API data come from one place: the types generated from `docs/openapi.yaml` (`admin/src/api/types.ts`, `mobile/src/types/index.ts`). Don't redeclare an API shape by hand.
 - Function components and hooks only. One component per file when it's exported. Props typed with a `type` or `interface` next to the component.
 - Keep logic out of components. Pure functions go in `src/logic` (mobile) or next to the feature (admin), with unit tests.
 - Named exports, except where the framework requires a default export (Expo Router route files).
