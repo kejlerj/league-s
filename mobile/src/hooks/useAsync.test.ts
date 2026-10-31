@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useAsync } from './useAsync';
 
 test('resolves data and flips loading to false', async () => {
@@ -20,6 +20,6 @@ test('reload re-runs the factory', async () => {
   const factory = () => Promise.resolve(++calls);
   const { result } = renderHook(() => useAsync(factory, []));
   await waitFor(() => expect(result.current.data).toBe(1));
-  result.current.reload();
+  act(() => result.current.reload());
   await waitFor(() => expect(result.current.data).toBe(2));
 });
