@@ -25,6 +25,18 @@ make seed
 
 For the mobile app, copy `mobile/.env.example` to `mobile/.env`. `EXPO_PUBLIC_API_URL` points the app at the local API.
 
+### Mobile builds
+
+`mobile/app.config.ts` reads two variables when Expo builds or starts the app:
+
+| `APP_ENV` | `EXPO_PUBLIC_API_URL` | iOS local networking (`NSAllowsLocalNetworking`) |
+|---|---|---|
+| `development` (default) | optional, `http://localhost:8080/api/v1` when unset | allowed |
+| `preview` | required, `https://` only | not allowed |
+| `production` | required, `https://` only | not allowed |
+
+A preview or production build without an `https` API address fails. Check the result with `APP_ENV=production EXPO_PUBLIC_API_URL=https://… npx expo config --type public` in `mobile/`.
+
 ### Demo data
 
 One league, "District Five Demo", with 10 teams of 8 players and two seasons. Each season is a home and away round robin: 18 matchdays of 5 matches, on Saturdays from 14:00 Paris time.
