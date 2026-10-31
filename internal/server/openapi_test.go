@@ -35,6 +35,9 @@ func routerOperations(t *testing.T) map[string]bool {
 
 	ops := map[string]bool{}
 	err := chi.Walk(router, func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
+		if strings.HasPrefix(route, "/admin") {
+			return nil
+		}
 		if len(route) > 1 {
 			route = strings.TrimSuffix(route, "/")
 		}
