@@ -31,7 +31,7 @@ const CONFIRMS: Record<ConfirmAction, { title: string; message: string; label: s
   finish: { title: 'Terminer le match', message: 'Le score devient définitif et compte au classement.', label: 'Terminer', danger: false },
   cancel: {
     title: 'Annuler le match',
-    message: 'Un match annulé ne peut plus être joué ni reprogrammé.',
+    message: 'Un match annulé ne peut plus être joué ni reprogrammé. Un match en cours garde son score, qui ne compte pas au classement.',
     label: 'Annuler le match',
     danger: true,
   },
