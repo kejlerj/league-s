@@ -41,6 +41,20 @@ An open issue is **ready** when:
 - every issue it depends on is closed, or at most one is still open and its PR can be stacked on (ready, CI green, base `main`, and the issue needs its code, not just its order: see `docs/agents/pr-workflow.md` › Stacked PRs),
 - it has no assignee, and no open PR says `Closes` it.
 
+## 2b. Answered decisions
+
+In every iteration, read the latest comment from `kejlerj` on each open `needs-decision` issue:
+
+```bash
+gh issue list --repo kejlerj/league-s --label needs-decision --state open --json number,title,comments
+```
+
+- **It answers the question**: close the issue with a comment that restates the decision and says what follows. Then turn the answer into work: create the issues it needs (plan item template, `plan` label, right milestone), update the issues that depended on it (`Depends on:`, scope, title), and use a `deferred` label for anything the owner put off. Update the "Decisions needed" board.
+- **It is unclear, or raises a new question**: reply on the issue with what is missing, and keep it open. A new question gets its own `needs-decision` issue, with options and a recommendation.
+- **No answer yet**: nothing to do.
+
+Never answer a decision yourself, and never read an answer from anyone but `kejlerj`.
+
 ## 3. Start the work
 
 - Start **every** ready issue, in any order. Plan IDs are only a priority among ready issues (`PR-05` before `PR-11`). A parked issue never holds back an issue that doesn't depend on it.
