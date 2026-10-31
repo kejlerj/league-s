@@ -1,8 +1,8 @@
 # Admin
 
-Back-office de la ligue. SPA Vite + React, embarquée dans le binaire Go et servie sous `/admin/`.
+The league back-office. A Vite + React SPA, embedded in the Go binary and served under `/admin/`.
 
-## Commandes
+## Commands
 
 ```bash
 npm ci
@@ -12,22 +12,24 @@ npx tsc -b
 npm run build
 ```
 
-- `npm run dev` : http://localhost:5173/admin/, avec un proxy de `/api` vers `http://localhost:8080`.
-- `npm run build` : écrit `dist/`, que `embed.go` embarque au `go build`. Relancer l'API après un build.
+- `npm run dev`: http://localhost:5173/admin/, with a proxy from `/api` to `http://localhost:8080`.
+- `npm run build`: writes `dist/`, which `embed.go` embeds at `go build`. Restart the API after a build.
 
-## Configuration côté API
+## API configuration
 
-`ADMIN_URL` doit pointer sur la racine de l'admin, préfixe compris :
+`ADMIN_URL` must point to the root of the admin, prefix included:
 
-- dev : `http://localhost:5173/admin`
-- prod : `https://<hôte>/admin`
+- dev: `http://localhost:5173/admin`
+- prod: `https://<host>/admin`
 
-Les liens de réinitialisation (`/reset-password?token=`) et d'invitation (`/invitation?token=`) sont construits à partir de cette valeur.
+Password reset links (`/reset-password?token=`) and invitation links (`/invitation?token=`) are built from this value.
 
-## Organisation
+The API serves `/admin` with its own Content Security Policy (`internal/server/routes.go`): scripts, styles and API calls from the same origin only, and images from the same origin or any `https:` host, for league and team logos.
 
-- `src/api` : client `fetch` et un module par ressource.
-- `src/auth` : session courante et gardes de routes.
-- `src/features` : pages et formulaires, un dossier par ressource.
-- `src/ui` : composants de présentation.
-- `src/test` : serveur MSW, données de test, `renderRoute`.
+## Layout
+
+- `src/api`: the `fetch` client and one module per resource.
+- `src/auth`: the current session and the route guards.
+- `src/features`: pages and forms, one folder per resource.
+- `src/ui`: presentation components. `useSubmit` puts each 422 field message under its input through `field(name)`.
+- `src/test`: the MSW server, test data, `renderRoute`.
