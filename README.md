@@ -6,6 +6,14 @@ One Paragraph of project description goes here
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
+### Build
+
+```bash
+make build
+```
+
+`make build` builds the admin (`admin/dist`), then the Go binary `./main`, which embeds it. The binary serves the API under `/api/v1` and the admin under `/admin`. Install the admin dependencies first (`npm --prefix admin ci`).
+
 ### Local stack
 
 Docker and the [goose](https://github.com/pressly/goose) CLI must be installed.
@@ -75,7 +83,7 @@ Then, with `.env` in place:
 make e2e
 ```
 
-`make e2e` starts Postgres and Mailpit, then `make e2e-run` migrates, builds the admin, reseeds and runs the tests. Playwright starts the API itself, or reuses one already listening on `PORT`. CI runs `make e2e-run` against a Postgres service container.
+`make e2e` starts Postgres and Mailpit, then `make e2e-run` migrates, builds the binary (`make build`), reseeds and runs the tests. Playwright starts the binary `./main`, or reuses an API already listening on `PORT`. CI runs `make e2e-run` against a Postgres service container, so the tests run on the same binary as production.
 
 ## Database schema
 

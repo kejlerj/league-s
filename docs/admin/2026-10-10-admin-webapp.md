@@ -613,10 +613,10 @@ test.each([
 
 This task is done with the API and the mobile app running locally.
 
-- [ ] **Step 1: Build** — Run: `npm test -- --run && npx tsc --noEmit && npm run build`. Expected: everything passes, `admin/dist/index.html` exists.
-- [ ] **Step 2: Check** that `admin/dist` exists so the API session can wire `admin/embed.go` and `GET /admin/*`. Ask it about the state of the spec's missing endpoints, and how to get a superadmin account locally (`SUPERADMIN_EMAIL`).
+- [x] **Step 1: Build** — Run: `npm test -- --run && npx tsc --noEmit && npm run build`. Expected: everything passes, `admin/dist/index.html` exists.
+- [x] **Step 2: Check** that `admin/dist` exists so the API session can wire `admin/embed.go` and `GET /admin/*`. Ask it about the state of the spec's missing endpoints, and how to get a superadmin account locally (`SUPERADMIN_EMAIL`).
 - [ ] **Step 3: Check in dev** — API running on `:8080`, `npm run dev`, open `http://localhost:5173/admin/`. Sign in as superadmin. Go through every screen. Note any gap between the proposed contract and the real API, then fix it on the webapp side or the API side.
 - [ ] **Step 4: Create the data set through the webapp** — one league, a 2026-2027 season, 6 registered teams, 8 players per team with numbers, 3 matchdays of matches: the first finished with scores, one match in progress, one postponed, one cancelled, the rest scheduled. A video link on a finished match.
 - [ ] **Step 5: Check the mobile app** — give the app the id of the league created (the app reads `LEAGUE_ID` in `src/config.ts`). Check the Suivi, Classement, Équipe and Match screens against the data entered: scores, standings, squads, statuses, video link. Each gap is attributed to the webapp, the API or the app, and fixed by the session concerned.
-- [ ] **Step 6: Check the binary** — once the embed handler is in place: Go build, open `http://localhost:8080/admin/`, reload on a deep link, sign in.
-- [ ] **Step 7: Commit** — `docs(admin): README`
+- [x] **Step 6: Check the binary** — once the embed handler is in place: Go build, open `http://localhost:8080/admin/`, reload on a deep link, sign in.
+- [x] **Step 7: Commit** — `docs(admin): README`

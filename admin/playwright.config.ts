@@ -15,7 +15,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'go run ./cmd/api',
+    command: './main',
     cwd: '..',
     url: `${origin}/health`,
     reuseExistingServer: !process.env.CI,

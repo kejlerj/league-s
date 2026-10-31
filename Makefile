@@ -19,10 +19,8 @@ migrate-reset:
 all: build test
 
 build:
-	@echo "Building..."
-	
-	
-	@go build -o main cmd/api/main.go
+	@npm --prefix admin run build
+	@go build -o main ./cmd/api
 
 # Run the application
 run:
@@ -42,7 +40,7 @@ e2e:
 
 e2e-run:
 	@$(MAKE) migrate-up
-	@npm --prefix admin run build
+	@$(MAKE) build
 	@go run ./cmd/seed
 	@PORT=$(PORT) npm --prefix admin run e2e
 

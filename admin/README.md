@@ -14,6 +14,8 @@ npm run build
 
 - `npm run dev`: http://localhost:5173/admin/, with a proxy from `/api` to `http://localhost:8080`.
 - `npm run build`: writes `dist/`, which `embed.go` embeds at `go build`. Restart the API after a build.
+- From the repository root, `make build` runs `npm run build`, then builds the Go binary `./main` that serves the admin and the API.
+- `npm run e2e`: Playwright tests in `e2e/`, against the binary and the demo seed. Run them with `make e2e` from the repository root.
 
 ## API configuration
 

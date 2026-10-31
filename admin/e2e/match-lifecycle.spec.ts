@@ -1,14 +1,11 @@
 import { expect, test } from '@playwright/test'
 import { demo } from './demo.ts'
+import { logInAsDemoAdmin } from './login.ts'
 
 test('an admin creates a season, schedules a match and plays it to the end', async ({ page }) => {
   const [home, away] = demo.teams
 
-  await page.goto('login')
-  await page.getByLabel('E-mail').fill(demo.adminEmail)
-  await page.getByLabel('Mot de passe').fill(demo.adminPassword)
-  await page.getByRole('button', { name: 'Se connecter' }).click()
-  await expect(page.getByRole('heading', { name: demo.leagueName })).toBeVisible()
+  await logInAsDemoAdmin(page)
 
   await page.getByRole('tab', { name: 'Saisons' }).click()
   await page.getByRole('button', { name: 'Nouvelle saison' }).click()
