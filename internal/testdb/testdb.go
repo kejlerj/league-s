@@ -58,7 +58,7 @@ func Run(m *testing.M, pool **pgxpool.Pool) int {
 func Reset(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
 	_, err := pool.Exec(context.Background(),
-		"TRUNCATE league RESTART IDENTITY CASCADE")
+		"TRUNCATE league, app_user RESTART IDENTITY CASCADE")
 	if err != nil {
 		t.Fatalf("reset db: %v", err)
 	}
