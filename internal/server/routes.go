@@ -58,6 +58,11 @@ func (s *Server) RegisterRoutes() http.Handler {
 		r.Get("/me", authHandler.Me)
 		r.Put("/me/password", authHandler.ChangePassword)
 
+		invitations := auth.NewInvitationHandler(auth.NewInvitations(authStore), authStore, s.adminURL)
+		r.With(loginLimit).Mount("/invitations", invitations.Routes())
+		r.With(auth.Superadmin).Mount("/leagues/{leagueID}/invitations", invitations.LeagueRoutes())
+		r.With(authSvc.LeagueAdmin("leagueID")).Mount("/leagues/{leagueID}/admins", invitations.AdminRoutes())
+
 		r.With(auth.SuperadminWrites).Mount("/leagues", league.NewHandler(league.NewPostgresStore(pool)).Routes())
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/teams", team.NewHandler(team.NewPostgresStore(pool)).Routes())
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/players", player.NewHandler(player.NewPostgresStore(pool)).Routes())

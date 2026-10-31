@@ -67,6 +67,16 @@ type AppUser struct {
 	UpdatedAt    time.Time
 }
 
+type Invitation struct {
+	ID         uuid.UUID
+	LeagueID   uuid.UUID
+	Email      string
+	TokenHash  []byte
+	ExpiresAt  time.Time
+	AcceptedAt *time.Time
+	CreatedAt  time.Time
+}
+
 type League struct {
 	ID        uuid.UUID
 	Name      string
