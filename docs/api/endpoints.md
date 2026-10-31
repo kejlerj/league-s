@@ -37,7 +37,7 @@ The request and response shapes are in `docs/openapi.yaml`. A new or changed rou
 | Statut | Méthode | Chemin | Accès | Description |
 |---|---|---|---|---|
 | ✅ | `POST` | `/leagues/{leagueID}/teams` | admin | Créer une équipe |
-| ✅ | `GET` | `/leagues/{leagueID}/teams` | public | Lister les équipes de la ligue, triées par nom. ⚠️ À finir : ligue inconnue → `[]` au lieu de 404 (TODO dans le handler) |
+| ✅ | `GET` | `/leagues/{leagueID}/teams` | public | Lister les équipes de la ligue, triées par nom. Ligue inconnue → 404 |
 | ✅ | `GET` | `/leagues/{leagueID}/teams/{teamID}` | public | Lire une équipe |
 | ✅ | `PATCH` | `/leagues/{leagueID}/teams/{teamID}` | admin | Modifier le nom ou le logo |
 | ✅ | `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | Supprimer (refusé si elle a un historique) |
@@ -59,7 +59,7 @@ The request and response shapes are in `docs/openapi.yaml`. A new or changed rou
 | Statut | Méthode | Chemin | Accès | Description |
 |---|---|---|---|---|
 | ✅ | `POST` | `/leagues/{leagueID}/seasons` | admin | Créer une saison (points 3/1/0 par défaut, `max_squad_size` optionnel) |
-| ✅ | `GET` | `/leagues/{leagueID}/seasons` | public | Lister les saisons de la ligue, la plus récente d'abord |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons` | public | Lister les saisons de la ligue, la plus récente d'abord. Ligue inconnue → 404 |
 | ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}` | public | Lire une saison |
 | ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Modifier dates, points ou départages (attention au classement déjà publié) |
 | ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Supprimer (refusé si elle a des matchs) |
@@ -69,8 +69,8 @@ The request and response shapes are in `docs/openapi.yaml`. A new or changed rou
 | Statut | Méthode | Chemin | Accès | Description |
 |---|---|---|---|---|
 | ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/teams` | public | Lister les équipes inscrites |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}` | admin | Inscrire une équipe |
-| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}` | admin | Désinscrire (refusé si elle a des matchs) |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}` | admin | Inscrire une équipe. Répond 201 |
+| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}` | admin | Désinscrire (refusé si elle a des matchs). Répond 204 |
 
 ## Effectifs (squad)
 

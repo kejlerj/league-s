@@ -157,6 +157,10 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	leagueID := ids[0]
 
 	seasons, err := h.store.GetByLeague(r.Context(), leagueID)
+	if errors.Is(err, ErrListLeagueNotFound) {
+		httpx.Error(w, http.StatusNotFound, ErrListLeagueNotFound.Error())
+		return
+	}
 	if err != nil {
 		slog.ErrorContext(r.Context(), "list seasons", "err", err, "league_id", leagueID)
 		httpx.Error(w, http.StatusInternalServerError, "internal error")
@@ -245,7 +249,7 @@ func (h *Handler) addTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]string{"message": "team added to season"})
+	httpx.JSON(w, http.StatusCreated, map[string]string{"message": "team added to season"})
 }
 
 func (h *Handler) removeTeam(w http.ResponseWriter, r *http.Request) {
@@ -272,5 +276,5 @@ func (h *Handler) removeTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, map[string]string{"message": "team removed from season"})
+	w.WriteHeader(http.StatusNoContent)
 }

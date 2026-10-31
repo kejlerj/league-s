@@ -33,7 +33,7 @@
 - [ ] **Des messages de validation lisibles** : `httpx.Decode` renvoie encore le tag brut (`"required"`, `"url"`)
 - [ ] **Des dates au format `2025-08-01`** dans les DTO de saison, au lieu de `time.Time` complet
   - `string` avec `validate:"datetime=2006-01-02"`, puis `time.Parse(time.DateOnly, …)`
-- [ ] **Les codes HTTP** : 201 pour l'inscription d'une équipe, 204 pour la désinscription
+- [x] **Les codes HTTP** : 201 pour l'inscription d'une équipe, 204 pour la désinscription
   - mettre à jour les tests en même temps
 - [ ] **Les endpoints de liste manquants** : saisons d'une ligue (`GetByLeague` existe déjà), équipes et joueurs d'une ligue
   - penser à la pagination dès le début (`limit`, `offset`, ou par curseur)

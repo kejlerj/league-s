@@ -71,6 +71,15 @@ func (s *PostgresStore) List(ctx context.Context, leagueID uuid.UUID) ([]*Team, 
 	if err != nil {
 		return nil, fmt.Errorf("list teams: %w", err)
 	}
+	if len(teams) == 0 {
+		exists, err := s.q.LeagueExists(ctx, leagueID)
+		if err != nil {
+			return nil, fmt.Errorf("check league %s: %w", leagueID, err)
+		}
+		if !exists {
+			return nil, ErrListLeagueNotFound
+		}
+	}
 
 	res := make([]*Team, len(teams))
 	for i, t := range teams {

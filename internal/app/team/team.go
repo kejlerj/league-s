@@ -23,3 +23,9 @@ type GetError string
 func (e GetError) Error() string { return string(e) }
 
 const ErrGetNotFound GetError = "team not found"
+
+type ListError string
+
+func (e ListError) Error() string { return string(e) }
+
+const ErrListLeagueNotFound ListError = "league not found"
