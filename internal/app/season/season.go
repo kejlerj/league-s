@@ -25,6 +25,10 @@ const (
 	DefaultMatchLossPts int32 = 0
 )
 
+func DefaultTieBreakers() []string {
+	return []string{"goal_difference", "goals_scored"}
+}
+
 type CreateError string
 
 func (e CreateError) Error() string { return string(e) }

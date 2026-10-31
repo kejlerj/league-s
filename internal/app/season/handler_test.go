@@ -99,7 +99,7 @@ func TestCreateThenGetSeason(t *testing.T) {
 func TestCreateSeason_Defaults(t *testing.T) {
 	league := testdb.New(t, testPool).CreateLeague(testdb.LeagueParams{})
 
-	body := `{"name": "2025-2026", "start_on": "2025-08-01T00:00:00Z", "end_on": "2026-05-31T00:00:00Z", "tie_breakers": ["goal_difference"]}`
+	body := `{"name": "2025-2026", "start_on": "2025-08-01T00:00:00Z", "end_on": "2026-05-31T00:00:00Z"}`
 	rec := testhttp.Do(t, newTestRouter(), http.MethodPost, seasonsPath(league), body)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body)
@@ -111,6 +111,9 @@ func TestCreateSeason_Defaults(t *testing.T) {
 	}
 	if got.MatchWinPts != 3 || got.MatchDrawPts != 1 || got.MatchLossPts != 0 {
 		t.Errorf("points = %d/%d/%d, want 3/1/0", got.MatchWinPts, got.MatchDrawPts, got.MatchLossPts)
+	}
+	if !slices.Equal(got.TieBreakers, []string{"goal_difference", "goals_scored"}) {
+		t.Errorf("tie_breakers = %v, want [goal_difference goals_scored]", got.TieBreakers)
 	}
 	if got.MaxSquadSize != nil {
 		t.Errorf("max_squad_size = %d, want null (no limit)", *got.MaxSquadSize)
