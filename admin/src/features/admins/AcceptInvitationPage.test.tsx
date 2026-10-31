@@ -14,7 +14,7 @@ function mockLookup(response: () => Response, bodies: unknown[] = []) {
   )
 }
 
-test('nouveau compte : envoie le jeton, le nom et le mot de passe', async () => {
+test('new account: sends the token, the name and the password', async () => {
   const lookups: unknown[] = []
   let body: unknown
   mockLookup(() => HttpResponse.json(preview), lookups)
@@ -36,7 +36,7 @@ test('nouveau compte : envoie le jeton, le nom et le mot de passe', async () => 
   expect(body).toEqual({ token: 'tok/123', name: 'Nouvel Admin', password: 'motdepasse-long' })
 })
 
-test('compte existant : envoie seulement le jeton', async () => {
+test('existing account: sends only the token', async () => {
   let body: unknown
   mockLookup(() => HttpResponse.json({ ...preview, account_exists: true }))
   server.use(
@@ -52,14 +52,14 @@ test('compte existant : envoie seulement le jeton', async () => {
   expect(screen.queryByLabelText('Mot de passe')).not.toBeInTheDocument()
 })
 
-test('lien invalide au chargement', async () => {
+test('invalid link on load', async () => {
   mockLookup(() => HttpResponse.json({ error: 'invalid link' }, { status: 400 }))
   renderRoute('/invitation?token=tok', { me: null })
   expect(await screen.findByText('Lien invalide ou expiré.')).toBeInTheDocument()
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
 })
 
-test('sans jeton, aucun appel et lien invalide', async () => {
+test('without a token, no call and an invalid link', async () => {
   const lookups: unknown[] = []
   mockLookup(() => HttpResponse.json(preview), lookups)
   renderRoute('/invitation', { me: null })
@@ -67,7 +67,7 @@ test('sans jeton, aucun appel et lien invalide', async () => {
   expect(lookups).toEqual([])
 })
 
-test('mot de passe refusé', async () => {
+test('password refused', async () => {
   mockLookup(() => HttpResponse.json(preview))
   server.use(http.post(`${API}/invitations/accept`, () => HttpResponse.json({ error: 'x' }, { status: 422 })))
   const { user } = renderRoute('/invitation?token=tok', { me: null })
@@ -77,7 +77,7 @@ test('mot de passe refusé', async () => {
   expect(await screen.findByText('Le mot de passe doit contenir au moins 10 caractères (72 octets au plus).')).toBeInTheDocument()
 })
 
-test("lien devenu invalide à l'envoi", async () => {
+test('link no longer valid on submit', async () => {
   mockLookup(() => HttpResponse.json({ ...preview, account_exists: true }))
   server.use(http.post(`${API}/invitations/accept`, () => HttpResponse.json({ error: 'x' }, { status: 400 })))
   const { user } = renderRoute('/invitation?token=tok', { me: null })

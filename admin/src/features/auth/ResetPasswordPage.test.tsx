@@ -8,13 +8,13 @@ async function submit(user: ReturnType<typeof renderRoute>['user'], password = '
   await user.click(screen.getByRole('button', { name: 'Enregistrer' }))
 }
 
-test('sans jeton, le lien est invalide', async () => {
+test('without a token, the link is invalid', async () => {
   renderRoute('/reset-password', { me: null })
   expect(await screen.findByText('Lien invalide ou expiré.')).toBeInTheDocument()
   expect(screen.queryByLabelText('Nouveau mot de passe')).not.toBeInTheDocument()
 })
 
-test('succès', async () => {
+test('success', async () => {
   let body: unknown
   server.use(
     http.post(`${API}/auth/password-reset/confirm`, async ({ request }) => {
@@ -29,7 +29,7 @@ test('succès', async () => {
   expect(body).toEqual({ token: 'abc', password: 'nouveau-mot-de-passe' })
 })
 
-test('lien refusé par le serveur', async () => {
+test('link refused by the server', async () => {
   server.use(
     http.post(`${API}/auth/password-reset/confirm`, () => HttpResponse.json({ error: 'invalid link' }, { status: 400 })),
   )
@@ -38,7 +38,7 @@ test('lien refusé par le serveur', async () => {
   expect(await screen.findByText('Lien invalide ou expiré.')).toBeInTheDocument()
 })
 
-test('mot de passe refusé', async () => {
+test('password refused', async () => {
   server.use(
     http.post(`${API}/auth/password-reset/confirm`, () =>
       HttpResponse.json({ error: 'password must be at least 10 characters long' }, { status: 422 }),

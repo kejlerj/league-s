@@ -15,13 +15,13 @@ function setup(queries: (string | null)[] = []) {
   return renderRoute('/leagues/L1?tab=players', { me: adminOne })
 }
 
-test('liste les joueurs', async () => {
+test('lists the players', async () => {
   setup()
   expect(await screen.findByText('Léo Dupont')).toBeInTheDocument()
   expect(screen.getByText('Max Durand')).toBeInTheDocument()
 })
 
-test('la recherche envoie q', async () => {
+test('the search sends q', async () => {
   const queries: (string | null)[] = []
   const { user } = setup(queries)
   await user.type(await screen.findByLabelText('Rechercher'), 'dup')
@@ -29,7 +29,7 @@ test('la recherche envoie q', async () => {
   expect(queries).not.toContain('d')
 })
 
-test('création : la photo vide part en null', async () => {
+test('create: an empty photo is sent as null', async () => {
   let body: unknown
   server.use(
     http.post(`${API}/leagues/L1/players`, async ({ request }) => {
@@ -46,7 +46,7 @@ test('création : la photo vide part en null', async () => {
   await vi.waitFor(() => expect(body).toEqual({ firstname: 'Tom', lastname: 'Petit', icon: null }))
 })
 
-test('modification : PATCH sur le bon chemin, sans la photo vide', async () => {
+test('edit: PATCH on the right path, without the empty photo', async () => {
   let body: unknown
   server.use(
     http.patch(`${API}/leagues/L1/players/P1`, async ({ request }) => {
@@ -63,7 +63,7 @@ test('modification : PATCH sur le bon chemin, sans la photo vide', async () => {
   await vi.waitFor(() => expect(body).toEqual({ firstname: 'Léo', lastname: 'Dupontd' }))
 })
 
-test('suppression refusée', async () => {
+test('delete refused', async () => {
   server.use(http.delete(`${API}/leagues/L1/players/P1`, () => HttpResponse.json({ error: 'x' }, { status: 409 })))
   const { user } = setup()
   const row = (await screen.findByText('Léo Dupont')).closest('tr')!

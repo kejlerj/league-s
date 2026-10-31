@@ -5,25 +5,25 @@ import { adminOne, adminTwo, leagueL1, mockLeague, mockMe, superadmin } from '@/
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
-test('sans session, une page protégée redirige vers la connexion', async () => {
+test('a protected page redirects to login without a session', async () => {
   renderRoute('/leagues/L1', { me: null })
   expect(await screen.findByRole('heading', { name: 'Connexion' })).toBeInTheDocument()
 })
 
-test("un admin qui ouvre une ligue qui n'est pas la sienne arrive dans sa ligue", async () => {
+test('an admin who opens a league that is not theirs lands in their league', async () => {
   mockLeague(leagueL1)
   renderRoute('/leagues/L2', { me: adminOne })
   expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
   expect(screen.queryByText('Accès refusé.')).not.toBeInTheDocument()
 })
 
-test("un admin de plusieurs ligues qui ouvre une ligue étrangère arrive sur la liste de ses ligues", async () => {
+test('an admin of several leagues who opens another league lands on the list of their leagues', async () => {
   renderRoute('/leagues/L9', { me: adminTwo })
   expect(await screen.findByRole('heading', { name: 'Ligues' })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'District Sud' })).toBeInTheDocument()
 })
 
-test("après la déconnexion d'un superadmin, un admin qui se connecte arrive dans sa ligue", async () => {
+test('after a superadmin logs out, an admin who logs in lands in their league', async () => {
   mockLeague({ id: 'L9', name: 'Neuvième', logo: null })
   const { user } = renderRoute('/leagues/L9', { me: superadmin })
   expect(await screen.findByRole('heading', { name: 'Neuvième' })).toBeInTheDocument()
@@ -46,19 +46,19 @@ test("après la déconnexion d'un superadmin, un admin qui se connecte arrive da
   expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
 })
 
-test('un admin accède à sa ligue par un lien profond', async () => {
+test('an admin reaches their league through a deep link', async () => {
   mockLeague(leagueL1)
   renderRoute('/leagues/L1', { me: adminOne })
   expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
 })
 
-test("un superadmin accède à n'importe quelle ligue", async () => {
+test('a superadmin reaches any league', async () => {
   mockLeague({ id: 'L9', name: 'Neuvième', logo: null })
   renderRoute('/leagues/L9', { me: superadmin })
   expect(await screen.findByRole('heading', { name: 'Neuvième' })).toBeInTheDocument()
 })
 
-test('le gabarit affiche le nom et la déconnexion renvoie au login', async () => {
+test('the layout shows the name, and logging out goes back to login', async () => {
   mockLeague(leagueL1)
   const { user } = renderRoute('/leagues/L1', { me: adminOne })
   expect(await screen.findByText('Admin Nord')).toBeInTheDocument()
@@ -74,7 +74,7 @@ test('le gabarit affiche le nom et la déconnexion renvoie au login', async () =
   expect(called).toBe(true)
 })
 
-test('un 401 sur une écriture renvoie au login puis ramène à la page', async () => {
+test('a 401 on a write goes to login, then back to the page', async () => {
   mockLeague(leagueL1)
   const { user } = renderRoute('/leagues/L1', { me: adminOne })
   expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()

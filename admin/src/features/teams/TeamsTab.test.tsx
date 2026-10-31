@@ -10,13 +10,13 @@ function setup() {
   return renderRoute('/leagues/L1?tab=teams', { me: adminOne })
 }
 
-test('liste les équipes', async () => {
+test('lists the teams', async () => {
   setup()
   expect(await screen.findByText('AS Alpha')).toBeInTheDocument()
   expect(screen.getByText('FC Bravo')).toBeInTheDocument()
 })
 
-test('création : le logo vide part en null', async () => {
+test('create: an empty logo is sent as null', async () => {
   let body: unknown
   server.use(
     http.post(`${API}/leagues/L1/teams`, async ({ request }) => {
@@ -32,7 +32,7 @@ test('création : le logo vide part en null', async () => {
   await vi.waitFor(() => expect(body).toEqual({ name: 'US Charlie', logo: null }))
 })
 
-test('modification : PATCH sans la clé logo si elle est vide', async () => {
+test('edit: PATCH without the logo key when it is empty', async () => {
   let body: unknown
   server.use(
     http.patch(`${API}/leagues/L1/teams/T1`, async ({ request }) => {
@@ -49,7 +49,7 @@ test('modification : PATCH sans la clé logo si elle est vide', async () => {
   await vi.waitFor(() => expect(body).toEqual({ name: 'AS Alpha B' }))
 })
 
-test('suppression refusée', async () => {
+test('delete refused', async () => {
   server.use(http.delete(`${API}/leagues/L1/teams/T1`, () => HttpResponse.json({ error: 'x' }, { status: 409 })))
   const { user } = setup()
   const row = (await screen.findByText('AS Alpha')).closest('tr')!

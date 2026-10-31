@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react'
 import { ApiError } from '@/api/client'
 import { useSubmit } from '@/ui/useSubmit'
 
-test('useSubmit ignore le second appel tant que le premier est en cours', async () => {
+test('useSubmit ignores a second call while the first one is running', async () => {
   let release!: () => void
   const fn = vi.fn(
     () =>
@@ -23,7 +23,7 @@ test('useSubmit ignore le second appel tant que le premier est en cours', async 
   expect(result.current.pending).toBe(false)
 })
 
-test("useSubmit expose le message et résout false en cas d'échec", async () => {
+test('useSubmit exposes the message and resolves false on failure', async () => {
   const { result } = renderHook(() => useSubmit(() => Promise.reject(new ApiError(409, 'pris'))))
   let ok = true
   await act(async () => {
@@ -33,7 +33,7 @@ test("useSubmit expose le message et résout false en cas d'échec", async () =>
   expect(result.current.error).toBe('pris')
 })
 
-test('useSubmit applique les overrides et efface l\'erreur au succès suivant', async () => {
+test('useSubmit applies the overrides and clears the error on the next success', async () => {
   let fail = true
   const { result } = renderHook(() =>
     useSubmit(() => (fail ? Promise.reject(new ApiError(409, 'x')) : Promise.resolve()), { 409: 'Conflit.' }),

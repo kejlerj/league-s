@@ -4,13 +4,13 @@ import { adminOne, adminTwo, leagueL1, leagueL2, mockLeague } from '@/test/fixtu
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
-test('un admin à une ligue est redirigé dedans', async () => {
+test('an admin of one league is redirected into it', async () => {
   mockLeague(leagueL1)
   renderRoute('/', { me: adminOne })
   expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
 })
 
-test('un admin à deux ligues voit ses ligues, sans création ni suppression', async () => {
+test('an admin of two leagues sees their leagues, without create or delete', async () => {
   renderRoute('/', { me: adminTwo })
   expect(await screen.findByRole('link', { name: 'District Nord' })).toHaveAttribute('href', '/leagues/L1')
   expect(screen.getByRole('link', { name: 'District Sud' })).toBeInTheDocument()
@@ -18,7 +18,7 @@ test('un admin à deux ligues voit ses ligues, sans création ni suppression', a
   expect(screen.queryByRole('button', { name: 'Supprimer' })).not.toBeInTheDocument()
 })
 
-test('le superadmin crée une ligue ; un logo vide part en null', async () => {
+test('the superadmin creates a league; an empty logo is sent as null', async () => {
   let body: unknown
   server.use(
     http.get(`${API}/leagues`, () => HttpResponse.json([leagueL1])),
@@ -36,7 +36,7 @@ test('le superadmin crée une ligue ; un logo vide part en null', async () => {
   await vi.waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 })
 
-test('suppression refusée affiche Cette ligue a un historique.', async () => {
+test('a refused delete shows Cette ligue a un historique.', async () => {
   server.use(
     http.get(`${API}/leagues`, () => HttpResponse.json([leagueL1, leagueL2])),
     http.delete(`${API}/leagues/L1`, () => HttpResponse.json({ error: 'league has history' }, { status: 409 })),
@@ -48,7 +48,7 @@ test('suppression refusée affiche Cette ligue a un historique.', async () => {
   expect(await screen.findByText('Cette ligue a un historique.')).toBeInTheDocument()
 })
 
-test('le superadmin avec une seule ligue existante reste sur la liste', async () => {
+test('a superadmin with a single existing league stays on the list', async () => {
   server.use(http.get(`${API}/leagues`, () => HttpResponse.json([leagueL1])))
   renderRoute('/')
   expect(await screen.findByRole('link', { name: 'District Nord' })).toBeInTheDocument()

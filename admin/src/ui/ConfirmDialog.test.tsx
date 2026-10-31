@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { ApiError } from '@/api/client'
 import { ConfirmDialog } from '@/ui/ConfirmDialog'
 
-test("ConfirmDialog reste ouvert et montre l'erreur si onConfirm échoue", async () => {
+test('ConfirmDialog stays open and shows the error when onConfirm fails', async () => {
   const onClose = vi.fn()
   render(
     <ConfirmDialog
@@ -21,7 +21,7 @@ test("ConfirmDialog reste ouvert et montre l'erreur si onConfirm échoue", async
   expect(onClose).not.toHaveBeenCalled()
 })
 
-test('ConfirmDialog se ferme après succès', async () => {
+test('ConfirmDialog closes after a success', async () => {
   const onClose = vi.fn()
   const onConfirm = vi.fn(() => Promise.resolve())
   render(
@@ -32,14 +32,14 @@ test('ConfirmDialog se ferme après succès', async () => {
   expect(onClose).toHaveBeenCalledTimes(1)
 })
 
-test('ConfirmDialog fermé ne rend rien', () => {
+test('a closed ConfirmDialog renders nothing', () => {
   render(
     <ConfirmDialog open={false} title="T" message="M" confirmLabel="Oui" onConfirm={() => Promise.resolve()} onClose={() => {}} />,
   )
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
 
-test("ConfirmDialog rouvert n'affiche pas l'erreur précédente", async () => {
+test('a reopened ConfirmDialog does not show the previous error', async () => {
   const props = {
     title: 'Supprimer',
     message: 'Sûr ?',

@@ -15,13 +15,13 @@ async function openNew(user: ReturnType<typeof renderRoute>['user']) {
   return screen.getByRole('dialog')
 }
 
-test('liste les saisons avec un lien vers chacune', async () => {
+test('lists the seasons with a link to each one', async () => {
   setup()
   expect(await screen.findByRole('link', { name: '2026-2027' })).toHaveAttribute('href', '/leagues/L1/seasons/S1')
   expect(screen.getByText('01/09/2026')).toBeInTheDocument()
 })
 
-test('création envoie les dates en UTC et les valeurs par défaut', async () => {
+test('create sends the dates in UTC and the default values', async () => {
   let body: unknown
   server.use(
     http.post(`${API}/leagues/L1/seasons`, async ({ request }) => {
@@ -48,7 +48,7 @@ test('création envoie les dates en UTC et les valeurs par défaut', async () =>
   )
 })
 
-test("les départages partent dans l'ordre de sélection", async () => {
+test('tie breakers are sent in the order they were selected', async () => {
   let body: { tie_breakers?: string[] } = {}
   server.use(
     http.post(`${API}/leagues/L1/seasons`, async ({ request }) => {
@@ -67,7 +67,7 @@ test("les départages partent dans l'ordre de sélection", async () => {
   await vi.waitFor(() => expect(body.tie_breakers).toEqual(['goals_scored', 'head_to_head']))
 })
 
-test("fin avant début bloque l'envoi", async () => {
+test('an end before the start blocks submitting', async () => {
   let called = false
   server.use(
     http.post(`${API}/leagues/L1/seasons`, () => {
@@ -85,7 +85,7 @@ test("fin avant début bloque l'envoi", async () => {
   expect(called).toBe(false)
 })
 
-test('modification préremplit les dates et envoie un PATCH', async () => {
+test('edit prefills the dates and sends a PATCH', async () => {
   let body: unknown
   server.use(
     http.patch(`${API}/leagues/L1/seasons/S1`, async ({ request }) => {
@@ -113,7 +113,7 @@ test('modification préremplit les dates et envoie un PATCH', async () => {
   )
 })
 
-test('suppression 409', async () => {
+test('delete answered 409', async () => {
   server.use(http.delete(`${API}/leagues/L1/seasons/S1`, () => HttpResponse.json({ error: 'x' }, { status: 409 })))
   const { user } = setup()
   const row = (await screen.findByRole('link', { name: '2026-2027' })).closest('tr')!

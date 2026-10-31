@@ -47,7 +47,7 @@ function capture(target: { body?: unknown }, status = 204) {
   }
 }
 
-test("affiche l'effectif et le nom de l'équipe", async () => {
+test('shows the squad and the team name', async () => {
   setup()
   expect(await screen.findByRole('heading', { name: 'AS Alpha' })).toBeInTheDocument()
   const row = (await screen.findByText('Léo Dupont')).closest('tr')!
@@ -56,7 +56,7 @@ test("affiche l'effectif et le nom de l'équipe", async () => {
   expect(screen.getByRole('link', { name: 'Retour à la saison' })).toHaveAttribute('href', '/leagues/L1/seasons/S1')
 })
 
-test('Afficher les départs recharge avec all=true', async () => {
+test('Show departures reloads with all=true', async () => {
   const alls: (string | null)[] = []
   const { user } = setup(alls)
   await screen.findByText('Léo Dupont')
@@ -66,7 +66,7 @@ test('Afficher les départs recharge avec all=true', async () => {
   expect(alls).toContain('true')
 })
 
-test('entrée : numéro vide en null, date au format YYYY-MM-DD, joueurs déjà présents exclus', async () => {
+test('join: an empty number is null, the date is YYYY-MM-DD, players already in the squad are left out', async () => {
   const sent: { body?: unknown } = {}
   const { user } = setup([], http.post(SQUAD, capture(sent, 201)))
   await user.click(await screen.findByRole('button', { name: 'Ajouter un joueur' }))
@@ -79,7 +79,7 @@ test('entrée : numéro vide en null, date au format YYYY-MM-DD, joueurs déjà 
   await vi.waitFor(() => expect(sent.body).toEqual({ player_id: 'P2', number: null, joined_on: today() }))
 })
 
-test("entrée refusée : le message de l'API s'affiche", async () => {
+test('join refused: the API message is shown', async () => {
   const { user } = setup(
     [],
     http.post(SQUAD, () => HttpResponse.json({ error: 'player already in a squad this season' }, { status: 409 })),
@@ -93,7 +93,7 @@ test("entrée refusée : le message de l'API s'affiche", async () => {
   expect(await screen.findByText('player already in a squad this season')).toBeInTheDocument()
 })
 
-test('changement de numéro', async () => {
+test('changing the number', async () => {
   const sent: { body?: unknown } = {}
   const { user } = setup([], http.patch(`${SQUAD}/M1`, capture(sent, 200)))
   const row = (await screen.findByText('Léo Dupont')).closest('tr')!
@@ -107,7 +107,7 @@ test('changement de numéro', async () => {
   await vi.waitFor(() => expect(sent.body).toEqual({ number: 9 }))
 })
 
-test('départ', async () => {
+test('leaving', async () => {
   const sent: { body?: unknown } = {}
   const { user } = setup([], http.post(`${SQUAD}/M1/leave`, capture(sent, 200)))
   const row = (await screen.findByText('Léo Dupont')).closest('tr')!
@@ -116,7 +116,7 @@ test('départ', async () => {
   await vi.waitFor(() => expect(sent.body).toEqual({ left_on: today() }))
 })
 
-test("transfert : part de l'équipe courante, qui n'est pas proposée en destination", async () => {
+test('transfer: leaves from the current team, which is not offered as a destination', async () => {
   const sent: { body?: unknown } = {}
   const { user } = setup([], http.post(`${S}/transfers`, capture(sent, 201)))
   const row = (await screen.findByText('Léo Dupont')).closest('tr')!
@@ -131,7 +131,7 @@ test("transfert : part de l'équipe courante, qui n'est pas proposée en destina
   )
 })
 
-test('un joueur parti n\'a plus d\'actions', async () => {
+test('a player who left has no actions', async () => {
   const { user } = setup()
   await screen.findByText('Léo Dupont')
   await user.click(screen.getByLabelText('Afficher les départs'))
@@ -140,7 +140,7 @@ test('un joueur parti n\'a plus d\'actions', async () => {
   expect(within(row).getByText('20/09/2026')).toBeInTheDocument()
 })
 
-test("un joueur déjà dans une autre équipe de la saison n'est pas proposé, et le formulaire dit quoi faire", async () => {
+test('a player already in another team of the season is not offered, and the form says what to do', async () => {
   const { user } = setup()
   server.use(http.get(`${S}/teams/T2/squad`, () => HttpResponse.json([{ ...member, membership_id: 'M2', player_id: 'P2' }])))
   await screen.findByText('Léo Dupont')

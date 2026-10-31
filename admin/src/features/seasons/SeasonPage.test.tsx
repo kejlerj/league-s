@@ -17,7 +17,7 @@ function setup(tab = 'teams', ...handlers: Parameters<typeof server.use>) {
   return renderRoute(`/leagues/L1/seasons/S1?tab=${tab}`, { me: adminOne })
 }
 
-test('affiche la saison, le retour à la ligue et les trois onglets', async () => {
+test('shows the season, the way back to the league and the three tabs', async () => {
   setup()
   expect(await screen.findByRole('heading', { name: '2026-2027' })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Retour à la ligue' })).toHaveAttribute('href', '/leagues/L1?tab=seasons')
@@ -26,7 +26,7 @@ test('affiche la saison, le retour à la ligue et les trois onglets', async () =
   }
 })
 
-test("une équipe inscrite mène à son effectif", async () => {
+test('a registered team links to its squad', async () => {
   setup()
   expect(await screen.findByRole('link', { name: 'AS Alpha' })).toHaveAttribute(
     'href',
@@ -34,7 +34,7 @@ test("une équipe inscrite mène à son effectif", async () => {
   )
 })
 
-test('la liste ne propose que les équipes non inscrites et inscrit la bonne', async () => {
+test('the list offers only unregistered teams and registers the chosen one', async () => {
   let called = ''
   server.use(
     http.post(`${S}/teams/:teamId`, ({ params }) => {
@@ -51,7 +51,7 @@ test('la liste ne propose que les équipes non inscrites et inscrit la bonne', a
   await vi.waitFor(() => expect(called).toBe('T2'))
 })
 
-test('désinscription refusée', async () => {
+test('unregistering refused', async () => {
   server.use(http.delete(`${S}/teams/T1`, () => HttpResponse.json({ error: 'x' }, { status: 409 })))
   const { user } = setup()
   const row = (await screen.findByRole('link', { name: 'AS Alpha' })).closest('tr')!
@@ -60,7 +60,7 @@ test('désinscription refusée', async () => {
   expect(await screen.findByText('Cette équipe a des matchs dans la saison.')).toBeInTheDocument()
 })
 
-test('le classement affiche une ligne complète', async () => {
+test('the standings show a full row', async () => {
   setup(
     'standings',
     http.get(`${S}/standings`, () =>
@@ -79,18 +79,18 @@ test('le classement affiche une ligne complète', async () => {
   expect(headers).toEqual(['#', 'Équipe', 'J', 'G', 'N', 'P', 'BP', 'BC', 'Diff', 'Pts'])
 })
 
-test('classement vide', async () => {
+test('empty standings', async () => {
   setup('standings')
   expect(await screen.findByText('Aucun match terminé.')).toBeInTheDocument()
 })
 
-test("la saison d'une ligue non administrée ramène l'admin dans sa ligue", async () => {
+test('a season of a league they do not administer sends the admin back to their league', async () => {
   mockLeague(leagueL1)
   renderRoute('/leagues/L2/seasons/S9', { me: adminOne })
   expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
 })
 
-test("quand toutes les équipes sont inscrites, l'onglet explique où en créer une", async () => {
+test('when every team is registered, the tab explains where to create one', async () => {
   setup()
   server.use(http.get(`${API}/leagues/L1/teams`, () => HttpResponse.json([teamA])))
   expect(await screen.findByText(/Toutes les équipes de la ligue sont déjà inscrites/)).toBeInTheDocument()

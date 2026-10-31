@@ -41,7 +41,7 @@ async function rowOf(status: string) {
   return cell.closest('tr')!
 }
 
-test('les actions dépendent du statut', async () => {
+test('the actions depend on the status', async () => {
   setup()
   const live = await rowOf('En cours')
   expect(within(live).getByRole('button', { name: 'Score' })).toBeInTheDocument()
@@ -52,7 +52,7 @@ test('les actions dépendent du statut', async () => {
   expect(within(scheduled).queryByRole('button', { name: 'Score' })).not.toBeInTheDocument()
 })
 
-test('la ligne affiche les équipes, le score et la date locale', async () => {
+test('the row shows the teams, the score and the local date', async () => {
   setup()
   const live = await rowOf('En cours')
   expect(within(live).getByText('FC Bravo')).toBeInTheDocument()
@@ -61,7 +61,7 @@ test('la ligne affiche les équipes, le score et la date locale', async () => {
   expect(within(scheduled).getByText(/^11\/10\/2026 \d{2}:\d{2}$/)).toBeInTheDocument()
 })
 
-test('saisie du score', async () => {
+test('entering the score', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.put(`${M}/M2/score`, capture(sent)))
   await user.click(within(await rowOf('En cours')).getByRole('button', { name: 'Score' }))
@@ -76,7 +76,7 @@ test('saisie du score', async () => {
   await vi.waitFor(() => expect(sent.body).toEqual({ home: 2, away: 1 }))
 })
 
-test('programmer sans coup d\'envoi ni lieu envoie des null', async () => {
+test('scheduling without kickoff or venue sends nulls', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.post(M, capture(sent)))
   await user.click(await screen.findByRole('button', { name: 'Programmer un match' }))
@@ -90,7 +90,7 @@ test('programmer sans coup d\'envoi ni lieu envoie des null', async () => {
   )
 })
 
-test('le coup d\'envoi saisi en heure locale part en UTC', async () => {
+test('the kickoff entered in local time is sent in UTC', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.post(M, capture(sent)))
   await user.click(await screen.findByRole('button', { name: 'Programmer un match' }))
@@ -106,7 +106,7 @@ test('le coup d\'envoi saisi en heure locale part en UTC', async () => {
   )
 })
 
-test("mêmes équipes : l'envoi est bloqué", async () => {
+test('same teams: submitting is blocked', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.post(M, capture(sent)))
   await user.click(await screen.findByRole('button', { name: 'Programmer un match' }))
@@ -119,7 +119,7 @@ test("mêmes équipes : l'envoi est bloqué", async () => {
   expect(sent.calls).toBe(0)
 })
 
-test('les filtres partent dans la requête', async () => {
+test('the filters are sent in the request', async () => {
   const queries: URLSearchParams[] = []
   const { user } = setup(queries)
   await rowOf('En cours')
@@ -129,7 +129,7 @@ test('les filtres partent dans la requête', async () => {
   await vi.waitFor(() => expect(queries.some((q) => q.get('matchday') === '2' && q.get('status') === 'live')).toBe(true))
 })
 
-test('Modifier ouvre un formulaire prérempli et envoie les champs renseignés', async () => {
+test('Edit opens a prefilled form and sends the filled fields', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.patch(`${M}/M1`, capture(sent)))
   await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Modifier' }))
@@ -147,7 +147,7 @@ test('Modifier ouvre un formulaire prérempli et envoie les champs renseignés',
   )
 })
 
-test('Modifier un match en cours : valeurs actuelles affichées, journée et date verrouillées', async () => {
+test('editing a live match shows the current values and locks matchday and date', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.patch(`${M}/M2`, capture(sent)))
   await user.click(within(await rowOf('En cours')).getByRole('button', { name: 'Modifier' }))
@@ -160,7 +160,7 @@ test('Modifier un match en cours : valeurs actuelles affichées, journée et dat
   await vi.waitFor(() => expect(sent.body).toEqual({ venue: 'Stade Nord', referee: 'M. Petit' }))
 })
 
-test('Démarrer appelle start, et une erreur de l\'API s\'affiche', async () => {
+test('Start calls start, and an API error is shown', async () => {
   const { user } = setup(
     [],
     http.post(`${M}/M1/start`, () => HttpResponse.json({ error: 'match is not scheduled' }, { status: 409 })),
@@ -170,7 +170,7 @@ test('Démarrer appelle start, et une erreur de l\'API s\'affiche', async () => 
   expect(await screen.findByText('match is not scheduled')).toBeInTheDocument()
 })
 
-test('Reporter sans nouvelle date envoie un corps vide', async () => {
+test('Postpone without a new date sends an empty body', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.post(`${M}/M1/postpone`, capture(sent)))
   await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Reporter' }))
@@ -178,7 +178,7 @@ test('Reporter sans nouvelle date envoie un corps vide', async () => {
   await vi.waitFor(() => expect(sent.body).toEqual({}))
 })
 
-test('Terminer demande confirmation puis appelle finish', async () => {
+test('Finish asks for confirmation, then calls finish', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.post(`${M}/M2/finish`, capture(sent)))
   await user.click(within(await rowOf('En cours')).getByRole('button', { name: 'Terminer' }))
@@ -187,13 +187,13 @@ test('Terminer demande confirmation puis appelle finish', async () => {
   await vi.waitFor(() => expect(sent.calls).toBe(1))
 })
 
-test('la confirmation nomme le match concerné', async () => {
+test('the confirmation names the match', async () => {
   const { user } = setup()
   await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Supprimer' }))
   expect(within(screen.getByRole('dialog')).getByText(/AS Alpha – FC Bravo, journée 1/)).toBeInTheDocument()
 })
 
-test("annuler un match : le bouton de confirmation n'est pas ambigu", async () => {
+test('cancelling a match: the confirm button is not ambiguous', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.post(`${M}/M1/cancel`, capture(sent)))
   await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Annuler' }))

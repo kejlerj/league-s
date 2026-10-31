@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
-test('la demande affiche toujours le même message', async () => {
+test('the request always shows the same message', async () => {
   let body: unknown
   server.use(
     http.post(`${API}/auth/password-reset`, async ({ request }) => {

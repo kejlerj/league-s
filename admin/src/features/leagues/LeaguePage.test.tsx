@@ -4,7 +4,7 @@ import { adminOne, leagueL1, leagueL2, mockLeague } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
-test('LeaguePage affiche les cinq onglets, Matchs en premier', async () => {
+test('LeaguePage shows the five tabs, Matches first', async () => {
   mockLeague(leagueL1)
   renderRoute('/leagues/L1', { me: adminOne })
   expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
@@ -12,13 +12,13 @@ test('LeaguePage affiche les cinq onglets, Matchs en premier', async () => {
   expect(screen.getByRole('tab', { name: 'Matchs' })).toHaveAttribute('aria-selected', 'true')
 })
 
-test('ligue inconnue affiche Introuvable.', async () => {
+test('an unknown league shows Introuvable.', async () => {
   server.use(http.get(`${API}/leagues/L1`, () => HttpResponse.json({ error: 'not found' }, { status: 404 })))
   renderRoute('/leagues/L1', { me: adminOne })
   expect(await screen.findByText('Introuvable.')).toBeInTheDocument()
 })
 
-test('modifier une ligue envoie un PATCH sans le logo vide', async () => {
+test('editing a league sends a PATCH without the empty logo', async () => {
   let body: unknown
   mockLeague(leagueL1)
   server.use(
@@ -37,7 +37,7 @@ test('modifier une ligue envoie un PATCH sans le logo vide', async () => {
   await vi.waitFor(() => expect(body).toEqual({ name: 'District Nord-Est' }))
 })
 
-test('modifier une ligue préremplit le logo', async () => {
+test('editing a league prefills the logo', async () => {
   mockLeague(leagueL2)
   const { user } = renderRoute('/leagues/L2')
   await user.click(await screen.findByRole('button', { name: 'Modifier' }))

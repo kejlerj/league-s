@@ -33,18 +33,18 @@ function setup(seasons: Season[], requested: string[] = [], ...handlers: Paramet
 }
 
 test.each([
-  ['la saison en cours', [past, running, upcoming], 'S1'],
-  ['sinon la prochaine saison', [past, upcoming], 'S2'],
-  ['sinon la dernière saison', [past], 'S0'],
-])('currentSeason choisit %s', (_, seasons, expected) => {
+  ['the current season', [past, running, upcoming], 'S1'],
+  ['otherwise the next season', [past, upcoming], 'S2'],
+  ['otherwise the last season', [past], 'S0'],
+])('currentSeason picks %s', (_, seasons, expected) => {
   expect(currentSeason(seasons, new Date())?.id).toBe(expected)
 })
 
-test('currentSeason sans saison', () => {
+test('currentSeason without a season', () => {
   expect(currentSeason([], new Date())).toBeUndefined()
 })
 
-test("la page d'une ligue s'ouvre sur les matchs de la saison en cours", async () => {
+test('a league page opens on the matches of the current season', async () => {
   const requested: string[] = []
   setup([past, running, upcoming], requested)
   expect(await screen.findByRole('cell', { name: 'Programmé' })).toBeInTheDocument()
@@ -52,7 +52,7 @@ test("la page d'une ligue s'ouvre sur les matchs de la saison en cours", async (
   expect(requested).toEqual(['S1'])
 })
 
-test('changer de saison recharge les matchs de la saison choisie', async () => {
+test('changing season loads the matches of the chosen season', async () => {
   const requested: string[] = []
   const { user } = setup([past, running], requested)
   await screen.findByRole('cell', { name: 'Programmé' })
@@ -61,7 +61,7 @@ test('changer de saison recharge les matchs de la saison choisie', async () => {
   expect(screen.getByRole('link', { name: 'Équipes et classement de la saison' })).toHaveAttribute('href', '/leagues/L1/seasons/S0')
 })
 
-test("un admin de ligue programme un match depuis l'onglet Matchs de la ligue", async () => {
+test("a league admin schedules a match from the league's Matches tab", async () => {
   let body: unknown
   const { user } = setup(
     [running],
@@ -81,7 +81,7 @@ test("un admin de ligue programme un match depuis l'onglet Matchs de la ligue", 
   await vi.waitFor(() => expect(body).toEqual({ home_team_id: 'T1', away_team_id: 'T2', matchday: 3, kickoff_at: null, venue: null }))
 })
 
-test("sans saison, l'onglet Matchs renvoie vers l'onglet Saisons", async () => {
+test('without a season, the Matches tab points to the Seasons tab', async () => {
   setup([])
   expect(await screen.findByText(/Aucune saison/)).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Saisons' })).toHaveAttribute('href', '/leagues/L1?tab=seasons')

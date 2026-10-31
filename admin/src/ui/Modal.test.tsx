@@ -16,13 +16,13 @@ function Harness() {
   )
 }
 
-test("à l'ouverture, le focus va sur le premier champ", async () => {
+test('on open, focus goes to the first field', async () => {
   render(<Harness />)
   await userEvent.click(screen.getByRole('button', { name: 'Ouvrir' }))
   expect(screen.getByLabelText('Premier')).toHaveFocus()
 })
 
-test('Tab reste dans la boîte de dialogue', async () => {
+test('Tab stays inside the dialog', async () => {
   const user = userEvent.setup()
   render(<Harness />)
   await user.click(screen.getByRole('button', { name: 'Ouvrir' }))
@@ -34,7 +34,7 @@ test('Tab reste dans la boîte de dialogue', async () => {
   expect(screen.getByRole('button', { name: 'Fermer' })).toHaveFocus()
 })
 
-test('à la fermeture, le focus revient sur le déclencheur', async () => {
+test('on close, focus returns to the trigger', async () => {
   const user = userEvent.setup()
   render(<Harness />)
   await user.click(screen.getByRole('button', { name: 'Ouvrir' }))

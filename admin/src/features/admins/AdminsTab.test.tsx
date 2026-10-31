@@ -21,7 +21,7 @@ function setup(me: Me, calls: string[] = []) {
   return renderRoute('/leagues/L1?tab=admins', { me })
 }
 
-test('un admin simple voit la liste, sans invitation ni retrait', async () => {
+test('a plain admin sees the list, without invite or remove', async () => {
   const calls: string[] = []
   setup(adminOne, calls)
   expect(await screen.findByText('nord@ligue.test')).toBeInTheDocument()
@@ -30,7 +30,7 @@ test('un admin simple voit la liste, sans invitation ni retrait', async () => {
   expect(calls).toEqual([])
 })
 
-test('le superadmin invite et obtient le lien, un mailto et un bouton copier', async () => {
+test('the superadmin invites and gets the link, a mailto and a copy button', async () => {
   let body: unknown
   server.use(
     http.post(`${API}/leagues/L1/invitations`, async ({ request }) => {
@@ -54,7 +54,7 @@ test('le superadmin invite et obtient le lien, un mailto et un bouton copier', a
   expect(decodeURIComponent(mailto)).toContain('District Nord')
 })
 
-test('inviter une personne déjà admin', async () => {
+test('inviting someone who is already an admin', async () => {
   server.use(http.post(`${API}/leagues/L1/invitations`, () => HttpResponse.json({ error: 'x' }, { status: 409 })))
   const { user } = setup(superadmin)
   await user.type(await screen.findByLabelText('E-mail'), 'nord@ligue.test')
@@ -62,7 +62,7 @@ test('inviter une personne déjà admin', async () => {
   expect(await screen.findByText('Cette personne est déjà admin de la ligue.')).toBeInTheDocument()
 })
 
-test('le superadmin annule une invitation en attente', async () => {
+test('the superadmin cancels a pending invitation', async () => {
   let deleted = false
   server.use(
     http.delete(`${API}/leagues/L1/invitations/I1`, () => {
@@ -77,7 +77,7 @@ test('le superadmin annule une invitation en attente', async () => {
   await vi.waitFor(() => expect(deleted).toBe(true))
 })
 
-test('le superadmin retire un admin', async () => {
+test('the superadmin removes an admin', async () => {
   let deleted = false
   server.use(
     http.delete(`${API}/leagues/L1/admins/U1`, () => {
