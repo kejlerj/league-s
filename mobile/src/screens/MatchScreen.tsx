@@ -46,7 +46,7 @@ export function MatchScreen({ id }: { id: string }) {
       <HeaderCard>
         <View className="gap-4">
           <View className="flex-row items-center justify-between">
-            <BackLink label={data ? fr.match.journee(data.matchday) : ''} />
+            <BackLink label={data ? fr.match.matchday(data.matchday) : ''} />
             {status && (
               <View className="bg-field dark:bg-fieldDark rounded-md px-2 py-1">
                 <ThemedText tone="muted" weight="semibold" size={11} className="uppercase tracking-wide">

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { SuiviScreen } from './SuiviScreen';
+import { FollowingScreen } from './FollowingScreen';
 import * as matchesService from '../services/matches';
 import * as leagueService from '../services/league';
 import { useAppStore } from '../store/useAppStore';
@@ -46,7 +46,7 @@ test('lists the followed fixtures for the current season', async () => {
     { match: apiMatch('m1', 'finished', 'Bastille', 'Belleville'), teamId: 'home' },
   ]);
 
-  render(<SuiviScreen />);
+  render(<FollowingScreen />);
 
   await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
   expect(matchesService.getFollowedFixtures).toHaveBeenCalledWith(SEASON.id, [TEAM]);
@@ -58,7 +58,7 @@ test('tapping a finished fixture opens its match page', async () => {
     { match: apiMatch('m1', 'finished', 'Bastille', 'Belleville'), teamId: 'home' },
   ]);
 
-  render(<SuiviScreen />);
+  render(<FollowingScreen />);
   await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
   fireEvent.press(screen.getByText('Bastille — Belleville'));
 
@@ -69,10 +69,10 @@ test('shows the empty state when no team is followed', async () => {
   useAppStore.setState({ follows: {} });
   jest.mocked(matchesService.getFollowedFixtures).mockResolvedValue([]);
 
-  render(<SuiviScreen />);
+  render(<FollowingScreen />);
 
-  await waitFor(() => expect(screen.getByText(fr.suivi.empty)).toBeTruthy());
-  expect(screen.getByText(fr.suivi.emptyHint)).toBeTruthy();
+  await waitFor(() => expect(screen.getByText(fr.following.empty)).toBeTruthy());
+  expect(screen.getByText(fr.following.emptyHint)).toBeTruthy();
 });
 
 test('shows an error and retries on tap', async () => {
@@ -80,8 +80,8 @@ test('shows an error and retries on tap', async () => {
     .mockRejectedValueOnce(new Error('network'))
     .mockResolvedValueOnce([{ match: apiMatch('m1', 'finished', 'Bastille', 'Belleville'), teamId: 'home' }]);
 
-  render(<SuiviScreen />);
-  await waitFor(() => expect(screen.getByText(fr.suivi.error)).toBeTruthy());
+  render(<FollowingScreen />);
+  await waitFor(() => expect(screen.getByText(fr.following.error)).toBeTruthy());
 
   fireEvent.press(screen.getByText(fr.common.retry));
 

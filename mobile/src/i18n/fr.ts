@@ -4,12 +4,12 @@ export const fr = {
     noSeason: 'Aucune saison disponible.',
   },
   tabs: {
-    suivi: 'Suivi',
-    classement: 'Classement',
-    pronos: 'Pronos',
-    moi: 'Moi',
+    following: 'Suivi',
+    standings: 'Classement',
+    predictions: 'Pronos',
+    profile: 'Moi',
   },
-  suivi: {
+  following: {
     title: 'Suivi',
     manage: 'Gérer',
     calendarLabel: 'Calendrier de mes équipes',
@@ -19,7 +19,7 @@ export const fr = {
     noMatches: 'Aucun match pour vos équipes cette saison.',
     error: 'Impossible de charger votre calendrier.',
   },
-  classement: {
+  standings: {
     title: 'Classement',
     columnHeaders: { rank: '#', team: 'Équipe', played: 'MJ', diff: 'DIFF', pts: 'PTS' },
     error: 'Impossible de charger le classement.',
@@ -47,7 +47,7 @@ export const fr = {
     error: 'Impossible de charger cette équipe.',
   },
   match: {
-    journee: (matchday: number) => `Journée ${matchday}`,
+    matchday: (matchday: number) => `Journée ${matchday}`,
     upcoming: 'À venir',
     live: 'En direct',
     done: 'Terminé',
@@ -64,7 +64,7 @@ export const fr = {
     scheduleTbd: 'Horaire à définir',
     error: 'Impossible de charger ce match.',
   },
-  moi: {
+  profile: {
     title: 'Moi',
     followedStat: 'Équipes suivies',
     followsHint: 'Vos équipes sont enregistrées sur cet appareil.',
@@ -72,6 +72,6 @@ export const fr = {
     themeOptions: ['Système', 'Clair', 'Sombre'],
   },
   placeholders: {
-    pronosNote: 'Les pronostics par journée arrivent dans une prochaine version.',
+    predictionsNote: 'Les pronostics par journée arrivent dans une prochaine version.',
   },
 };

@@ -16,7 +16,7 @@ import { getFollowedFixtures } from '../services/matches';
 import { toFixtureRow } from '../logic/fixtureRow';
 import { fr } from '../i18n/fr';
 
-export function SuiviScreen() {
+export function FollowingScreen() {
   const router = useRouter();
   const followedTeamIds = useAppStore((s) => s.followedTeamIds());
   const season = useCurrentSeason();
@@ -40,31 +40,31 @@ export function SuiviScreen() {
         <View className="flex-row items-end justify-between">
           <View>
             <ThemedText tone="muted" weight="semibold" size={11} className="uppercase tracking-wide">
-              {season.season ? `Saison ${season.season.name}` : fr.suivi.calendarLabel}
+              {season.season ? `Saison ${season.season.name}` : fr.following.calendarLabel}
             </ThemedText>
-            <ThemedText weight="semibold" size={24} className="mt-1.5">{fr.suivi.title}</ThemedText>
+            <ThemedText weight="semibold" size={24} className="mt-1.5">{fr.following.title}</ThemedText>
           </View>
-          <ThemedText tone="accent" weight="medium" size={12.5} onPress={() => router.push('/moi')}>
-            {fr.suivi.manage}
+          <ThemedText tone="accent" weight="medium" size={12.5} onPress={() => router.push('/profile')}>
+            {fr.following.manage}
           </ThemedText>
         </View>
       </HeaderCard>
 
       <View className="px-5 pt-4 gap-2.5 pb-6">
         {loading && <Skeleton rows={5} />}
-        {error && <ErrorState message={fr.suivi.error} onRetry={reload} />}
+        {error && <ErrorState message={fr.following.error} onRetry={reload} />}
 
         {!loading && !error && (
           <>
-            <SectionLabel>{fr.suivi.calendarLabel}</SectionLabel>
+            <SectionLabel>{fr.following.calendarLabel}</SectionLabel>
 
             {followedTeamIds.length === 0 ? (
               <View className="py-6 gap-1">
-                <ThemedText tone="muted" size={13.5}>{fr.suivi.empty}</ThemedText>
-                <ThemedText tone="faint" size={12}>{fr.suivi.emptyHint}</ThemedText>
+                <ThemedText tone="muted" size={13.5}>{fr.following.empty}</ThemedText>
+                <ThemedText tone="faint" size={12}>{fr.following.emptyHint}</ThemedText>
               </View>
             ) : rows.length === 0 ? (
-              <ThemedText tone="muted" size={13.5} className="py-6">{fr.suivi.noMatches}</ThemedText>
+              <ThemedText tone="muted" size={13.5} className="py-6">{fr.following.noMatches}</ThemedText>
             ) : (
               <Card>
                 {rows.map((row, index) => (
@@ -72,7 +72,7 @@ export function SuiviScreen() {
                     key={row.matchId}
                     onPress={() =>
                       router.push(
-                        row.target.kind === 'match' ? `/match/${row.target.id}` : `/suivi/team/${row.target.id}`
+                        row.target.kind === 'match' ? `/match/${row.target.id}` : `/following/team/${row.target.id}`
                       )
                     }
                   >
@@ -91,7 +91,7 @@ export function SuiviScreen() {
               </Card>
             )}
 
-            <ThemedText tone="muted" size={11.5} className="leading-5">{fr.suivi.footerNote}</ThemedText>
+            <ThemedText tone="muted" size={11.5} className="leading-5">{fr.following.footerNote}</ThemedText>
           </>
         )}
       </View>

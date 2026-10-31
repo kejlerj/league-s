@@ -15,7 +15,7 @@ import { getStandings, listSeasons } from '../services/league';
 import { pickCurrentSeason } from '../logic/season';
 import { fr } from '../i18n/fr';
 
-export function ClassementScreen() {
+export function StandingsScreen() {
   const router = useRouter();
   const followedTeamIds = useAppStore((s) => s.followedTeamIds());
   const seasons = useAsync(listSeasons, []);
@@ -34,7 +34,7 @@ export function ClassementScreen() {
     <Screen>
       <HeaderCard>
         <View className="gap-3.5">
-          <ThemedText weight="semibold" size={24}>{fr.classement.title}</ThemedText>
+          <ThemedText weight="semibold" size={24}>{fr.standings.title}</ThemedText>
           {seasonList.length > 0 && (
             <SegmentedTabs
               options={seasonList.map((season) => season.name)}
@@ -49,7 +49,7 @@ export function ClassementScreen() {
         {(seasons.loading || standings.loading) && <Skeleton rows={8} />}
         {(seasons.error || standings.error) && (
           <ErrorState
-            message={fr.classement.error}
+            message={fr.standings.error}
             onRetry={() => {
               seasons.reload();
               standings.reload();
@@ -61,23 +61,23 @@ export function ClassementScreen() {
         )}
 
         {standings.data && standings.data.length === 0 && !standings.loading && (
-          <ThemedText tone="muted" size={13.5}>{fr.classement.empty}</ThemedText>
+          <ThemedText tone="muted" size={13.5}>{fr.standings.empty}</ThemedText>
         )}
 
         {standings.data && standings.data.length > 0 && (
           <>
             <View className="flex-row items-center gap-3 px-1">
-              <ThemedText tone="faint" mono size={10.5} style={{ width: 20 }}>{fr.classement.columnHeaders.rank}</ThemedText>
-              <ThemedText tone="faint" mono size={10.5} className="flex-1">{fr.classement.columnHeaders.team}</ThemedText>
+              <ThemedText tone="faint" mono size={10.5} style={{ width: 20 }}>{fr.standings.columnHeaders.rank}</ThemedText>
+              <ThemedText tone="faint" mono size={10.5} className="flex-1">{fr.standings.columnHeaders.team}</ThemedText>
               <View style={{ width: 112 }} className="flex-row justify-between">
-                <ThemedText tone="faint" mono size={10.5}>{fr.classement.columnHeaders.played}</ThemedText>
-                <ThemedText tone="faint" mono size={10.5}>{fr.classement.columnHeaders.diff}</ThemedText>
-                <ThemedText tone="faint" mono size={10.5}>{fr.classement.columnHeaders.pts}</ThemedText>
+                <ThemedText tone="faint" mono size={10.5}>{fr.standings.columnHeaders.played}</ThemedText>
+                <ThemedText tone="faint" mono size={10.5}>{fr.standings.columnHeaders.diff}</ThemedText>
+                <ThemedText tone="faint" mono size={10.5}>{fr.standings.columnHeaders.pts}</ThemedText>
               </View>
             </View>
             <Card>
               {standings.data.map((row, index) => (
-                <Pressable key={row.team_id} onPress={() => router.push(`/classement/team/${row.team_id}`)}>
+                <Pressable key={row.team_id} onPress={() => router.push(`/standings/team/${row.team_id}`)}>
                   <CardRow
                     isFirst={index === 0}
                     testID={`standings-row-${row.team_id}`}
