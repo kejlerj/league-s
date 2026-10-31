@@ -85,10 +85,12 @@ Screen
   when `deps` change; exposes `{ data, loading, error, reload }`. A module-level
   `SHOULD_FAIL` dev flag (default `false`) makes services reject, to exercise
   error states.
-- **Services** — `src/services/`. Pure functions returning `Promise<T>`.
+- **Services** — `src/services/`. Pure functions returning `Promise<T>`. Every
+  league-scoped service takes the `leagueId` as its first parameter; screens get it
+  from `useLeagueId()` (`src/hooks/useLeagueId.ts`), which reads the store.
   Artificial delay via `await sleep(250)`. No React, no store access.
 - **`useAppStore`** — `src/store/useAppStore.ts`. Zustand with `persist`
-  middleware (AsyncStorage) for `themeMode`, `follows`, `mvpVotes`.
+  middleware (AsyncStorage) for `themeMode`, `leagueId`, `followsByLeague`, `mvpVotes`.
 
 ### Store shape
 
@@ -98,12 +100,14 @@ type NotifyLevel = 'full' | 'result';
 
 interface AppState {
   themeMode: ThemeMode;
-  follows: Record<string, { notifyLevel: NotifyLevel }>;   // key: teamId
+  leagueId: string | null;                                  // the chosen league, null before the picker
+  followsByLeague: Record<string, Record<string, { notifyLevel: NotifyLevel }>>; // leagueId -> teamId -> entry
   mvpVotes: Record<string, string>;                        // matchId -> playerId
 
   setThemeMode(mode: ThemeMode): void;
-  toggleFollow(teamId: string): void;
-  isFollowing(teamId: string): boolean;
+  setLeague(leagueId: string): void;
+  toggleFollow(teamId: string): void;       // in the chosen league
+  isFollowing(teamId: string): boolean;     // in the chosen league
   toggleMvpVote(matchId: string, playerId: string): void;
 
   // selectors (via hooks/selectors, not stored)
@@ -111,8 +115,10 @@ interface AppState {
 }
 ```
 
-Persisted keys: `themeMode`, `follows`, `mvpVotes`. Default `follows` seeded on
-first run with `fc-vallonnais` and `as-riverain` (both `full`).
+Persisted keys: `themeMode`, `leagueId`, `followsByLeague`, `mvpVotes`. Follows are
+kept per league: switching league shows that league's follows, and switching back
+restores the previous ones. Store version 3 drops the follows saved before the
+picker existed (they belonged to the hard-coded league).
 
 ---
 
@@ -227,6 +233,7 @@ Helpers: `src/services/_shared.ts` — `sleep`, `SHOULD_FAIL`, `maybeFail()`.
 ```
 app/
   _layout.tsx                     Root <Stack> (headerShown: false)
+                                    - leagues        league picker, no tab bar
                                     - (tabs)
                                     - match/[id]     full screen, no tab bar
                                     - boutique       placeholder
@@ -242,9 +249,16 @@ app/
       team/[id].tsx               -> <TeamScreen origin="standings"/>
     predictions/index.tsx         -> <PlaceholderScreen title="Pronos"/>
     profile/index.tsx             -> <ProfileScreen/>
+  index.tsx                       -> /following, or /leagues when no league is chosen
+  leagues.tsx                     -> <LeaguePickerScreen/>
   match/[id].tsx                  -> <MatchScreen/>
   boutique/index.tsx             -> <PlaceholderScreen title="Boutique"/>
 ```
+
+**League guard.** `index`, `(tabs)/_layout` and `match/[id]` render through
+`<RequireLeague>` (`src/components/RequireLeague.tsx`): it waits for the persisted
+store to load, then redirects to `/leagues` when no league is chosen. The tabs are
+keyed by `leagueId`, so changing league remounts every tab and refetches.
 
 **Rationale.** The design shows the tab bar on the Team page (with the origin tab
 still active) but **not** on the Match page ("la page match n'en a pas, c'est une
@@ -405,6 +419,19 @@ depuis 2024`; trailing `Modifier` (inert).
      (`system`/`light`/`dark`) via `setThemeMode`. **Working.**
    - `Notifications`, `Confidentialité`, `Langue` (`Français`), `Déconnexion` —
      present with chevron, inert this slice.
+
+### 7.5b League picker (`src/screens/LeaguePickerScreen.tsx`)
+
+Shown on first launch and from Moi. **Header**: `‹ Retour` (only when a league is
+already chosen), title `Choisissez votre ligue`, hint `Vous pourrez en changer
+depuis Moi.` **Body**: one `Card` with a row per league from `GET /leagues`
+(sorted by name by the API): crest + name, `✓` on the current league. Tapping a
+row saves the league (`setLeague`) and replaces the screen with `/following`.
+Loading skeleton, error with `Réessayer`, `Aucune ligue disponible.` when empty.
+
+**Moi** gets a `LIGUE` section above the stats: the current league's name
+(`GET /leagues/{id}`) and a `Changer` link to `/leagues`. The followed-teams count
+is for the current league.
 
 ### 7.6 Pronos & Boutique — `PlaceholderScreen`
 

@@ -32,7 +32,7 @@ One league, "District Five Demo", with 10 teams of 8 players and two seasons. Ea
 - 2025-2026 is over: every match is finished, except the last match of matchdays 6, 12 and 18, which is postponed.
 - 2026-2027 depends on when you seed: matches before now are finished, the first match after now is live (kicked off 25 minutes ago, 1-0), the rest are scheduled.
 
-IDs are fixed, so E2E tests can use them. The league ID is the mobile app's `LEAGUE_ID`. Other IDs follow `01a10d58-8ae3-7c66-80KK-NNNNNNNNNNNN`, with `KK` the kind and `N` the number in hex, starting at 1:
+IDs are fixed, so E2E tests can use them. The league ID is fixed; the mobile app lists the leagues and asks which one on first launch. Other IDs follow `01a10d58-8ae3-7c66-80KK-NNNNNNNNNNNN`, with `KK` the kind and `N` the number in hex, starting at 1:
 
 | Kind | `KK` | Examples |
 |---|---|---|
