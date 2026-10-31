@@ -183,10 +183,10 @@ func (s *PostgresStore) Update(ctx context.Context, leagueID, id uuid.UUID, u Up
 	})
 
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
-		switch {
-		case pgErr.ConstraintName == "season_league_name_key":
+		switch pgErr.ConstraintName {
+		case "season_league_name_key":
 			return nil, ErrUpdateNameTaken
-		case pgErr.ConstraintName == "season_check":
+		case "season_check":
 			return nil, ErrUpdateInvalidDates
 		}
 	}
