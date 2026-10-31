@@ -6,6 +6,45 @@ One Paragraph of project description goes here
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
+### Local stack
+
+Docker and the [goose](https://github.com/pressly/goose) CLI must be installed.
+
+```bash
+cp .env.example .env
+make dev-up
+```
+
+`make dev-up` starts Postgres, waits until it is healthy, runs the migrations and starts the API on `PORT` (8080 by default). In another terminal:
+
+```bash
+make seed
+```
+
+`make seed` replaces the demo league and everything in it, and leaves other leagues alone. Run it again at any time to reset the demo data.
+
+For the mobile app, copy `mobile/.env.example` to `mobile/.env`. `EXPO_PUBLIC_API_URL` points the app at the local API.
+
+### Demo data
+
+One league, "District Five Demo", with 10 teams of 8 players and two seasons. Each season is a home and away round robin: 18 matchdays of 5 matches, on Saturdays from 14:00 Paris time.
+
+- 2025-2026 is over: every match is finished, except the last match of matchdays 6, 12 and 18, which is postponed.
+- 2026-2027 depends on when you seed: matches before now are finished, the first match after now is live (kicked off 25 minutes ago, 1-0), the rest are scheduled.
+
+IDs are fixed, so E2E tests can use them. The league ID is the mobile app's `LEAGUE_ID`. Other IDs follow `01a10d58-8ae3-7c66-80KK-NNNNNNNNNNNN`, with `KK` the kind and `N` the number in hex, starting at 1:
+
+| Kind | `KK` | Examples |
+|---|---|---|
+| League | | `01a10d58-8ae3-7c66-ac38-c7cac896cc65` |
+| Season | `01` | 2025-2026 is `…-8001-000000000001`, 2026-2027 is `…-8001-000000000002` |
+| Team | `02` | AS Belleville is `…-8002-000000000001`, Athletic Goncourt is `…-8002-00000000000a` |
+| Player | `03` | 8 per team, in team order |
+| Squad membership | `04` | 2025-2026 first, then 2026-2027 |
+| Match | `05` | 2025-2026 first, then 2026-2027, by matchday and kickoff |
+
+`make seed` prints the league, season and team IDs.
+
 ## Database schema
 
 The app is multi-tenant: each league is an independent space run by its own
