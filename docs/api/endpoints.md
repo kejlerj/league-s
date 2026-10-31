@@ -56,7 +56,7 @@ Tous les chemins commencent par `/api/v1`.
 
 | Statut | Méthode | Chemin | Accès | Description |
 |---|---|---|---|---|
-| ✅ | `POST` | `/leagues/{leagueID}/seasons` | admin | Créer une saison |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons` | admin | Créer une saison (points 3/1/0 par défaut, `max_squad_size` optionnel) |
 | ✅ | `GET` | `/leagues/{leagueID}/seasons` | public | Lister les saisons de la ligue, la plus récente d'abord |
 | ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}` | public | Lire une saison |
 | ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Modifier dates, points ou départages (attention au classement déjà publié) |

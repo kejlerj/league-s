@@ -45,7 +45,8 @@ const validSeasonBody = `{
 	"match_win_pts": 3,
 	"match_draw_pts": 1,
 	"match_loss_pts": 0,
-	"tie_breakers": ["goal_difference", "head_to_head"]
+	"tie_breakers": ["goal_difference", "head_to_head"],
+	"max_squad_size": 12
 }`
 
 func TestCreateThenGetSeason(t *testing.T) {
@@ -88,8 +89,50 @@ func TestCreateThenGetSeason(t *testing.T) {
 		t.Errorf("points = %d/%d/%d, want 3/1/0", got.MatchWinPts, got.MatchDrawPts, got.MatchLossPts)
 	case !slices.Equal(got.TieBreakers, []string{"goal_difference", "head_to_head"}):
 		t.Errorf("tie_breakers = %v, want [goal_difference head_to_head]", got.TieBreakers)
+	case got.MaxSquadSize == nil || *got.MaxSquadSize != 12:
+		t.Errorf("max_squad_size = %v, want 12", got.MaxSquadSize)
 	case got.LeagueID != league.ID:
 		t.Errorf("league_id = %s, want %s (from the URL)", got.LeagueID, league.ID)
+	}
+}
+
+func TestCreateSeason_Defaults(t *testing.T) {
+	league := testdb.New(t, testPool).CreateLeague(testdb.LeagueParams{})
+
+	body := `{"name": "2025-2026", "start_on": "2025-08-01T00:00:00Z", "end_on": "2026-05-31T00:00:00Z", "tie_breakers": ["goal_difference"]}`
+	rec := testhttp.Do(t, newTestRouter(), http.MethodPost, seasonsPath(league), body)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body)
+	}
+
+	var got seasonResponse
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.MatchWinPts != 3 || got.MatchDrawPts != 1 || got.MatchLossPts != 0 {
+		t.Errorf("points = %d/%d/%d, want 3/1/0", got.MatchWinPts, got.MatchDrawPts, got.MatchLossPts)
+	}
+	if got.MaxSquadSize != nil {
+		t.Errorf("max_squad_size = %d, want null (no limit)", *got.MaxSquadSize)
+	}
+}
+
+func TestCreateSeason_ExplicitZeroPointsAreKept(t *testing.T) {
+	league := testdb.New(t, testPool).CreateLeague(testdb.LeagueParams{})
+
+	body := `{"name": "2025-2026", "start_on": "2025-08-01T00:00:00Z", "end_on": "2026-05-31T00:00:00Z",
+		"match_win_pts": 2, "match_draw_pts": 0, "match_loss_pts": 0, "tie_breakers": ["goal_difference"]}`
+	rec := testhttp.Do(t, newTestRouter(), http.MethodPost, seasonsPath(league), body)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body)
+	}
+
+	var got seasonResponse
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if got.MatchWinPts != 2 || got.MatchDrawPts != 0 || got.MatchLossPts != 0 {
+		t.Errorf("points = %d/%d/%d, want 2/0/0", got.MatchWinPts, got.MatchDrawPts, got.MatchLossPts)
 	}
 }
 
@@ -130,6 +173,8 @@ func TestCreateSeason_Errors(t *testing.T) {
 		{"name too long", seasonsPath, withField("name", `"`+strings.Repeat("a", 51)+`"`), http.StatusUnprocessableEntity},
 		{"end before start", seasonsPath, withField("end_on", `"2025-01-01T00:00:00Z"`), http.StatusUnprocessableEntity},
 		{"negative points", seasonsPath, withField("match_win_pts", `-1`), http.StatusUnprocessableEntity},
+		{"zero max squad size", seasonsPath, withField("max_squad_size", `0`), http.StatusUnprocessableEntity},
+		{"negative max squad size", seasonsPath, withField("max_squad_size", `-1`), http.StatusUnprocessableEntity},
 		{"unknown tie breaker", seasonsPath, withField("tie_breakers", `["coin_flip"]`), http.StatusUnprocessableEntity},
 		{"same name in the same league", seasonsPath, validSeasonBody, http.StatusConflict},
 		{"unknown league", func(db.League) string { return "/api/v1/leagues/" + uuid.NewString() + "/seasons" }, validSeasonBody, http.StatusNotFound},
