@@ -40,7 +40,7 @@ export function FollowingScreen() {
         <View className="flex-row items-end justify-between">
           <View>
             <ThemedText tone="muted" weight="semibold" size={11} className="uppercase tracking-wide">
-              {season.season ? `Saison ${season.season.name}` : fr.following.calendarLabel}
+              {season.season ? fr.following.seasonLabel(season.season.name) : fr.following.calendarLabel}
             </ThemedText>
             <ThemedText weight="semibold" size={24} className="mt-1.5">{fr.following.title}</ThemedText>
           </View>

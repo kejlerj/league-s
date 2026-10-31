@@ -11,6 +11,7 @@ export const fr = {
   },
   following: {
     title: 'Suivi',
+    seasonLabel: (name: string) => `Saison ${name}`,
     manage: 'Gérer',
     calendarLabel: 'Calendrier de mes équipes',
     footerNote: 'Les matchs les plus récents apparaissent en premier.',
@@ -46,6 +47,14 @@ export const fr = {
     noSquad: 'Effectif non disponible.',
     error: 'Impossible de charger cette équipe.',
   },
+  fixture: {
+    live: 'en cours',
+    cancelled: 'annulé',
+    scheduleTbd: 'à définir',
+    matchdayShort: (matchday: number) => `J${matchday}`,
+    home: 'domicile',
+    away: 'extérieur',
+  },
   match: {
     matchday: (matchday: number) => `Journée ${matchday}`,
     upcoming: 'À venir',
@@ -70,6 +79,10 @@ export const fr = {
     followsHint: 'Vos équipes sont enregistrées sur cet appareil.',
     theme: 'Thème',
     themeOptions: ['Système', 'Clair', 'Sombre'],
+  },
+  dates: {
+    months: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],
+    days: ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'],
   },
   placeholders: {
     predictionsNote: 'Les pronostics par journée arrivent dans une prochaine version.',
