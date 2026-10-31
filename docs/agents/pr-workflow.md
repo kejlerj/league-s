@@ -15,7 +15,7 @@ How one item of the plan becomes a merged PR, with no human in the loop unless s
 
 Each PR starts from a GitHub issue with the `plan` label (template `.github/ISSUE_TEMPLATE/plan-item.md`). The issue gives:
 
-- the plan ID (`PR-11`…),
+- the plan ID (`PR-11`…), and the phase's milestone,
 - the scope, the acceptance criteria, and the specs it refers to,
 - `Depends on: #<issue>, …`,
 - the parts it touches (back, admin, mobile), and whether it needs a simulator check.
@@ -27,7 +27,7 @@ When the issue and the specs disagree, the specs win. Say so in the PR descripti
 1. **Branch.** In a worktree, named `<type>/SOC-<issue>-<slug>`:
    - from the latest `origin/main` when every dependency is merged,
    - from the parent PR's branch when a dependency is still open (see Stacked PRs).
-2. **Plan.** For more than a few files, write a short task list first (skill `superpowers:writing-plans`). Keep it in the session, not in the repo.
+2. **Plan.** Write a short task list (skill `superpowers:writing-plans`) and post it on the issue as a checklist comment. Keep it ticked as you go. It lets another session resume the work, and gives the reviewer context. Never commit it to the repo.
 3. **Tests first.** Write the failing spec tests, then the code (skill `superpowers:test-driven-development`). See `testing.md`.
 4. **Docs.** Update `docs/api/*.md` and the specs touched by the change.
 5. **Local checks.** Run every check of the parts you touched (`CLAUDE.md` › Commands). Simulator checks are paused until PR-26.
