@@ -1,7 +1,6 @@
 package server
 
 import (
-	"bufio"
 	"context"
 	"net/http"
 	"os"
@@ -50,18 +49,16 @@ func routerOperations(t *testing.T) map[string]bool {
 
 func specOperations(t *testing.T) map[string]bool {
 	t.Helper()
-	f, err := os.Open(openAPIPath)
+	raw, err := os.ReadFile(openAPIPath)
 	if err != nil {
-		t.Fatalf("open spec: %v", err)
+		t.Fatalf("read spec: %v", err)
 	}
-	defer f.Close()
 
 	ops := map[string]bool{}
 	inPaths := false
 	path := ""
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
+	for line := range strings.Lines(string(raw)) {
+		line = strings.TrimRight(line, "\r\n")
 		if topLevelKey.MatchString(line) {
 			inPaths = line == "paths:"
 			continue
@@ -76,9 +73,6 @@ func specOperations(t *testing.T) map[string]bool {
 		if m := specMethodLine.FindStringSubmatch(line); m != nil {
 			ops[strings.ToUpper(m[1])+" "+path] = true
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		t.Fatalf("read spec: %v", err)
 	}
 	return ops
 }
