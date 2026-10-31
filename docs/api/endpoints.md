@@ -97,8 +97,8 @@ A body that fails validation gets a 422 with one readable French message per fie
 | ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad` | public | Current squad (`?all=true` to include players who left) |
 | ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad` | admin | Add a player (`player_id`, `number`, `joined_on`) |
 | ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}` | admin | Change the number |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}/leave` | admin | Make a player leave (`left_on`) |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/transfers` | admin | Transfer: leave then join, in one transaction |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}/leave` | admin | Make a player leave (`left_on`, their last day in the team) |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/transfers` | admin | Transfer: leave then join, in one transaction. `on` is the last day in the former team, the new team is joined the day after |
 
 ## Matches
 

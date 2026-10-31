@@ -157,6 +157,15 @@ func TestJoinSquad_Errors(t *testing.T) {
 			wantStatus: http.StatusConflict,
 		},
 		{
+			name: "overlaps a past stint",
+			path: func(f fixture) string { return f.squadPath(f.home) },
+			body: func(f fixture) string {
+				f.joinAndLeave(t, f.away, "2025-08-01", "2025-12-31")
+				return joinBody(f.player.ID, "10", "2025-12-01")
+			},
+			wantStatus: http.StatusConflict,
+		},
+		{
 			name: "number already taken",
 			path: func(f fixture) string { return f.squadPath(f.home) },
 			body: func(f fixture) string {
@@ -358,8 +367,11 @@ func TestTransfer(t *testing.T) {
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body)
 	}
-	if got := decode[membershipResponse](t, rec); got.TeamID != f.away.ID || got.JoinedOn != "2026-01-15" {
-		t.Errorf("membership = %+v, want the player in the away team from 2026-01-15", got)
+	if got := decode[membershipResponse](t, rec); got.TeamID != f.away.ID || got.JoinedOn != "2026-01-16" {
+		t.Errorf("membership = %+v, want the player in the away team from 2026-01-16, the day after leaving", got)
+	}
+	if former := f.list(t, f.home, true); len(former) != 1 || former[0].LeftOn == nil || !former[0].LeftOn.Equal(day(t, "2026-01-15")) {
+		t.Errorf("former squad history = %+v, want the player's last day on 2026-01-15", former)
 	}
 
 	if members := f.list(t, f.home, false); len(members) != 0 {
@@ -399,6 +411,11 @@ func TestTransfer_Errors(t *testing.T) {
 		{
 			name:       "outside the season",
 			body:       func(f fixture) string { return transferBody(f.player.ID, f.home.ID, f.away.ID, "2026-06-01") },
+			wantStatus: http.StatusUnprocessableEntity,
+		},
+		{
+			name:       "on the last day of the season, so joining the day after is outside it",
+			body:       func(f fixture) string { return transferBody(f.player.ID, f.home.ID, f.away.ID, "2026-05-31") },
 			wantStatus: http.StatusUnprocessableEntity,
 		},
 		{

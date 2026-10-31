@@ -55,8 +55,9 @@ export function TransferForm({ leagueId, seasonId, teamId, member, teams, onDone
       </SelectField>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Numéro" {...field('number')} type="number" min={1} max={99} value={number} onChange={(e) => setNumber(e.target.value)} />
-        <Field label="Date" {...field('on')} type="date" required value={on} onChange={(e) => setOn(e.target.value)} />
+        <Field label="Dernier jour dans l'équipe actuelle" {...field('on')} type="date" required value={on} onChange={(e) => setOn(e.target.value)} />
       </div>
+      <p className="text-sm text-slate-600">Il rejoint la nouvelle équipe le lendemain.</p>
       <FormActions error={error} pending={pending} onCancel={onCancel} submitLabel="Transférer" />
     </form>
   )
