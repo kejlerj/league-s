@@ -1322,7 +1322,7 @@ components:
       enum: [goal_difference, goals_scored, head_to_head, fair_play, random]
     Season:
       type: object
-      required: [id, league_id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers]
+      required: [id, league_id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, max_squad_size]
       properties:
         id:
           type: string
@@ -1351,6 +1351,11 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TieBreaker"
+        max_squad_size:
+          type: [integer, "null"]
+          format: int32
+          minimum: 1
+          description: "`null`: no limit."
     CreateSeasonRequest:
       type: object
       required: [name, start_on, end_on]
@@ -1367,21 +1372,29 @@ components:
           format: date-time
           description: After `start_on`.
         match_win_pts:
-          type: integer
+          type: [integer, "null"]
           format: int32
           minimum: 0
+          description: Defaults to 3.
         match_draw_pts:
-          type: integer
+          type: [integer, "null"]
           format: int32
           minimum: 0
+          description: Defaults to 1.
         match_loss_pts:
-          type: integer
+          type: [integer, "null"]
           format: int32
           minimum: 0
+          description: Defaults to 0.
         tie_breakers:
           type: array
           items:
             $ref: "#/components/schemas/TieBreaker"
+        max_squad_size:
+          type: [integer, "null"]
+          format: int32
+          minimum: 1
+          description: "Omitted or `null`: no limit."
 
     ShirtNumber:
       type: [integer, "null"]
