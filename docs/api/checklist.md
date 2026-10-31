@@ -11,6 +11,7 @@
 - [x] **Lint** : golangci-lint v2 (`.golangci.yml`, `make lint`, `make fmt`, job de CI), imports groupés avec `gci` et `goimports`
 - [x] **CI** : `.github/workflows/ci.yml` (vérifié avec actionlint, pas encore poussé)
 - [x] **README** : schéma, notes de conception, endpoints
+- [x] **Stack locale et données de démo** : `make dev-up` (Postgres, migrations, API) et `make seed` (`cmd/seed`, package `internal/demo`) : une ligue de démo, 10 équipes de 8 joueurs, deux saisons aller-retour, IDs fixes pour les tests E2E
 
 ## 🔜 Avant le prochain commit
 
