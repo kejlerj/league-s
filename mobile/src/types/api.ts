@@ -627,7 +627,7 @@ export interface paths {
         put?: never;
         /**
          * Add a player to the squad
-         * @description Access: league admin.
+         * @description Access: league admin. A player is in only one squad at a time: a membership that overlaps another one of the same player in the season, past ones included, is refused (409).
          */
         post: operations["joinSquad"];
         delete?: never;
@@ -700,7 +700,7 @@ export interface paths {
         put?: never;
         /**
          * Move a player from one squad to another
-         * @description Access: league admin. Leaves then joins, in one transaction. Returns the new membership.
+         * @description Access: league admin. Leaves then joins, in one transaction. `on` is the player's last day in the former team; they join the new team the day after, which must still be in the season (422 otherwise). Returns the new membership.
          */
         post: operations["transferPlayer"];
         delete?: never;
@@ -855,9 +855,11 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Postpone a scheduled match
+         * Postpone a scheduled or live match
          * @description Access: league admin. Without `kickoff_at`, the match becomes `postponed`.
          *     With it, the match is rescheduled at that time.
+         *     A live match keeps its score while postponed. Once it has a new kickoff, it is scheduled again without a score.
+         *     A finished, postponed or cancelled match can't be postponed (409).
          */
         post: operations["postponeMatch"];
         delete?: never;
@@ -880,8 +882,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Cancel a scheduled or postponed match
-         * @description Access: league admin.
+         * Cancel a scheduled, postponed or live match
+         * @description Access: league admin. A live match keeps its score for the record, but doesn't count in the standings.
+         *     A finished or cancelled match can't be cancelled (409).
          */
         post: operations["cancelMatch"];
         delete?: never;
@@ -1075,7 +1078,10 @@ export interface components {
             number: components["schemas"]["ShirtNumber"];
             /** Format: date */
             joined_on: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description The player's last day in the team (included). `null`: still in the squad.
+             */
             left_on: string | null;
         };
         CreatePlayerRequest: {
@@ -1178,7 +1184,10 @@ export interface components {
             number: components["schemas"]["ShirtNumber"];
             /** Format: date */
             joined_on: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description The player's last day in the team (included). `null`: still in the squad.
+             */
             left_on: string | null;
         };
         SquadMember: {
@@ -1193,7 +1202,10 @@ export interface components {
             number: components["schemas"]["ShirtNumber"];
             /** Format: date */
             joined_on: string;
-            /** Format: date */
+            /**
+             * Format: date
+             * @description The player's last day in the team (included). `null`: still in the squad.
+             */
             left_on: string | null;
         };
         JoinSquadRequest: {
@@ -1207,7 +1219,10 @@ export interface components {
             number?: components["schemas"]["ShirtNumber"];
         };
         LeaveSquadRequest: {
-            /** Format: date */
+            /**
+             * Format: date
+             * @description The player's last day in the team (included).
+             */
             left_on: string;
         };
         TransferRequest: {
@@ -1221,7 +1236,10 @@ export interface components {
              */
             to_team_id: string;
             number?: components["schemas"]["ShirtNumber"];
-            /** Format: date */
+            /**
+             * Format: date
+             * @description The player's last day in the former team. They join the new team the day after.
+             */
             on: string;
         };
         /** @enum {string} */
