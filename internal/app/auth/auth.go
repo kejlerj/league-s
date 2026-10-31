@@ -47,7 +47,7 @@ func NormalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
-func hashPassword(password string) (string, error) {
+func HashPassword(password string) (string, error) {
 	if len([]rune(password)) < minPasswordLength {
 		return "", ErrPasswordTooShort
 	}
@@ -63,7 +63,7 @@ func hashPassword(password string) (string, error) {
 }
 
 var decoyHash = sync.OnceValue(func() string {
-	hash, err := hashPassword("a password nobody uses")
+	hash, err := HashPassword("a password nobody uses")
 	if err != nil {
 		panic(err)
 	}

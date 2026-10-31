@@ -9,7 +9,9 @@ import (
 
 	"github.com/google/uuid"
 
+	"league-s/internal/app/auth"
 	"league-s/internal/app/match"
+	"league-s/internal/mailer"
 	"league-s/internal/testdb"
 )
 
@@ -187,5 +189,24 @@ func TestSeed_LeavesOtherLeaguesUntouched(t *testing.T) {
 
 	if got := count(t, `SELECT count(*) FROM team WHERE league_id = $1`, other.ID); got != 1 {
 		t.Errorf("teams of the other league = %d, want 1", got)
+	}
+}
+
+func TestSeed_DemoAdminLogsInAndAdministersTheDemoLeague(t *testing.T) {
+	testdb.New(t, testPool)
+	seed(t, seedNow)
+	seed(t, seedNow)
+
+	store := auth.NewPostgresStore(testPool)
+	_, user, err := auth.NewService(store, auth.EmailNotifier{Mailer: mailer.Disabled{}}).Login(t.Context(), AdminEmail, AdminPassword)
+	if err != nil {
+		t.Fatalf("Login(%s) error = %v", AdminEmail, err)
+	}
+	if user.IsSuperadmin {
+		t.Error("demo admin is a superadmin, want a league admin only")
+	}
+	admin, err := store.IsLeagueAdmin(t.Context(), user.ID, LeagueID)
+	if err != nil || !admin {
+		t.Errorf("IsLeagueAdmin() = %t, %v, want true", admin, err)
 	}
 }

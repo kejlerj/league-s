@@ -119,7 +119,7 @@ func (s *Invitations) Accept(ctx context.Context, token, name, password string) 
 		if name == "" || password == "" {
 			return ErrInvitationAccountRequired
 		}
-		hash, err := hashPassword(password)
+		hash, err := HashPassword(password)
 		if err != nil {
 			return err
 		}

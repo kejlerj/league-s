@@ -38,7 +38,7 @@ func NewService(store Store, notifier Notifier) *Service {
 }
 
 func (s *Service) CreateUser(ctx context.Context, email, name, password string, superadmin bool) (*User, error) {
-	hash, err := hashPassword(password)
+	hash, err := HashPassword(password)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (s *Service) sendReset(ctx context.Context, user User) error {
 }
 
 func (s *Service) ResetPassword(ctx context.Context, token, password string) error {
-	hash, err := hashPassword(password)
+	hash, err := HashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -164,7 +164,7 @@ func (s *Service) ChangePassword(ctx context.Context, user *User, sessionToken, 
 		return ErrChangePasswordWrongCurrent
 	}
 
-	hash, err := hashPassword(next)
+	hash, err := HashPassword(next)
 	if err != nil {
 		return err
 	}
