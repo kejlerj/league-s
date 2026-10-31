@@ -21,3 +21,8 @@ export function formatDateTime(date: Date): string {
 export function toLocalDateParam(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
+
+export function formatCalendarDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split('-').map(Number);
+  return `${day} ${fr.dates.months[month - 1]} ${year}`;
+}

@@ -6,6 +6,8 @@ export default function StandingsLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="team/[id]" />
+      <Stack.Screen name="squad/[teamId]" />
+      <Stack.Screen name="player/[id]" />
     </Stack>
   );
 }

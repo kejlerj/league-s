@@ -71,3 +71,28 @@ export interface SquadRow {
   joined_on: string;
   left_on: string | null;
 }
+
+export interface PlayerDetail {
+  id: string;
+  league_id: string;
+  firstname: string;
+  lastname: string;
+  icon: string | null;
+  current_team: TeamRef | null;
+}
+
+export interface SeasonRef {
+  id: string;
+  name: string;
+}
+
+export interface CareerEntry {
+  membership_id: string;
+  season: SeasonRef;
+  team: TeamRef;
+  number: number;
+  joined_on: string;
+  left_on: string | null;
+}
+
+export type TabOrigin = 'following' | 'standings';

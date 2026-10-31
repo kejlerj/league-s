@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Share, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { HeaderCard } from '../components/HeaderCard';
 import { BackLink } from '../components/BackLink';
@@ -19,8 +20,10 @@ import { listMatches } from '../services/matches';
 import { buildTeamDetail } from '../logic/teamDetail';
 import { formatDateTime, formatTime, toLocalDateParam } from '../logic/dateTime';
 import { fr } from '../i18n/fr';
+import type { TabOrigin } from '../types';
 
-export function TeamScreen({ id }: { id: string }) {
+export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
+  const router = useRouter();
   const isFollowing = useAppStore((s) => s.isFollowing(id));
   const toggleFollow = useAppStore((s) => s.toggleFollow);
   const leagueId = useLeagueId();
@@ -155,6 +158,14 @@ export function TeamScreen({ id }: { id: string }) {
                     </CardRow>
                   ))
                 )}
+                <Pressable onPress={() => router.push(`/${origin}/squad/${id}`)} accessibilityRole="button">
+                  <CardRow isFirst={false}>
+                    <ThemedText tone="accent" weight="medium" size={13.5} className="flex-1">
+                      {fr.team.fullSquad}
+                    </ThemedText>
+                    <ThemedText tone="accent" size={13.5}>›</ThemedText>
+                  </CardRow>
+                </Pressable>
               </Card>
             </View>
 

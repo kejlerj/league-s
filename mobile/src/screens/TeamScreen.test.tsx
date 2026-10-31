@@ -7,8 +7,9 @@ import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
 import type { ApiMatch } from '../types';
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
+  useRouter: () => ({ back: jest.fn(), push: mockPush }),
 }));
 jest.mock('../services/league');
 jest.mock('../services/matches');
@@ -46,7 +47,7 @@ beforeEach(() => {
 });
 
 test('shows the team header, next match, results and squad from the API', async () => {
-  render(<TeamScreen id={TEAM_ID} />);
+  render(<TeamScreen id={TEAM_ID} origin="following" />);
 
   await waitFor(() => expect(screen.getByText('US Bastille')).toBeTruthy());
   expect(screen.getByText('2ᵉ · 10 pts')).toBeTruthy();
@@ -57,11 +58,20 @@ test('shows the team header, next match, results and squad from the API', async 
 });
 
 test('follow toggles the button label and the store', async () => {
-  render(<TeamScreen id={TEAM_ID} />);
+  render(<TeamScreen id={TEAM_ID} origin="following" />);
   await waitFor(() => expect(screen.getByText(fr.team.follow)).toBeTruthy());
 
   fireEvent.press(screen.getByText(fr.team.follow));
 
   expect(useAppStore.getState().isFollowing(TEAM_ID)).toBe(true);
   await waitFor(() => expect(screen.getByText(fr.team.following)).toBeTruthy());
+});
+
+test('Voir l\'effectif complet opens the full squad in the same tab', async () => {
+  render(<TeamScreen id={TEAM_ID} origin="following" />);
+  await waitFor(() => expect(screen.getByText(fr.team.fullSquad)).toBeTruthy());
+
+  fireEvent.press(screen.getByText(fr.team.fullSquad));
+
+  expect(mockPush).toHaveBeenCalledWith(`/following/squad/${TEAM_ID}`);
 });

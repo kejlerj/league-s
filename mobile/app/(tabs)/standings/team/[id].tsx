@@ -4,5 +4,5 @@ import { TeamScreen } from '@/src/screens/TeamScreen';
 
 export default function StandingsTeamRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <TeamScreen id={id} />;
+  return <TeamScreen id={id} origin="standings" />;
 }

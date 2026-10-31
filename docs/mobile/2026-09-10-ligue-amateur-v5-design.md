@@ -243,10 +243,14 @@ app/
       _layout.tsx                 <Stack headerShown:false>: index, team/[id]
       index.tsx                   -> <FollowingScreen/>
       team/[id].tsx               -> <TeamScreen origin="following"/>
+      squad/[teamId].tsx          -> <SquadScreen origin="following"/>
+      player/[id].tsx             -> <PlayerScreen/>
     standings/
       _layout.tsx                 <Stack headerShown:false>: index, team/[id]
       index.tsx                   -> <StandingsScreen/>
       team/[id].tsx               -> <TeamScreen origin="standings"/>
+      squad/[teamId].tsx          -> <SquadScreen origin="standings"/>
+      player/[id].tsx             -> <PlayerScreen/>
     predictions/index.tsx         -> <PlaceholderScreen title="Pronos"/>
     profile/index.tsx             -> <ProfileScreen/>
   index.tsx                       -> /following, or /leagues when no league is chosen
@@ -373,12 +377,31 @@ follow hint line (`Vous suivez cette équipe — compos, buts, résultats` /
    `Étoile de Mornay` + `dom.`/`ext.`, score `3–1` (mono).
 3. `EFFECTIF · {squadCount} JOUEURS` label + `MJ · BUTS · PD` legend; `Card` of
    squad rows (number mono, avatar, name + position, `MP · goals · assists`
-   line); final row `Voir l'effectif complet` (inert this slice).
+   line); final row `Voir l'effectif complet ›` opens the full squad
+   (`/{origin}/squad/{teamId}`, same tab).
 
 **Follow button** calls `toggleFollow(teamId)`; the change is observable
 immediately in Suivi (list membership) and Classement (row tint) and Moi (count).
 
 **States:** skeleton / error.
+
+### 7.3b Full squad (`src/screens/SquadScreen.tsx`, props `teamId`, `origin`)
+
+**Header**: `‹ Retour`, team name, current season name. **Body**: the season's
+squad with departures (`GET …/squad?all=true`), in two sections:
+`EFFECTIF ACTUEL · {n} JOUEURS` and `DÉPARTS · {n}` (only when there are any). Rows:
+number (mono), avatar, name, and `Parti le 12 oct. 2026` for a departure. A row
+opens the player (`/{origin}/player/{playerId}`, same tab).
+**States:** skeleton / error with `Réessayer` / `Aucun joueur cette saison.`
+
+### 7.3c Player (`src/screens/PlayerScreen.tsx`, prop `id`)
+
+**Header**: `‹ Retour`, avatar, name, `Club actuel · {team}` or `Sans club`
+(`GET /leagues/{id}/players/{playerId}`, `current_team`). **Body**: `PARCOURS`
+`Card`, one row per stint from `GET …/players/{playerId}/career`, most recent
+first: crest, `{team} · N° {number}`, `Depuis le 29 août 2026` or
+`30 août 2025 → 31 mai 2026`, season name on the right.
+**States:** skeleton / error with `Réessayer` / `Aucun passage en club.`
 
 ### 7.4 Match (`src/screens/MatchScreen.tsx`) — no tab bar
 
