@@ -11,7 +11,7 @@ import { fr } from '../i18n/fr';
 
 const THEME_MODES: ThemeMode[] = ['system', 'light', 'dark'];
 
-export function MoiScreen() {
+export function ProfileScreen() {
   const themeMode = useAppStore((s) => s.themeMode);
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   const followedCount = useAppStore((s) => s.followedTeamIds().length);
@@ -19,7 +19,7 @@ export function MoiScreen() {
   return (
     <Screen>
       <HeaderCard>
-        <ThemedText weight="semibold" size={24}>{fr.moi.title}</ThemedText>
+        <ThemedText weight="semibold" size={24}>{fr.profile.title}</ThemedText>
       </HeaderCard>
 
       <View className="px-5 pt-4 gap-4 pb-6">
@@ -27,18 +27,18 @@ export function MoiScreen() {
           <View className="p-3.5">
             <ThemedText mono weight="semibold" size={20}>{followedCount}</ThemedText>
             <ThemedText tone="muted" weight="medium" size={11} className="mt-1.5 uppercase tracking-wide">
-              {fr.moi.followedStat}
+              {fr.profile.followedStat}
             </ThemedText>
-            <ThemedText tone="faint" size={12} className="mt-2">{fr.moi.followsHint}</ThemedText>
+            <ThemedText tone="faint" size={12} className="mt-2">{fr.profile.followsHint}</ThemedText>
           </View>
         </Card>
 
         <View className="gap-2.5">
-          <SectionLabel>{fr.moi.theme}</SectionLabel>
+          <SectionLabel>{fr.profile.theme}</SectionLabel>
           <Card>
             <CardRow isFirst>
               <SegmentedTabs
-                options={fr.moi.themeOptions}
+                options={fr.profile.themeOptions}
                 value={THEME_MODES.indexOf(themeMode)}
                 onChange={(index) => setThemeMode(THEME_MODES[index])}
               />

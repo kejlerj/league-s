@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { ClassementScreen } from './ClassementScreen';
+import { StandingsScreen } from './StandingsScreen';
 import * as leagueService from '../services/league';
 import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
@@ -27,13 +27,13 @@ beforeEach(() => {
 });
 
 test('shows the standings of the current season by default', async () => {
-  render(<ClassementScreen />);
+  render(<StandingsScreen />);
   await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
   expect(leagueService.getStandings).toHaveBeenCalledWith(RECENT.id);
 });
 
 test('switching the season loads that season standings', async () => {
-  render(<ClassementScreen />);
+  render(<StandingsScreen />);
   await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
 
   fireEvent.press(screen.getByTestId('segmented-tab-2025-2026'));
@@ -44,7 +44,7 @@ test('switching the season loads that season standings', async () => {
 
 test('a followed team row gets the follow tint', async () => {
   useAppStore.setState({ follows: { a: { notifyLevel: 'full' } } });
-  render(<ClassementScreen />);
+  render(<StandingsScreen />);
   await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
 
   expect(screen.getByTestId('standings-row-a').props.className).toContain('bg-accent/5');
@@ -52,6 +52,6 @@ test('a followed team row gets the follow tint', async () => {
 
 test('shows the error state when standings fail', async () => {
   jest.mocked(leagueService.getStandings).mockRejectedValueOnce(new Error('network'));
-  render(<ClassementScreen />);
-  await waitFor(() => expect(screen.getByText(fr.classement.error)).toBeTruthy());
+  render(<StandingsScreen />);
+  await waitFor(() => expect(screen.getByText(fr.standings.error)).toBeTruthy());
 });

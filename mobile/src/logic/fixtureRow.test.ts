@@ -47,7 +47,7 @@ test('a postponed match without a kickoff shows a placeholder and no date', () =
   expect(row.when).toBe('—');
 });
 
-test('a cancelled match is shown as annulé', () => {
+test('a cancelled match is shown as cancelled', () => {
   const row = toFixtureRow(match({ status: 'cancelled' }), 'home');
   expect(row.status).toBe('cancelled');
   expect(row.slot).toEqual({ text: 'annulé', tone: 'muted' });

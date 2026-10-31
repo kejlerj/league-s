@@ -8,10 +8,10 @@ import { fr } from '../i18n/fr';
 type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 const LABELS: Record<string, string> = {
-  suivi: fr.tabs.suivi,
-  classement: fr.tabs.classement,
-  pronos: fr.tabs.pronos,
-  moi: fr.tabs.moi,
+  following: fr.tabs.following,
+  standings: fr.tabs.standings,
+  predictions: fr.tabs.predictions,
+  profile: fr.tabs.profile,
 };
 
 export function TabBar({ state, navigation }: TabBarProps) {
