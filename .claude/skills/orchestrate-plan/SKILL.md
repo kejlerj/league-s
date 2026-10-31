@@ -44,7 +44,8 @@ An open issue is **ready** when:
 ## 3. Start the work
 
 - Start **every** ready issue, in any order. Plan IDs are only a priority among ready issues (`PR-05` before `PR-11`). A parked issue never holds back an issue that doesn't depend on it.
-- No limit on how many run at the same time. If the usage limit is hit, sessions wait for the reset: that is expected, not a failure.
+- No limit of our own on how many run at the same time, but the desktop app runs at most **5** sessions it started at once. If the usage limit is hit, sessions wait for the reset: that is expected, not a failure. After a reset, send each stopped session a short message to resume.
+- **New sessions start only on a turn where the owner wrote.** On an automated wake-up (a `/loop` tick or a session report), the app refuses `start_session`. Then give the issue to an **idle session whose PR is merged** (`SendMessage` with the same brief as below, plus "remove your old worktree and start a fresh one from `origin/main`"), preferring one that already knows the area. If no session is idle, wait for the next report.
 - Don't run two issues at the same time if both add a migration, or if both touch the same files. Start one, and keep the other for later.
 - Follow-up issues (`tech-debt`, `bug`) are plan items like any other. Give them a lower priority than plan items of the same phase.
 - Phase 6 (product features): a session writes the design spec as a `docs:` PR (skill `superpowers:brainstorming`, specs in `docs/`). The spec PR gets `needs-decision` once its review passes: the user approves the spec by merging it. Only then create and start the code issues.
