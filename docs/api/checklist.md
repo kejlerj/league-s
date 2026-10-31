@@ -119,12 +119,12 @@
 - [x] **Limiter la taille des body** dans `httpx.Decode` : `http.MaxBytesReader` (par exemple 1 Mo), sinon un client peut envoyer un body énorme
 - [x] **Refuser les champs inconnus** dans `httpx.Decode` : `DisallowUnknownFields()`
   - un `"league_id"` envoyé dans le body renverra 400 au lieu d'être ignoré en silence
-- [ ] **Des headers de sécurité** via un middleware, pour toutes les réponses :
+- [x] **Des headers de sécurité** via un middleware, pour toutes les réponses (`httpx.SecurityHeaders`, `/admin` pose sa propre CSP avec `httpx.ContentSecurityPolicy`) :
   - `X-Content-Type-Options: nosniff`
   - `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` (une API JSON n'a rien à charger ni à afficher dans une iframe)
   - `Referrer-Policy: no-referrer`
-  - `Cache-Control: no-store` sur les réponses authentifiées
-  - `Strict-Transport-Security` seulement si l'app gère elle-même le TLS, sinon c'est au reverse proxy de l'ajouter
+  - `Cache-Control: no-store` sur les réponses authentifiées : toute requête qui porte une session (cookie ou `Bearer`), et `/auth` et `/invitations` qui en créent
+  - `Strict-Transport-Security` seulement si l'app gère elle-même le TLS, sinon c'est au reverse proxy de l'ajouter. L'app ne gère pas le TLS : pas de HSTS dans l'app
 - [x] **Sécuriser `/health`** : il est public, répond 200 même quand la base est down, et renvoie l'erreur brute de pgx et les stats du pool
   - en public : juste `{"status":"up"}` ou `"down"`, avec un 503 quand c'est down
   - l'erreur détaillée va dans les logs (et dans Sentry), pas dans la réponse
