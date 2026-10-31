@@ -23,6 +23,8 @@ gh issue view <N> --repo kejlerj/league-s --comments
 
 ## 2. Branch in a worktree
 
+If you were given this issue after finishing another one, remove your old worktree first (`git worktree remove .claude/worktrees/<old>`), so you start clean.
+
 ```bash
 git fetch origin
 git worktree add -b <type>/SOC-<N>-<slug> .claude/worktrees/SOC-<N> refs/remotes/origin/main
