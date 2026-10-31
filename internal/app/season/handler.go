@@ -128,6 +128,9 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		MaxSquadSize: req.MaxSquadSize,
 		LeagueID:     leagueID,
 	}
+	if season.TieBreakers == nil {
+		season.TieBreakers = DefaultTieBreakers()
+	}
 
 	res, err := h.store.Create(r.Context(), season)
 	if createErr, ok := errors.AsType[CreateError](err); ok {

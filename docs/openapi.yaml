@@ -1390,6 +1390,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TieBreaker"
+          description: "Applied in order. Omitted: `[goal_difference, goals_scored]`."
         max_squad_size:
           type: [integer, "null"]
           format: int32
