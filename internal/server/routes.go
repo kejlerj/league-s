@@ -25,6 +25,7 @@ import (
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
+	r.Use(httpx.SecurityHeaders)
 	r.Use(middleware.ClientIPFromRemoteAddr)
 	r.Use(logging.RequestID)
 	r.Use(logging.Requests(slog.Default()))
@@ -54,12 +55,12 @@ func (s *Server) RegisterRoutes() http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(authSvc.Identify)
 
-		r.With(loginLimit).Mount("/auth", authHandler.Routes())
+		r.With(loginLimit, httpx.NoStore).Mount("/auth", authHandler.Routes())
 		r.Get("/me", authHandler.Me)
 		r.Put("/me/password", authHandler.ChangePassword)
 
 		invitations := auth.NewInvitationHandler(auth.NewInvitations(authStore), authStore, s.adminURL)
-		r.With(loginLimit).Mount("/invitations", invitations.Routes())
+		r.With(loginLimit, httpx.NoStore).Mount("/invitations", invitations.Routes())
 		r.With(auth.Superadmin).Mount("/leagues/{leagueID}/invitations", invitations.LeagueRoutes())
 		r.With(authSvc.LeagueAdmin("leagueID")).Mount("/leagues/{leagueID}/admins", invitations.AdminRoutes())
 
