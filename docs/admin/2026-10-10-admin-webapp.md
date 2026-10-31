@@ -23,7 +23,7 @@
 - Chaque segment d'URL dynamique passe par `seg()`.
 - Mot de passe : 10 caractères minimum, 72 octets maximum.
 - L'API refuse les champs inconnus (`DisallowUnknownFields`) : n'envoyer que les champs listés dans la spec. Un corps « vide » s'envoie comme `{}`.
-- Deux formes d'erreur : `{"error": "message"}` et, pour la validation des champs (422), `{"errors": {"<champ>": "<règle>"}}`.
+- Deux formes d'erreur : `{"error": "message"}` et, pour la validation des champs (422), `{"errors": {"<champ>": "<message>"}}`, le message (en français) s'affiche sous le champ.
 - Création : un champ optionnel vide part en `null`. Modification (`PATCH`) : un champ optionnel vide n'est pas envoyé du tout. Vider un champ existant n'est pas possible en v1.
 - `admin/dist` n'est pas versionné, sauf `admin/dist/.gitkeep`. Le fichier source est `admin/public/.gitkeep`, que Vite recopie dans `dist` à chaque build.
 - Toutes les commandes `npm` se lancent depuis `admin/`. Vérification de fin de tâche : `npm test -- --run && npx tsc --noEmit`.

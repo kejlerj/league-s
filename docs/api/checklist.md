@@ -29,7 +29,7 @@
   - la traduire en 409 dans `season.CreateError`
 - [x] **Les points par défaut d'une saison** : si le client omet `match_win_pts`…, la saison est créée avec 0/0/0 au lieu de 3/1/0
   - pointeurs dans le DTO, ou valeurs par défaut appliquées dans le handler
-- [ ] **Des messages de validation lisibles** : `httpx.Decode` renvoie encore le tag brut (`"required"`, `"url"`)
+- [x] **Des messages de validation lisibles** : `httpx.Decode` renvoie encore le tag brut (`"required"`, `"url"`)
 - [ ] **Des dates au format `2025-08-01`** dans les DTO de saison, au lieu de `time.Time` complet
   - `string` avec `validate:"datetime=2006-01-02"`, puis `time.Parse(time.DateOnly, …)`
 - [ ] **Les codes HTTP** : 201 pour l'inscription d'une équipe, 204 pour la désinscription

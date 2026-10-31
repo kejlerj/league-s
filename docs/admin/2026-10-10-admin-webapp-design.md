@@ -51,7 +51,7 @@ Règle de mot de passe : 10 caractères minimum, 72 octets maximum. Le login est
 
 ### Erreurs
 
-Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"errors": {"<champ>": "<règle>"}}`. JSON illisible : 400. Corps trop gros : 413. L'API refuse les champs inconnus.
+Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"errors": {"<champ>": "<message>"}}`, avec un message en français à afficher sous le champ (voir `docs/api/endpoints.md` › Validation errors). JSON illisible : 400. Corps trop gros : 413. L'API refuse les champs inconnus.
 
 `PATCH` : un champ absent n'est pas modifié. Vider un champ optionnel n'est pas possible en v1.
 
