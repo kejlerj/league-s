@@ -5,18 +5,27 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/mail"
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	_ "github.com/joho/godotenv/autoload"
+
+	"league-s/internal/mailer"
 )
 
 type Config struct {
-	Port        int
-	DatabaseURL string
-	LogFormat   string
-	LogLevel    slog.Level
+	Port            int
+	DatabaseURL     string
+	LogFormat       string
+	LogLevel        slog.Level
+	CORSOrigins     []string
+	SecureCookie    bool
+	SuperadminEmail string
+	AdminURL        string
+	SMTP            mailer.SMTPConfig
 }
 
 func Load() (Config, error) {
@@ -63,6 +72,62 @@ func Load() (Config, error) {
 		}
 	}
 
+	var corsOrigins []string
+	for raw := range strings.SplitSeq(os.Getenv("CORS_ORIGINS"), ",") {
+		origin := strings.TrimSpace(raw)
+		if origin == "" {
+			continue
+		}
+		u, err := url.Parse(origin)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.Path != "" {
+			errs = append(errs, fmt.Errorf("CORS_ORIGINS must be a comma-separated list of origins such as https://admin.example.com, got %q", origin))
+			continue
+		}
+		corsOrigins = append(corsOrigins, origin)
+	}
+
+	secureCookie := true
+	if raw := os.Getenv("COOKIE_SECURE"); raw != "" {
+		secureCookie, err = strconv.ParseBool(raw)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("COOKIE_SECURE must be true or false, got %q", raw))
+		}
+	}
+
+	superadminEmail := strings.TrimSpace(os.Getenv("SUPERADMIN_EMAIL"))
+	if superadminEmail != "" {
+		if addr, err := mail.ParseAddress(superadminEmail); err != nil || addr.Address != superadminEmail {
+			errs = append(errs, fmt.Errorf("SUPERADMIN_EMAIL must be an email address, got %q", superadminEmail))
+		}
+	}
+
+	adminURL := strings.TrimRight(os.Getenv("ADMIN_URL"), "/")
+	if adminURL == "" {
+		adminURL = "http://localhost:5173"
+	}
+	if u, err := url.Parse(adminURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		errs = append(errs, fmt.Errorf("ADMIN_URL must be an http or https URL, got %q", adminURL))
+	}
+
+	smtp := mailer.SMTPConfig{
+		Host:     os.Getenv("SMTP_HOST"),
+		Port:     587,
+		Username: os.Getenv("SMTP_USERNAME"),
+		Password: os.Getenv("SMTP_PASSWORD"),
+		From:     os.Getenv("MAIL_FROM"),
+	}
+	if raw := os.Getenv("SMTP_PORT"); raw != "" {
+		smtp.Port, err = strconv.Atoi(raw)
+		if err != nil || smtp.Port < 1 || smtp.Port > 65535 {
+			errs = append(errs, fmt.Errorf("SMTP_PORT must be a number between 1 and 65535, got %q", raw))
+		}
+	}
+	if smtp.Host != "" {
+		if _, err := mail.ParseAddress(smtp.From); err != nil {
+			errs = append(errs, fmt.Errorf("MAIL_FROM must be an email address when SMTP_HOST is set, got %q", smtp.From))
+		}
+	}
+
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
 	}
@@ -75,5 +140,16 @@ func Load() (Config, error) {
 		RawQuery: url.Values{"sslmode": {"disable"}, "search_path": {schema}}.Encode(),
 	}
 
-	return Config{Port: port, DatabaseURL: dsn.String(), LogFormat: logFormat, LogLevel: logLevel}, nil
+	return Config{
+		Port:         port,
+		DatabaseURL:  dsn.String(),
+		LogFormat:    logFormat,
+		LogLevel:     logLevel,
+		CORSOrigins:  corsOrigins,
+		SecureCookie: secureCookie,
+
+		SuperadminEmail: superadminEmail,
+		AdminURL:        adminURL,
+		SMTP:            smtp,
+	}, nil
 }
