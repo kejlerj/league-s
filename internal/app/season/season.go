@@ -15,8 +15,15 @@ type Season struct {
 	MatchDrawPts int32     `json:"match_draw_pts"`
 	MatchLossPts int32     `json:"match_loss_pts"`
 	TieBreakers  []string  `json:"tie_breakers"`
+	MaxSquadSize *int32    `json:"max_squad_size"`
 	LeagueID     uuid.UUID `json:"league_id"`
 }
+
+const (
+	DefaultMatchWinPts  int32 = 3
+	DefaultMatchDrawPts int32 = 1
+	DefaultMatchLossPts int32 = 0
+)
 
 type CreateError string
 

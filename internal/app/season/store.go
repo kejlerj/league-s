@@ -32,6 +32,7 @@ func (s *PostgresStore) Create(ctx context.Context, season *Season) (*Season, er
 		MatchDrawPts: season.MatchDrawPts,
 		MatchLossPts: season.MatchLossPts,
 		TieBreakers:  season.TieBreakers,
+		MaxSquadSize: season.MaxSquadSize,
 		LeagueID:     season.LeagueID,
 	})
 
@@ -163,6 +164,7 @@ func toSeason(s db.Season) *Season {
 		MatchDrawPts: s.MatchDrawPts,
 		MatchLossPts: s.MatchLossPts,
 		TieBreakers:  s.TieBreakers,
+		MaxSquadSize: s.MaxSquadSize,
 		LeagueID:     s.LeagueID,
 	}
 }
