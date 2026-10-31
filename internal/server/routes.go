@@ -3,11 +3,15 @@ package server
 import (
 	"log/slog"
 	"net/http"
+	"slices"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 
+	"league-s/internal/app/auth"
 	"league-s/internal/app/league"
 	"league-s/internal/app/match"
 	"league-s/internal/app/player"
@@ -21,11 +25,14 @@ import (
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.ClientIPFromRemoteAddr)
 	r.Use(logging.RequestID)
 	r.Use(logging.Requests(slog.Default()))
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowOriginFunc: func(_ *http.Request, origin string) bool {
+			return slices.Contains(s.corsOrigins, origin)
+		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 		AllowCredentials: true,
@@ -36,20 +43,34 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	pool := s.db.Pool()
 
+	authStore := auth.NewPostgresStore(pool)
+	authSvc := auth.NewService(authStore, s.notifier)
+	authHandler := auth.NewHandler(authSvc, authStore, s.secureCookie)
+	leagueAdmin := authSvc.LeagueAdminWrites("leagueID")
+	loginLimit := httprate.LimitBy(10, time.Minute, func(r *http.Request) (string, error) {
+		return httprate.CanonicalizeIP(middleware.GetClientIP(r.Context())), nil
+	})
+
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Mount("/leagues", league.NewHandler(league.NewPostgresStore(pool)).Routes())
-		r.Mount("/leagues/{leagueID}/teams", team.NewHandler(team.NewPostgresStore(pool)).Routes())
-		r.Mount("/leagues/{leagueID}/players", player.NewHandler(player.NewPostgresStore(pool)).Routes())
+		r.Use(authSvc.Identify)
+
+		r.With(loginLimit).Mount("/auth", authHandler.Routes())
+		r.Get("/me", authHandler.Me)
+		r.Put("/me/password", authHandler.ChangePassword)
+
+		r.With(auth.SuperadminWrites).Mount("/leagues", league.NewHandler(league.NewPostgresStore(pool)).Routes())
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/teams", team.NewHandler(team.NewPostgresStore(pool)).Routes())
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/players", player.NewHandler(player.NewPostgresStore(pool)).Routes())
 		seasonStore := season.NewPostgresStore(pool)
-		r.Mount("/leagues/{leagueID}/seasons", season.NewHandler(seasonStore).Routes())
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons", season.NewHandler(seasonStore).Routes())
 
 		squadStore := squadmembership.NewPostgresStore(pool)
 		squad := squadmembership.NewHandler(squadmembership.NewService(squadStore), squadStore)
-		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad", squad.Routes())
-		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/transfers", squad.TransferRoutes())
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad", squad.Routes())
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/transfers", squad.TransferRoutes())
 
 		matchStore := match.NewPostgresStore(pool)
-		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/matches", match.NewHandler(match.NewService(matchStore), matchStore, seasonStore).Routes())
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/matches", match.NewHandler(match.NewService(matchStore), matchStore, seasonStore).Routes())
 		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/standings", standing.NewHandler(seasonStore, matchStore).Routes())
 	})
 

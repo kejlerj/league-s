@@ -12,9 +12,11 @@ import (
 	"syscall"
 	"time"
 
+	"league-s/internal/app/auth"
 	"league-s/internal/config"
 	"league-s/internal/database"
 	"league-s/internal/logging"
+	"league-s/internal/mailer"
 	"league-s/internal/server"
 )
 
@@ -43,6 +45,14 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 	done <- true
 }
 
+func newMailer(cfg config.Config) (auth.Mailer, error) {
+	if cfg.SMTP.Host == "" {
+		slog.Warn("SMTP_HOST is not set, emails are not sent")
+		return mailer.Disabled{}, nil
+	}
+	return mailer.NewSMTP(cfg.SMTP)
+}
+
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
@@ -59,7 +69,23 @@ func main() {
 	}
 	defer db.Close()
 
-	server := server.NewServer(cfg.Port, db)
+	sender, err := newMailer(cfg)
+	if err != nil {
+		panic(fmt.Sprintf("mailer: %s", err))
+	}
+	notifier := auth.EmailNotifier{Mailer: sender, AdminURL: cfg.AdminURL}
+
+	if cfg.SuperadminEmail != "" {
+		authSvc := auth.NewService(auth.NewPostgresStore(db.Pool()), notifier)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err := authSvc.EnsureSuperadmin(ctx, cfg.SuperadminEmail)
+		cancel()
+		if err != nil {
+			log.Fatalf("superadmin: %v", err)
+		}
+	}
+
+	server := server.NewServer(cfg, db, notifier)
 
 	// Create a done channel to signal when the shutdown is complete
 	done := make(chan bool, 1)
