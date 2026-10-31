@@ -1,5 +1,4 @@
-const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
-const DAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+import { fr } from '@/src/i18n/fr';
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -12,7 +11,7 @@ export function formatTime(date: Date): string {
 }
 
 export function formatDayMonth(date: Date): string {
-  return `${DAYS[date.getDay()]} ${date.getDate()} ${MONTHS[date.getMonth()]}`;
+  return `${fr.dates.days[date.getDay()]} ${date.getDate()} ${fr.dates.months[date.getMonth()]}`;
 }
 
 export function formatDateTime(date: Date): string {
