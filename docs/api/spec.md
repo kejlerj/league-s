@@ -73,13 +73,14 @@ An app for amateur football leagues (five-a-side, urban football), not for profe
 | A player can leave a team and come back: each membership is a row | ✅ data model |
 | Leaving deletes nothing: it sets `left_on`, and the history stays readable | ✅ `CloseSquadMembership`, `ListSquadMemberships` with history |
 | Leaving is on the same day as joining or later | ✅ `CHECK squad_membership_left_after_joined`, `ErrLeaveBeforeJoining` |
-| Two memberships of the same player don't overlap, even in the past | ⚠️ only active memberships are protected (decision 008) |
+| Two memberships of the same player don't overlap, even in the past (first and last days included) | ✅ constraint `squad_membership_no_overlap` (`EXCLUDE USING gist (player_id WITH =, season_id WITH =, daterange(joined_on, left_on, '[]') WITH &&)`), `ErrJoinOverlap`, 409 (decision 008). Scoped by season: memberships stay inside their season and seasons don't overlap, so it is one team at a time in the league, and an open membership of a past season doesn't block the next one |
 | Shirt number: optional, between 1 and 99 | ✅ `CHECK` in the database and DTO validation (422) |
 | A number is unique within the active squad. It becomes free when the player leaves | ✅ partial index `squad_membership_active_number`, 409 |
 | Joining and leaving happen during the season (first and last day included) | ✅ `SquadRules.CheckJoin` and `CheckLeave`, called by the service: `ErrJoinOutsideSeason`, `ErrLeaveOutsideSeason` |
 | The squad doesn't exceed the season's maximum size | ✅ `Service.Join`: `LockSquad` (lock on `season_team`), `CountActive`, then `SquadRules.CheckJoin` → `ErrJoinSquadFull`. Also applies to the receiving team of a transfer |
 | A transfer (leaving then joining) is all or nothing | ✅ `Service.Transfer`, inside `store.InTx` |
-| ❓ `left_on`: last day in the team, or first day the player is no longer in it? | ❓ to settle with decision 008. The second option allows a same-day transfer |
+| A transfer on day D: the player's last day in the former team is D, they join the new team on D + 1. A transfer on the season's last day is refused | ✅ `Transfer.JoinedOn`, `ErrJoinOutsideSeason` (422) |
+| `left_on` is the player's last day in the team (included) | ✅ decided in #15. The overlap constraint uses inclusive bounds (`'[]'`), so joining another team on that same day is refused |
 
 ## Match (planned)
 

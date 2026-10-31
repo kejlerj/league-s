@@ -146,7 +146,7 @@ func joinStatus(err JoinError) int {
 	switch err {
 	case ErrJoinPlayerNotFound, ErrJoinTeamNotRegistered:
 		return http.StatusNotFound
-	case ErrJoinPlayerAlreadyActive, ErrJoinNumberTaken, ErrJoinSquadFull:
+	case ErrJoinPlayerAlreadyActive, ErrJoinNumberTaken, ErrJoinSquadFull, ErrJoinOverlap:
 		return http.StatusConflict
 	case ErrJoinOutsideSeason:
 		return http.StatusUnprocessableEntity

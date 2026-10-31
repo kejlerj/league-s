@@ -998,7 +998,7 @@ paths:
     post:
       operationId: joinSquad
       summary: Add a player to the squad
-      description: "Access: league admin."
+      description: "Access: league admin. A player is in only one squad at a time: a membership that overlaps another one of the same player in the season, past ones included, is refused (409)."
       tags: [squad]
       requestBody:
         required: true
@@ -1107,7 +1107,7 @@ paths:
     post:
       operationId: transferPlayer
       summary: Move a player from one squad to another
-      description: "Access: league admin. Leaves then joins, in one transaction. Returns the new membership."
+      description: "Access: league admin. Leaves then joins, in one transaction. `on` is the player's last day in the former team; they join the new team the day after, which must still be in the season (422 otherwise). Returns the new membership."
       tags: [squad]
       requestBody:
         required: true
@@ -1891,6 +1891,7 @@ components:
         left_on:
           type: [string, "null"]
           format: date
+          description: "The player's last day in the team (included). `null`: still in the squad."
     CreatePlayerRequest:
       type: object
       required: [firstname, lastname]
@@ -2067,6 +2068,7 @@ components:
         left_on:
           type: [string, "null"]
           format: date
+          description: "The player's last day in the team (included). `null`: still in the squad."
     SquadMember:
       type: object
       required: [membership_id, player_id, firstname, lastname, icon, number, joined_on, left_on]
@@ -2092,6 +2094,7 @@ components:
         left_on:
           type: [string, "null"]
           format: date
+          description: "The player's last day in the team (included). `null`: still in the squad."
     JoinSquadRequest:
       type: object
       required: [player_id, joined_on]
@@ -2119,6 +2122,7 @@ components:
         left_on:
           type: string
           format: date
+          description: The player's last day in the team (included).
     TransferRequest:
       type: object
       required: [player_id, from_team_id, to_team_id, "on"]
@@ -2139,6 +2143,7 @@ components:
         "on":
           type: string
           format: date
+          description: The player's last day in the former team. They join the new team the day after.
 
     MatchStatus:
       type: string

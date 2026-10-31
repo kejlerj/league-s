@@ -161,7 +161,7 @@ export function SquadPage() {
         ) : null}
         {dialog?.kind === 'leave' ? (
           <SingleFieldForm
-            label="Date de départ"
+            label="Dernier jour dans l'équipe"
             name="left_on"
             type="date"
             initial={today()}

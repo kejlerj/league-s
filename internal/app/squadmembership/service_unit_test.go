@@ -349,7 +349,7 @@ func TestServiceTransfer_LeavesThenJoinsInOneTransaction(t *testing.T) {
 		TeamID:   tr.ToTeamID,
 		PlayerID: tr.PlayerID,
 		Number:   tr.Number,
-		JoinedOn: tr.On,
+		JoinedOn: tr.On.AddDate(0, 0, 1),
 	}
 	if *store.state.joined != wantJoined {
 		t.Errorf("Join() called with %+v, want %+v", *store.state.joined, wantJoined)

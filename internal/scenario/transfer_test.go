@@ -78,8 +78,8 @@ func TestScenario_AMidSeasonTransferMovesThePlayerOnceTheNewSquadHasRoom(t *test
 
 		newSquad := squad(to, "")
 		arrived, ok := newSquad[moving.PlayerID]
-		if !ok || arrived.Number == nil || *arrived.Number != 10 || arrived.JoinedOn != "2025-11-15" {
-			t.Errorf("player in the new squad = %+v (found %t), want number 10 from 2025-11-15", arrived, ok)
+		if !ok || arrived.Number == nil || *arrived.Number != 10 || arrived.JoinedOn != "2025-11-16" {
+			t.Errorf("player in the new squad = %+v (found %t), want number 10 from 2025-11-16, the day after leaving", arrived, ok)
 		}
 		if _, ok := newSquad[keeper.PlayerID]; !ok || len(newSquad) != 2 {
 			t.Errorf("new squad = %+v, want the keeper and the new player", newSquad)

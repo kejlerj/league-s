@@ -112,6 +112,7 @@ test('leaving', async () => {
   const { user } = setup([], http.post(`${SQUAD}/M1/leave`, capture(sent, 200)))
   const row = (await screen.findByText('Léo Dupont')).closest('tr')!
   await user.click(within(row).getByRole('button', { name: 'Départ' }))
+  expect(within(screen.getByRole('dialog')).getByLabelText("Dernier jour dans l'équipe")).toHaveValue(today())
   await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Enregistrer' }))
   await vi.waitFor(() => expect(sent.body).toEqual({ left_on: today() }))
 })
@@ -125,6 +126,8 @@ test('transfer: leaves from the current team, which is not offered as a destinat
   const select = within(dialog).getByLabelText('Vers')
   expect(within(select).queryByRole('option', { name: 'AS Alpha' })).not.toBeInTheDocument()
   await user.selectOptions(select, 'T2')
+  expect(within(dialog).getByLabelText("Dernier jour dans l'équipe actuelle")).toHaveValue(today())
+  expect(within(dialog).getByText('Il rejoint la nouvelle équipe le lendemain.')).toBeInTheDocument()
   await user.click(within(dialog).getByRole('button', { name: 'Transférer' }))
   await vi.waitFor(() =>
     expect(sent.body).toEqual({ player_id: 'P1', from_team_id: 'T1', to_team_id: 'T2', number: null, on: today() }),

@@ -155,6 +155,30 @@ func TestJoin_Errors(t *testing.T) {
 			},
 			wantErr: ErrJoinNumberTaken,
 		},
+		{
+			name: "starts on the last day of a past stint",
+			prepare: func(f fixture) *Membership {
+				f.joinAndLeave(t, f.away, "2025-08-01", "2025-11-30")
+				return f.membership(t, f.home, f.player, nil, "2025-11-30")
+			},
+			wantErr: ErrJoinOverlap,
+		},
+		{
+			name: "backdated inside a past stint",
+			prepare: func(f fixture) *Membership {
+				f.joinAndLeave(t, f.away, "2025-10-01", "2025-12-31")
+				return f.membership(t, f.home, f.player, nil, "2025-11-15")
+			},
+			wantErr: ErrJoinOverlap,
+		},
+		{
+			name: "backdated before a past stint, still open",
+			prepare: func(f fixture) *Membership {
+				f.joinAndLeave(t, f.away, "2025-10-01", "2025-12-31")
+				return f.membership(t, f.home, f.player, nil, "2025-09-01")
+			},
+			wantErr: ErrJoinOverlap,
+		},
 	}
 
 	for _, tt := range tests {
@@ -165,6 +189,34 @@ func TestJoin_Errors(t *testing.T) {
 				t.Errorf("Join() error = %v, want %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func (f fixture) joinAndLeave(t *testing.T, team db.Team, joinedOn, leftOn string) {
+	t.Helper()
+	f.join(t, team, f.player, nil, joinedOn)
+	if _, err := f.store.Leave(t.Context(), f.season.LeagueID, f.season.ID, team.ID, f.player.ID, day(t, leftOn)); err != nil {
+		t.Fatalf("leave %q: %v", team.Name, err)
+	}
+}
+
+func TestJoin_TheDayAfterAPastStint(t *testing.T) {
+	f := newFixture(t)
+	f.joinAndLeave(t, f.away, "2025-08-01", "2025-12-31")
+
+	f.join(t, f.home, f.player, nil, "2026-01-01")
+}
+
+func TestJoin_PastStintsInAnotherSeasonDoNotBlock(t *testing.T) {
+	f := newFixture(t)
+	f.join(t, f.home, f.player, nil, "2025-08-01")
+
+	next := f.seed.CreateSeason(testdb.SeasonParams{StartOn: "2026-08-01", EndOn: "2027-05-31"})
+	f.seed.RegisterTeams(next, f.away)
+	m := f.membership(t, f.away, f.player, nil, "2026-08-01")
+	m.SeasonID = next.ID
+	if _, err := f.store.Join(t.Context(), m); err != nil {
+		t.Errorf("Join() in the next season error = %v, want nil: an open stint ends with its season", err)
 	}
 }
 
@@ -289,7 +341,7 @@ func (f fixture) transfer(ctx context.Context, t *testing.T, to db.Team, n *int3
 	if _, err := store.Leave(ctx, f.season.LeagueID, f.season.ID, f.home.ID, f.player.ID, day(t, on)); err != nil {
 		return err
 	}
-	if _, err := store.Join(ctx, f.membership(t, to, f.player, n, on)); err != nil {
+	if _, err := store.Join(ctx, f.membership(t, to, f.player, n, day(t, on).AddDate(0, 0, 1).Format(time.DateOnly))); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
