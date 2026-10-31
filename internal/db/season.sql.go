@@ -14,9 +14,9 @@ import (
 
 const createSeason = `-- name: CreateSeason :one
 INSERT INTO season (
-    name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, league_id
+    name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, max_squad_size, league_id
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
 ) RETURNING id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, max_squad_size, league_id, created_at, updated_at
 `
 
@@ -28,6 +28,7 @@ type CreateSeasonParams struct {
 	MatchDrawPts int32
 	MatchLossPts int32
 	TieBreakers  []string
+	MaxSquadSize *int32
 	LeagueID     uuid.UUID
 }
 
@@ -40,6 +41,7 @@ func (q *Queries) CreateSeason(ctx context.Context, arg CreateSeasonParams) (Sea
 		arg.MatchDrawPts,
 		arg.MatchLossPts,
 		arg.TieBreakers,
+		arg.MaxSquadSize,
 		arg.LeagueID,
 	)
 	var i Season

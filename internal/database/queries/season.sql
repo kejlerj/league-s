@@ -1,8 +1,8 @@
 -- name: CreateSeason :one
 INSERT INTO season (
-    name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, league_id
+    name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, max_squad_size, league_id
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
 ) RETURNING *;
 
 -- name: GetSeasonByID :one
