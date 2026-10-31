@@ -45,17 +45,35 @@ type PlayerParams struct {
 }
 
 type SeasonParams struct {
-	League  *db.League
-	Name    string
-	StartOn string
-	EndOn   string
+	League       *db.League
+	Name         string
+	StartOn      string
+	EndOn        string
+	MaxSquadSize int32
 }
 
 type MatchParams struct {
+	Season    db.Season
+	Home      db.Team
+	Away      db.Team
+	Matchday  int
+	KickoffAt *time.Time
+	Status    db.MatchStatus
+	Score     *Score
+}
+
+type Score struct {
+	Home int32
+	Away int32
+}
+
+type SquadMemberParams struct {
 	Season   db.Season
-	Home     db.Team
-	Away     db.Team
-	Matchday int
+	Team     db.Team
+	Player   db.Player
+	Number   int32
+	JoinedOn string
+	LeftOn   string
 }
 
 func (s *Seeder) CreateLeague(p LeagueParams) db.League {
@@ -130,6 +148,7 @@ func (s *Seeder) CreateSeason(p SeasonParams) db.Season {
 		MatchDrawPts: 1,
 		MatchLossPts: 0,
 		TieBreakers:  []string{"goal_difference"},
+		MaxSquadSize: positive(p.MaxSquadSize),
 		LeagueID:     league.ID,
 	})
 	if err != nil {
@@ -157,16 +176,58 @@ func (s *Seeder) CreateMatch(p MatchParams) uuid.UUID {
 	if p.Matchday == 0 {
 		p.Matchday = 1
 	}
+	if p.Status == "" {
+		p.Status = db.MatchStatusScheduled
+	}
+	var homeScore, awayScore *int32
+	if p.Score != nil {
+		homeScore, awayScore = &p.Score.Home, &p.Score.Away
+	}
 
 	var id uuid.UUID
 	err := s.pool.QueryRow(context.Background(),
-		`INSERT INTO match (season_id, home_team_id, away_team_id, matchday) VALUES ($1, $2, $3, $4) RETURNING id`,
-		p.Season.ID, p.Home.ID, p.Away.ID, p.Matchday,
+		`INSERT INTO match (season_id, home_team_id, away_team_id, matchday, kickoff_at, status, home_score, away_score)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+		p.Season.ID, p.Home.ID, p.Away.ID, p.Matchday, p.KickoffAt, p.Status, homeScore, awayScore,
 	).Scan(&id)
 	if err != nil {
 		s.t.Fatalf("create match %q vs %q: %v", p.Home.Name, p.Away.Name, err)
 	}
 	return id
+}
+
+func (s *Seeder) CreateSquadMember(p SquadMemberParams) db.SquadMembership {
+	s.t.Helper()
+	joinedOn := p.Season.StartOn
+	if p.JoinedOn != "" {
+		joinedOn = s.date(p.JoinedOn)
+	}
+	m, err := s.q.CreateSquadMembership(context.Background(), db.CreateSquadMembershipParams{
+		PlayerID: p.Player.ID,
+		SeasonID: p.Season.ID,
+		TeamID:   p.Team.ID,
+		LeagueID: p.Season.LeagueID,
+		Number:   positive(p.Number),
+		JoinedOn: joinedOn,
+	})
+	if err != nil {
+		s.t.Fatalf("add %s %s to the squad of %q: %v", p.Player.Firstname, p.Player.Lastname, p.Team.Name, err)
+	}
+	if p.LeftOn == "" {
+		return m
+	}
+
+	m, err = s.q.CloseSquadMembership(context.Background(), db.CloseSquadMembershipParams{
+		LeftOn:   s.date(p.LeftOn),
+		PlayerID: p.Player.ID,
+		SeasonID: p.Season.ID,
+		TeamID:   p.Team.ID,
+		LeagueID: p.Season.LeagueID,
+	})
+	if err != nil {
+		s.t.Fatalf("close the membership of %s %s in %q: %v", p.Player.Firstname, p.Player.Lastname, p.Team.Name, err)
+	}
+	return m
 }
 
 func (s *Seeder) leagueOrDefault(l *db.League) db.League {
@@ -196,6 +257,13 @@ func (s *Seeder) date(v string) time.Time {
 
 func optional(v string) *string {
 	if v == "" {
+		return nil
+	}
+	return &v
+}
+
+func positive(v int32) *int32 {
+	if v == 0 {
 		return nil
 	}
 	return &v

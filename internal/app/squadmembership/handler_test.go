@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -24,7 +25,12 @@ func newTestRouter() http.Handler {
 	r := chi.NewRouter()
 	r.Mount("/api/v1/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad", h.Routes())
 	r.Mount("/api/v1/leagues/{leagueID}/seasons/{seasonID}/transfers", h.TransferRoutes())
+	r.Mount("/api/v1/leagues/{leagueID}/players/{playerID}/career", h.CareerRoutes())
 	return r
+}
+
+func careerPath(p db.Player) string {
+	return fmt.Sprintf("/api/v1/leagues/%s/players/%s/career", p.LeagueID, p.ID)
 }
 
 func (f fixture) squadPath(team db.Team) string {
@@ -418,6 +424,93 @@ func TestTransfer_Errors(t *testing.T) {
 			active, err := f.store.Active(t.Context(), f.season.LeagueID, f.season.ID, f.player.ID)
 			if err != nil || active.TeamID != f.home.ID {
 				t.Errorf("active membership = %+v (error %v), want the player still in the home team", active, err)
+			}
+		})
+	}
+}
+
+func TestPlayerCareer_ListsEveryStintMostRecentFirst(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	player := seed.CreatePlayer(testdb.PlayerParams{})
+	rovers := seed.CreateTeam(testdb.TeamParams{Name: "Rovers", Logo: "https://example.com/rovers.png"})
+	united := seed.CreateTeam(testdb.TeamParams{Name: "United"})
+	lastYear := seed.CreateSeason(testdb.SeasonParams{Name: "2024-25", StartOn: "2024-08-01", EndOn: "2025-05-31"})
+	thisYear := seed.CreateSeason(testdb.SeasonParams{Name: "2025-26", StartOn: "2025-08-01", EndOn: "2026-05-31"})
+	seed.RegisterTeams(lastYear, rovers, united)
+	seed.RegisterTeams(thisYear, rovers)
+	first := seed.CreateSquadMember(testdb.SquadMemberParams{Season: lastYear, Team: rovers, Player: player, Number: 7, JoinedOn: "2024-08-01", LeftOn: "2025-01-10"})
+	second := seed.CreateSquadMember(testdb.SquadMemberParams{Season: lastYear, Team: united, Player: player, JoinedOn: "2025-01-11", LeftOn: "2025-05-31"})
+	current := seed.CreateSquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: player, Number: 10, JoinedOn: "2025-08-01"})
+	seed.CreateSquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: seed.CreatePlayer(testdb.PlayerParams{}), Number: 9})
+
+	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, careerPath(player), "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+	}
+	got := decode[[]careerResponse](t, rec)
+	if len(got) != 3 || got[0].MembershipID != current.ID || got[1].MembershipID != second.ID || got[2].MembershipID != first.ID {
+		t.Fatalf("career = %+v, want the 3 stints of the player, most recent first", got)
+	}
+
+	now := got[0]
+	switch {
+	case now.Season.ID != thisYear.ID || now.Season.Name != "2025-26":
+		t.Errorf("current stint season = %+v, want 2025-26", now.Season)
+	case now.Team.ID != rovers.ID || now.Team.Name != "Rovers" || now.Team.Logo == nil || *now.Team.Logo != "https://example.com/rovers.png":
+		t.Errorf("current stint team = %+v, want Rovers with its logo", now.Team)
+	case now.Number == nil || *now.Number != 10:
+		t.Errorf("current stint number = %v, want 10", now.Number)
+	case now.JoinedOn != "2025-08-01" || now.LeftOn != nil:
+		t.Errorf("current stint dates = %s / %v, want 2025-08-01 and no leaving date", now.JoinedOn, now.LeftOn)
+	}
+
+	past := got[1]
+	if past.Team.Name != "United" || past.Number != nil || past.LeftOn == nil || *past.LeftOn != "2025-05-31" {
+		t.Errorf("past stint = %+v, want United, no number, left on 2025-05-31", past)
+	}
+}
+
+func TestPlayerCareer_NoStint(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	player := seed.CreatePlayer(testdb.PlayerParams{})
+
+	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, careerPath(player), "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+	}
+	if body := strings.TrimSpace(rec.Body.String()); body != "[]" {
+		t.Errorf("body = %s, want []", body)
+	}
+}
+
+func TestPlayerCareer_Errors(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	other := seed.CreateLeague(testdb.LeagueParams{})
+	player := seed.CreatePlayer(testdb.PlayerParams{})
+	foreign := seed.CreatePlayer(testdb.PlayerParams{League: &other})
+	season := seed.CreateSeason(testdb.SeasonParams{League: &other})
+	team := seed.CreateTeam(testdb.TeamParams{League: &other})
+	seed.RegisterTeams(season, team)
+	seed.CreateSquadMember(testdb.SquadMemberParams{Season: season, Team: team, Player: foreign})
+
+	tests := []struct {
+		name string
+		path string
+		want int
+	}{
+		{"player of another league", fmt.Sprintf("/api/v1/leagues/%s/players/%s/career", player.LeagueID, foreign.ID), http.StatusNotFound},
+		{"unknown player", fmt.Sprintf("/api/v1/leagues/%s/players/%s/career", player.LeagueID, uuid.New()), http.StatusNotFound},
+		{"invalid player id", fmt.Sprintf("/api/v1/leagues/%s/players/abc/career", player.LeagueID), http.StatusBadRequest},
+		{"invalid league id", fmt.Sprintf("/api/v1/leagues/abc/players/%s/career", player.ID), http.StatusBadRequest},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := testhttp.Do(t, newTestRouter(), http.MethodGet, tt.path, "")
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, tt.want, rec.Body)
+			}
+			if !strings.Contains(rec.Body.String(), `"error"`) {
+				t.Errorf("body = %s, want an error message", rec.Body)
 			}
 		})
 	}

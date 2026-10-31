@@ -62,7 +62,7 @@
 - [x] **La taille maximale de l'effectif** : `Service.Join` verrouille `season_team`, compte les actifs, puis décide (`ErrJoinSquadFull`)
   - `left_on` après `joined_on` : déjà garanti par la contrainte `squad_membership_left_after_joined`, traduite en `ErrLeaveBeforeJoining`
 - [x] **Des tests de store directs** pour les transferts, là où l'API seule est pénible à préparer
-- [ ] Optionnel : le club actuel dans `GET /players/{playerID}` (requête avec `LEFT JOIN`, pas `LATERAL`)
+- [x] Optionnel : le club actuel dans `GET /players/{playerID}` (requête avec `LEFT JOIN`, pas `LATERAL`)
 
 ## 🥅 Match
 
@@ -89,9 +89,9 @@
 
 ## 🧪 Tests de scénario
 
-- [ ] **Le package `internal/scenario`**, sur le vrai routeur (le package `config` est prêt)
-- [ ] **3 à 5 parcours** : une saison complète jusqu'au classement, un transfert en cours de saison, un match reporté
-- [ ] **Étendre le seeder** (`internal/testdb/seed.go`) à chaque nouveau domaine : `s.SquadMember(...)` avec `squad`, un vrai `s.Match(...)` avec options (score, statut) avec `match`
+- [x] **Le package `internal/scenario`**, sur le vrai routeur (`server.NewServer`), connecté comme admin de la ligue
+- [x] **3 à 5 parcours** : une saison complète jusqu'au classement, un transfert en cours de saison, un match reporté puis reprogrammé
+- [x] **Étendre le seeder** (`internal/testdb/seed.go`) à chaque nouveau domaine : `s.CreateSquadMember(...)` avec `squad`, `s.CreateMatch(...)` avec options (coup d'envoi, statut, score) avec `match`, `MaxSquadSize` sur la saison
 
 ## 🔐 Authentification et rôles
 

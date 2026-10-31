@@ -50,8 +50,8 @@ func (s *PostgresStore) Create(ctx context.Context, player *Player) (*Player, er
 	return toPlayer(res), nil
 }
 
-func (s *PostgresStore) Get(ctx context.Context, leagueID, id uuid.UUID) (*Player, error) {
-	player, err := s.q.GetPlayerByID(ctx, db.GetPlayerByIDParams{ID: id, LeagueID: leagueID})
+func (s *PostgresStore) Get(ctx context.Context, leagueID, id uuid.UUID) (*Profile, error) {
+	row, err := s.q.GetPlayerByID(ctx, db.GetPlayerByIDParams{ID: id, LeagueID: leagueID})
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrGetNotFound
@@ -60,7 +60,11 @@ func (s *PostgresStore) Get(ctx context.Context, leagueID, id uuid.UUID) (*Playe
 		return nil, fmt.Errorf("get player %s: %w", id, err)
 	}
 
-	return toPlayer(player), nil
+	profile := &Profile{Player: *toPlayer(row.Player)}
+	if row.CurrentTeamID.Valid {
+		profile.CurrentTeam = &Club{ID: row.CurrentTeamID.Bytes, Name: *row.CurrentTeamName, Logo: row.CurrentTeamLogo}
+	}
+	return profile, nil
 }
 
 func (s *PostgresStore) List(ctx context.Context, leagueID uuid.UUID, search string) ([]*Player, error) {

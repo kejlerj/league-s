@@ -215,6 +215,67 @@ func (q *Queries) GetSquadRules(ctx context.Context, arg GetSquadRulesParams) (G
 	return i, err
 }
 
+const listPlayerCareer = `-- name: ListPlayerCareer :many
+SELECT squad_membership.id, squad_membership.number, squad_membership.joined_on, squad_membership.left_on,
+       season.id AS season_id, season.name AS season_name,
+       team.id AS team_id, team.name AS team_name, team.logo AS team_logo
+FROM squad_membership
+JOIN season ON season.id = squad_membership.season_id
+  AND season.league_id = squad_membership.league_id
+JOIN team ON team.id = squad_membership.team_id
+  AND team.league_id = squad_membership.league_id
+WHERE squad_membership.player_id = $1
+  AND squad_membership.league_id = $2
+ORDER BY squad_membership.joined_on DESC, squad_membership.id DESC
+`
+
+type ListPlayerCareerParams struct {
+	PlayerID uuid.UUID
+	LeagueID uuid.UUID
+}
+
+type ListPlayerCareerRow struct {
+	ID         uuid.UUID
+	Number     *int32
+	JoinedOn   time.Time
+	LeftOn     *time.Time
+	SeasonID   uuid.UUID
+	SeasonName string
+	TeamID     uuid.UUID
+	TeamName   string
+	TeamLogo   *string
+}
+
+func (q *Queries) ListPlayerCareer(ctx context.Context, arg ListPlayerCareerParams) ([]ListPlayerCareerRow, error) {
+	rows, err := q.db.Query(ctx, listPlayerCareer, arg.PlayerID, arg.LeagueID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPlayerCareerRow
+	for rows.Next() {
+		var i ListPlayerCareerRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.JoinedOn,
+			&i.LeftOn,
+			&i.SeasonID,
+			&i.SeasonName,
+			&i.TeamID,
+			&i.TeamName,
+			&i.TeamLogo,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listSquadMemberships = `-- name: ListSquadMemberships :many
 SELECT player.id, player.league_id, player.firstname, player.lastname, player.icon, player.created_at, player.updated_at, squad_membership.id AS membership_id, squad_membership.number, squad_membership.joined_on, squad_membership.left_on
 FROM squad_membership

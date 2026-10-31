@@ -14,3 +14,11 @@ ORDER BY team.name;
 DELETE FROM season_team
 WHERE season_id = $1 AND team_id = $2 AND league_id = $3
 RETURNING *;
+
+-- name: GetSeasonsByTeam :many
+SELECT season.* FROM season
+JOIN season_team ON season_team.season_id = season.id
+  AND season_team.league_id = season.league_id
+WHERE season_team.team_id = $1
+  AND season_team.league_id = $2
+ORDER BY season.start_on DESC;

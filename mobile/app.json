@@ -8,12 +8,7 @@
     "scheme": "ligueamateur",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true,
-      "infoPlist": {
-        "NSAppTransportSecurity": {
-          "NSAllowsLocalNetworking": true
-        }
-      }
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
