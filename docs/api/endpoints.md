@@ -76,10 +76,10 @@ A body that fails validation gets a 422 with one readable French message per fie
 
 | Statut | Méthode | Chemin | Accès | Description |
 |---|---|---|---|---|
-| ✅ | `POST` | `/leagues/{leagueID}/seasons` | admin | Créer une saison (points 3/1/0 par défaut, `max_squad_size` optionnel) |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons` | admin | Créer une saison (points 3/1/0 par défaut, `max_squad_size` optionnel). Dates qui chevauchent une autre saison de la ligue → 409 |
 | ✅ | `GET` | `/leagues/{leagueID}/seasons` | public | Lister les saisons de la ligue, la plus récente d'abord. Ligue inconnue → 404 |
 | ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}` | public | Lire une saison |
-| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Modifier dates, points ou départages (attention au classement déjà publié) |
+| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Modifier dates, points ou départages (attention au classement déjà publié). Dates qui chevauchent une autre saison de la ligue → 409 |
 | ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Supprimer (refusé si elle a des matchs). Ses inscriptions et effectifs sont supprimés avec elle |
 
 ## Équipes inscrites à une saison
