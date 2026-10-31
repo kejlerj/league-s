@@ -20,6 +20,7 @@ Older docs in `docs/admin/` and `docs/mobile/` mention `go-blueprint/league-s` a
 - `docs/agents/pr-workflow.md`: how a PR is written, reviewed and merged.
 - `docs/agents/testing.md`: which tests each change needs.
 - `docs/agents/review-rules.md`: what the reviewer checks. Read it before opening a PR.
+- `docs/agents/code-style.md`: language idioms and design principles.
 - Specs (the source of truth, in French):
   - API: `docs/api/spec.md` (business rules), `docs/api/endpoints.md` (routes), `docs/api/decision.md` (technical decisions), `docs/api/checklist.md` (tasks)
   - Admin: `docs/admin/2026-10-10-admin-webapp-design.md`
@@ -47,8 +48,13 @@ Local API: `docker compose up -d`, `make migrate-up`, then `make run` (port 8080
 
 ## Rules for code
 
+- **Code in English, UI in French.**
+  - English: identifiers (variables, functions, types, packages, files), test names, commit messages, PR titles and descriptions, error strings in logs, SQL names.
+  - French: only what the user reads: UI copy, API error messages shown in the admin, mobile strings (in `mobile/src/i18n/fr.ts`).
+  - Exception: existing names that mirror the French tabs of the mobile app (`SuiviScreen`, `ClassementScreen`, `MoiScreen`, the `/suivi` and `/classement` routes, the keys of `fr.ts`). Keep them, don't rename them. New code uses English.
+  - The spec docs stay in French.
 - **No code comments**, unless the user approves them.
-- All UI text is in French. Mobile copy goes in `mobile/src/i18n/fr.ts`.
+- Style, idioms and design principles: `docs/agents/code-style.md`.
 - Leagues never mix: every query filters on the `leagueID` of the URL. A resource of another league is a 404.
 - The API is snake_case JSON, UUID v7 IDs, date-times in UTC (RFC 3339), dates as `YYYY-MM-DD`.
 - Errors: `{"error": "..."}`, and for field validation `{"errors": {"<field>": "<rule>"}}` with a 422.
@@ -61,8 +67,8 @@ Local API: `docker compose up -d`, `make migrate-up`, then `make run` (port 8080
 - Never commit to `main`. One branch per PR: `feat/<slug>`, `fix/<slug>`, `chore/<slug>`, `test/<slug>`, `docs/<slug>`.
 - Conventional commit titles: `feat(match): ...`, `fix(admin): ...`.
 - Open PRs as **drafts**. Mark one ready (`gh pr ready`) only when every local check passes. The reviewer runs only on ready PRs.
-- Never force-push a branch that is under review. Push new commits, so the reviewer can see what changed.
-- Never merge by hand and never bypass branch protection. Auto-merge does it after approval.
+- Never force-push a branch that is under review. Push new commits, so the reviewer can see what changed. One exception: restacking a stacked PR after its parent is merged (`docs/agents/pr-workflow.md` › Stacked PRs), with `git push --force-with-lease` only.
+- Never merge by hand and never bypass branch protection. Turn on auto-merge (`gh pr merge --auto --squash`) on a PR whose base is `main`. GitHub then merges it once it is approved and green. Never turn it on for a PR stacked on another branch.
 - Don't run destructive commands on the local database (`migrate-reset`, `docker compose down -v`) without asking.
 
 ## Models

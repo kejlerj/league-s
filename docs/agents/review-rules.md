@@ -10,12 +10,18 @@ What the reviewer (`claude[bot]`, `.github/workflows/claude-review.yml`) checks.
 4. **League isolation.** Every new query filters on the URL's `leagueID`. Every new write route has the right guard (`LeagueAdminWrites`, `SuperadminWrites`, `Superadmin`).
 5. **Security.** No secret, token or reset link in logs or responses where it shouldn't be. Input validated. No raw database errors returned to the client.
 6. **Tests** (see `docs/agents/testing.md`):
+   - a PR that changes no behaviour (CI, types only, pure refactor, docs, dependency bump, config) needs no new tests, if the "Tests" section says so and the diff agrees. Block it if you find a behaviour change in it without a test,
    - a spec test for each new or changed rule,
    - a non-regression test for each bug fix,
    - no test deleted or loosened without a spec change,
    - mobile change: jest screen tests cover it, and the description lists the affected screens. Until PR-26 is merged, a missing simulator run or Maestro flow is **not** blocking. After PR-26, both are required.
 7. **Docs.** Spec docs updated: ⚠️ → ✅, new routes, ticked checklist items.
-8. **Conventions** (`CLAUDE.md`): no code comments, French UI copy, snake_case JSON, existing package structure.
+8. **Conventions** (`CLAUDE.md`, `docs/agents/code-style.md`):
+   - code in English (identifiers, test names, commits), UI copy in French,
+   - no code comments, snake_case JSON,
+   - the existing structure of the package,
+   - KISS, YAGNI and DRY as that file applies them.
+9. **Stacked PR** (body says `Stacked on #N`): review only this PR's own diff against its base. Auto-merge must be off while its base is not `main`.
 
 Don't comment on formatting that the linters handle.
 

@@ -1,4 +1,5 @@
 Closes #
+<!-- Stacked PR only: Stacked on #<parent PR> -->
 
 **Plan item:** PR-
 
@@ -11,6 +12,8 @@ Closes #
 <!-- The main technical choices, and anything that differs from the spec or the issue, with the reason. -->
 
 ## Tests
+
+<!-- For a PR that changes no behaviour, replace this list with: No new tests: <kind> — <why behaviour doesn't change>. See docs/agents/testing.md. -->
 
 - Spec tests:
 - Non-regression tests:
