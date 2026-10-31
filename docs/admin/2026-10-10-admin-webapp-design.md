@@ -1,216 +1,216 @@
-# Webapp admin — design
+# Admin webapp — design
 
-Date : 2026-10-10
+Date: 2026-10-10
 
-## But
+## Goal
 
-Un back-office web pour gérer les ligues amateurs. Un admin doit pouvoir tenir une saison entière sans toucher à la base : équipes, joueurs, effectifs, calendrier, scores.
+A web back-office to run amateur leagues. An admin must be able to run a whole season without touching the database: teams, players, squads, fixtures, scores.
 
-Deux rôles :
+Two roles:
 
-- **Superadmin** : voit toutes les ligues, les crée et les supprime, invite et retire les admins de ligue.
-- **Admin** : ne voit que les ligues renvoyées par `GET /me` et y gère tout le reste.
+- **Superadmin**: sees every league, creates and deletes them, invites and removes league admins.
+- **Admin**: sees only the leagues returned by `GET /me` and manages everything else in them.
 
-## Décisions prises
+## Decisions made
 
-| Sujet | Décision |
+| Topic | Decision |
 |---|---|
 | Stack | Vite, React 19, TypeScript, Tailwind, React Router, TanStack Query |
-| Livraison | Build statique embarqué dans le binaire Go avec `go:embed`, servi sous `/admin/` |
-| Origine | Même origine que l'API. Pas de CORS en prod |
-| Session | Cookie `session` `httpOnly` posé par l'API. La webapp ne stocke aucun jeton |
-| Rôles | Admin par ligue, superadmin global |
-| Périmètre v1 | Tout, y compris l'invitation des admins |
-| Nouveaux admins | Invitation par lien à usage unique, valable 7 jours |
-| Langue | Interface en français |
+| Delivery | Static build embedded in the Go binary with `go:embed`, served under `/admin/` |
+| Origin | Same origin as the API. No CORS in production |
+| Session | `httpOnly` `session` cookie set by the API. The webapp stores no token |
+| Roles | Admin per league, global superadmin |
+| v1 scope | Everything, including inviting admins |
+| New admins | Invitation by single-use link, valid for 7 days |
+| Language | French interface |
 
 ## API
 
-L'API est à la racine du dépôt. Tous les chemins commencent par `/api/v1`.
+The API is at the root of the repository. Every path starts with `/api/v1`.
 
-Conventions : JSON en snake_case, identifiants UUID, dates-heures en UTC (RFC 3339), dates simples `YYYY-MM-DD`.
+Conventions: snake_case JSON, UUID identifiers, date-times in UTC (RFC 3339), plain dates `YYYY-MM-DD`.
 
-### Auth (existant)
+### Auth (existing)
 
-| Méthode | Chemin | Corps | Réponse |
+| Method | Path | Body | Response |
 |---|---|---|---|
-| `POST` | `/auth/login` | `{email, password}` | 200 `{id, email, name, is_superadmin}` + cookie `session` ; 401 si identifiants faux |
+| `POST` | `/auth/login` | `{email, password}` | 200 `{id, email, name, is_superadmin}` + `session` cookie; 401 if the credentials are wrong |
 | `POST` | `/auth/logout` | — | 204 |
-| `GET` | `/me` | — | 200 `{id, email, name, is_superadmin, leagues: [{id, name}]}` ; 401 |
-| `PUT` | `/me/password` | `{current_password, new_password}` | 204 ; 403 mot de passe actuel faux ; 422 règle de mot de passe |
-| `POST` | `/auth/password-reset` | `{email}` | 204 dans tous les cas |
-| `POST` | `/auth/password-reset/confirm` | `{token, password}` | 204 ; 400 lien invalide ; 422 règle de mot de passe |
+| `GET` | `/me` | — | 200 `{id, email, name, is_superadmin, leagues: [{id, name}]}`; 401 |
+| `PUT` | `/me/password` | `{current_password, new_password}` | 204; 403 wrong current password; 422 password rule |
+| `POST` | `/auth/password-reset` | `{email}` | 204 in every case |
+| `POST` | `/auth/password-reset/confirm` | `{token, password}` | 204; 400 invalid link; 422 password rule |
 
-Règle de mot de passe : 10 caractères minimum, 72 octets maximum. Le login est limité à 10 requêtes par minute et par IP.
+Password rule: 10 characters minimum, 72 bytes maximum. Sign-in is limited to 10 requests per minute per IP.
 
-### Autorisations
+### Authorization
 
-- Les lectures (`GET`) sont publiques.
-- Écritures sous `/leagues/{leagueID}/...` : admin de cette ligue ou superadmin. Sinon 401 (non connecté) ou 403.
-- `POST /leagues` et `DELETE /leagues/{leagueID}` : superadmin.
+- Reads (`GET`) are public.
+- Writes under `/leagues/{leagueID}/...`: admin of that league or superadmin. Otherwise 401 (not signed in) or 403.
+- `POST /leagues` and `DELETE /leagues/{leagueID}`: superadmin.
 
-### Erreurs
+### Errors
 
-Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"errors": {"<champ>": "<message>"}}`, avec un message en français à afficher sous le champ (voir `docs/api/endpoints.md` › Validation errors). JSON illisible : 400. Corps trop gros : 413. L'API refuse les champs inconnus.
+Two shapes: `{"error": "message"}`, and for field validation (422) `{"errors": {"<field>": "<message>"}}`, with a French message to show under the field (see `docs/api/endpoints.md` › Validation errors). Unreadable JSON: 400. Body too large: 413. The API refuses unknown fields.
 
-`PATCH` : un champ absent n'est pas modifié. Vider un champ optionnel n'est pas possible en v1.
+`PATCH`: a missing field isn't changed. Clearing an optional field isn't possible in v1.
 
-### Ressources existantes
+### Existing resources
 
-- **League** : `{id, name, logo}`. Création : `{name, logo?}`.
-- **Team** : `{id, league_id, name, logo}`. Création : `{name, logo?}`.
-- **Player** : `{id, league_id, firstname, lastname, icon}`. Création : `{firstname, lastname, icon?}`.
-- **Season** : `{id, league_id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers}`. `tie_breakers` parmi `goal_difference`, `goals_scored`, `head_to_head`, `fair_play`, `random`.
-- **Équipes d'une saison** : `GET .../seasons/{seasonID}/teams`, `POST` et `DELETE .../teams/{teamID}`.
-- **Effectif** : membre `{membership_id, player_id, firstname, lastname, icon, number, joined_on, left_on}`. Entrée `{player_id, number?, joined_on}`, numéro `{number}`, départ `{left_on}`, transfert `{player_id, from_team_id, to_team_id, number?, on}`. Dates au format `YYYY-MM-DD`.
-- **Match** : `{id, season_id, home_team, away_team, matchday, kickoff_at, status, home_score, away_score, venue, referee, convocation_at, video_url}`. Programmer `{home_team_id, away_team_id, matchday, kickoff_at?, venue?}`. Actions : `start`, `score` (`{home, away}`), `finish`, `postpone` (`{kickoff_at?}`), `cancel`.
-- **Classement** : lignes `{rank, team_id, team_name, played, won, drawn, lost, goals_for, goals_against, goal_difference, points}`.
+- **League**: `{id, name, logo}`. Create: `{name, logo?}`.
+- **Team**: `{id, league_id, name, logo}`. Create: `{name, logo?}`.
+- **Player**: `{id, league_id, firstname, lastname, icon}`. Create: `{firstname, lastname, icon?}`.
+- **Season**: `{id, league_id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers}`. `tie_breakers` among `goal_difference`, `goals_scored`, `head_to_head`, `fair_play`, `random`.
+- **A season's teams**: `GET .../seasons/{seasonID}/teams`, `POST` and `DELETE .../teams/{teamID}`.
+- **Squad**: member `{membership_id, player_id, firstname, lastname, icon, number, joined_on, left_on}`. Join `{player_id, number?, joined_on}`, number `{number}`, leave `{left_on}`, transfer `{player_id, from_team_id, to_team_id, number?, on}`. Dates in `YYYY-MM-DD` format.
+- **Match**: `{id, season_id, home_team, away_team, matchday, kickoff_at, status, home_score, away_score, venue, referee, convocation_at, video_url}`. Schedule `{home_team_id, away_team_id, matchday, kickoff_at?, venue?}`. Actions: `start`, `score` (`{home, away}`), `finish`, `postpone` (`{kickoff_at?}`), `cancel`.
+- **Standings**: rows `{rank, team_id, team_name, played, won, drawn, lost, goals_for, goals_against, goal_difference, points}`.
 
-### Endpoints ajoutés pour la webapp (implémentés et vérifiés le 2026-10-10)
+### Endpoints added for the webapp (implemented and checked on 2026-10-10)
 
-| Méthode | Chemin | Accès | Corps | Réponse |
+| Method | Path | Access | Body | Response |
 |---|---|---|---|---|
-| `GET` | `/leagues/{leagueID}/admins` | admin | — | 200 liste de `{id, email, name}` |
+| `GET` | `/leagues/{leagueID}/admins` | admin | — | 200 list of `{id, email, name}` |
 | `DELETE` | `/leagues/{leagueID}/admins/{userID}` | superadmin | — | 204 |
-| `POST` | `/leagues/{leagueID}/invitations` | superadmin | `{email}` | 201 `{id, email, expires_at, link}` ; 409 déjà admin de la ligue. Réinviter remplace l'invitation précédente |
-| `GET` | `/leagues/{leagueID}/invitations` | superadmin | — | 200 liste des invitations en attente `{id, email, expires_at}` |
+| `POST` | `/leagues/{leagueID}/invitations` | superadmin | `{email}` | 201 `{id, email, expires_at, link}`; 409 already admin of the league. Inviting again replaces the previous invitation |
+| `GET` | `/leagues/{leagueID}/invitations` | superadmin | — | 200 list of pending invitations `{id, email, expires_at}` |
 | `DELETE` | `/leagues/{leagueID}/invitations/{invitationID}` | superadmin | — | 204 |
-| `POST` | `/invitations/lookup` | public | `{token}` | 200 `{email, league: {id, name}, account_exists}` ; 400 lien invalide, expiré ou déjà utilisé |
-| `POST` | `/invitations/accept` | public | `{token, name, password}` si nouveau compte, `{token}` sinon | 204 ; 400 lien invalide ; 422 nom ou mot de passe manquant, ou règle de mot de passe |
+| `POST` | `/invitations/lookup` | public | `{token}` | 200 `{email, league: {id, name}, account_exists}`; 400 invalid, expired or already used link |
+| `POST` | `/invitations/accept` | public | `{token, name, password}` for a new account, `{token}` otherwise | 204; 400 invalid link; 422 missing name or password, or password rule |
 | `PATCH` | `/leagues/{leagueID}` | admin | `{name?, logo?}` | 200 League |
 | `PATCH` | `/leagues/{leagueID}/teams/{teamID}` | admin | `{name?, logo?}` | 200 Team |
-| `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | — | 204 ; 409 si historique |
-| `GET` | `/leagues/{leagueID}/players?q=` | public | — | 200 liste de Player |
+| `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | — | 204; 409 if it has a history |
+| `GET` | `/leagues/{leagueID}/players?q=` | public | — | 200 list of Player |
 | `PATCH` | `/leagues/{leagueID}/players/{playerID}` | admin | `{firstname?, lastname?, icon?}` | 200 Player |
-| `DELETE` | `/leagues/{leagueID}/players/{playerID}` | admin | — | 204 ; 409 si historique |
-| `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | champs de Season, tous optionnels | 200 Season |
-| `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | — | 204 ; 409 si elle a des matchs |
+| `DELETE` | `/leagues/{leagueID}/players/{playerID}` | admin | — | 204; 409 if it has a history |
+| `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Season fields, all optional | 200 Season |
+| `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | — | 204; 409 if it has matches |
 
-Invitation : le superadmin invite une adresse sur une ligue. Le lien `{ADMIN_URL}/invitation?token=...` est à usage unique et valable 7 jours. Le jeton passe en paramètre puis dans le corps des requêtes, jamais dans un chemin, pour ne pas finir dans les logs. L'API renvoie le lien dans `link`, une seule fois, à la création. L'API n'envoie pas de mail d'invitation : la webapp affiche le lien avec un bouton « Copier le lien » et un lien `mailto:` prérempli. La personne choisit son nom et son mot de passe. Si l'adresse a déjà un compte, accepter rattache la ligue à ce compte, sans être connecté. Retirer un admin retire le droit sur la ligue, pas le compte. Il n'y a pas de `POST /users`.
+Invitation: the superadmin invites an address to a league. The link `{ADMIN_URL}/invitation?token=...` is single-use and valid for 7 days. The token goes in a query parameter and then in request bodies, never in a path, so it doesn't end up in logs. The API returns the link in `link`, only once, on creation. The API sends no invitation email: the webapp shows the link with a « Copier le lien » button and a prefilled `mailto:` link. The person chooses their name and password. If the address already has an account, accepting attaches the league to that account, without being signed in. Removing an admin removes the right on the league, not the account. There is no `POST /users`.
 
-`PATCH /leagues/{leagueID}` est ouvert à l'admin de la ligue. Un `tie_breakers` fourni doit contenir au moins une valeur. Supprimer une saison sans match supprime aussi ses inscriptions et ses effectifs.
+`PATCH /leagues/{leagueID}` is open to the league's admin. A `tie_breakers` that is sent must contain at least one value. Deleting a season without matches also deletes its registrations and squads.
 
 ## Architecture
 
-### Emplacement
+### Location
 
-Sources dans `admin/`, avec son propre `package.json`. `go:embed` exige que `dist` soit dans le module Go, d'où ce choix.
+Sources in `admin/`, with its own `package.json`. `go:embed` requires `dist` to be inside the Go module, hence this choice.
 
-Côté Go : `admin/embed.go` avec `//go:embed all:dist`, et une route `GET /admin/*` qui sert les fichiers et retombe sur `index.html` pour les routes de la SPA.
+Go side: `admin/embed.go` with `//go:embed all:dist`, and a `GET /admin/*` route that serves the files and falls back to `index.html` for the SPA's routes.
 
-### Dev et prod
+### Dev and production
 
-- **Dev** : serveur Vite sur `localhost:5173`, `base: '/admin/'`, proxy de `/api` vers `localhost:8080`. Le cookie passe par le proxy, donc même origine aussi en dev.
-- **Prod** : `npm run build` produit `admin/dist`, embarqué dans le binaire.
-- `ADMIN_URL` côté API doit valoir `http://localhost:5173/admin` en dev et `https://<hôte>/admin` en prod, pour que le lien de réinitialisation pointe sur `/admin/reset-password?token=`.
+- **Dev**: Vite server on `localhost:5173`, `base: '/admin/'`, proxy from `/api` to `localhost:8080`. The cookie goes through the proxy, so same origin in dev too.
+- **Production**: `npm run build` produces `admin/dist`, embedded in the binary.
+- `ADMIN_URL` on the API side must be `http://localhost:5173/admin` in dev and `https://<host>/admin` in production, so that the reset link points to `/admin/reset-password?token=`.
 
 ### Structure
 
 ```
 admin/
   src/
-    api/         client fetch, types, un fichier par ressource
-    auth/        session courante, gardes de routes
-    features/    un dossier par ressource : pages et formulaires
-    ui/          table, champ, modale, bouton, bandeau d'erreur
+    api/         fetch client, types, one file per resource
+    auth/        current session, route guards
+    features/    one folder per resource: pages and forms
+    ui/          table, field, modal, button, error banner
     routes.tsx
     main.tsx
 ```
 
-Chaque unité a un rôle :
+Each unit has one role:
 
-- `api/client.ts` : `fetch` avec `credentials: 'same-origin'`, encodage des segments d'URL, conversion des réponses non-2xx en `ApiError {status, message}`.
-- `api/<ressource>.ts` : fonctions typées, sans état.
-- `auth/` : charge `GET /me`, expose l'utilisateur et `canWrite(leagueId)`, `isSuperadmin`.
-- `features/` : pages qui combinent requêtes TanStack Query et composants `ui/`.
-- `ui/` : composants de présentation sans appel réseau.
+- `api/client.ts`: `fetch` with `credentials: 'same-origin'`, encoding of URL segments, conversion of non-2xx responses into `ApiError {status, message}`.
+- `api/<resource>.ts`: typed functions, stateless.
+- `auth/`: loads `GET /me`, exposes the user and `canWrite(leagueId)`, `isSuperadmin`.
+- `features/`: pages that combine TanStack Query requests and `ui/` components.
+- `ui/`: presentation components with no network call.
 
 ## Routes
 
-Toutes sous `/admin`.
+All under `/admin`.
 
-| Route | Écran | Accès |
+| Route | Screen | Access |
 |---|---|---|
-| `/login` | Connexion | public |
-| `/forgot-password` | Demande de lien | public |
-| `/reset-password?token=` | Nouveau mot de passe | public |
-| `/` | Liste des ligues | connecté |
-| `/account` | Changer son mot de passe | connecté |
-| `/invitation?token=` | Accepter une invitation | public |
-| `/leagues/:leagueId` | Ligue : équipes, joueurs, saisons, admins | admin de la ligue |
-| `/leagues/:leagueId/seasons/:seasonId` | Saison : équipes inscrites, matchs, classement | admin de la ligue |
-| `/leagues/:leagueId/seasons/:seasonId/teams/:teamId` | Effectif | admin de la ligue |
+| `/login` | Sign in | public |
+| `/forgot-password` | Ask for a link | public |
+| `/reset-password?token=` | New password | public |
+| `/` | List of leagues | signed in |
+| `/account` | Change one's password | signed in |
+| `/invitation?token=` | Accept an invitation | public |
+| `/leagues/:leagueId` | League: teams, players, seasons, admins | league admin |
+| `/leagues/:leagueId/seasons/:seasonId` | Season: registered teams, matches, standings | league admin |
+| `/leagues/:leagueId/seasons/:seasonId/teams/:teamId` | Squad | league admin |
 
-## Comportements
+## Behaviour
 
 ### Auth
 
-- Au démarrage, `GET /me`. Un 401 redirige vers `/login` en gardant la page demandée pour y revenir après connexion.
-- Un 401 sur un appel quelconque vide la session et renvoie au login.
-- Un 403 affiche « accès refusé » sans déconnecter.
-- Une route `/leagues/:leagueId` pour une ligue non administrée affiche « accès refusé ».
-- Un admin avec une seule ligue est redirigé de `/` vers cette ligue.
+- On startup, `GET /me`. A 401 redirects to `/login`, keeping the requested page to come back to it after signing in.
+- A 401 on any call clears the session and sends back to sign-in.
+- A 403 shows « accès refusé » without signing out.
+- A `/leagues/:leagueId` route for a league the user doesn't administer shows « accès refusé ».
+- An admin with a single league is redirected from `/` to that league.
 
-### Ligues
+### Leagues
 
-- Superadmin : liste complète (`GET /leagues`), création, suppression avec confirmation. Un 409 à la suppression affiche « cette ligue a un historique ».
-- Admin : liste issue de `GET /me`.
+- Superadmin: full list (`GET /leagues`), create, delete with confirmation. A 409 on delete shows « cette ligue a un historique ».
+- Admin: list from `GET /me`.
 
-### Dans une ligue
+### Inside a league
 
-- **Équipes** et **joueurs** : liste, création, modification, suppression.
-- **Saisons** : liste, création (dates, barème de points, départages), modification, suppression.
-- **Admins** : liste visible par tous les admins de la ligue. Le superadmin invite une adresse e-mail, voit et annule les invitations en attente, et retire un admin.
+- **Teams** and **players**: list, create, edit, delete.
+- **Seasons**: list, create (dates, points scale, tie-breakers), edit, delete.
+- **Admins**: list visible to every admin of the league. The superadmin invites an email address, sees and cancels pending invitations, and removes an admin.
 
-### Dans une saison
+### Inside a season
 
-- **Équipes inscrites** : inscrire, désinscrire.
-- **Effectif** : faire entrer un joueur, changer le numéro, faire partir, transférer vers une autre équipe inscrite.
-- **Matchs** : liste filtrable par journée et statut. Programmer, modifier, supprimer. Actions selon le statut :
-  - `scheduled` : démarrer, reporter, annuler, modifier, supprimer.
-  - `live` : saisir le score, terminer.
-  - `finished`, `postponed`, `cancelled` : les actions que l'API accepte, à relever dans `internal/app/match/service.go` au moment du plan.
-- **Classement** : lecture seule, rafraîchi après chaque action sur un match.
+- **Registered teams**: register, unregister.
+- **Squad**: add a player, change the number, make them leave, transfer to another registered team.
+- **Matches**: list filterable by matchday and status. Schedule, edit, delete. Actions depending on the status:
+  - `scheduled`: start, postpone, cancel, edit, delete.
+  - `live`: enter the score, finish.
+  - `finished`, `postponed`, `cancelled`: the actions the API accepts, to read in `internal/app/match/service.go` when writing the plan.
+- **Standings**: read-only, refreshed after each action on a match.
 
-### Accepter une invitation
+### Accepting an invitation
 
-- La page appelle `POST /invitations/lookup` et affiche la ligue et l'adresse invitée.
-- Nouveau compte : formulaire nom + mot de passe, puis redirection vers la connexion.
-- Compte existant : un bouton « rejoindre la ligue », puis redirection vers la connexion.
-- Lien invalide ou expiré : message clair, sans formulaire.
+- The page calls `POST /invitations/lookup` and shows the league and the invited address.
+- New account: name + password form, then redirect to sign-in.
+- Existing account: a « rejoindre la ligue » button, then redirect to sign-in.
+- Invalid or expired link: clear message, no form.
 
-## Erreurs
+## Errors
 
-- 400, 409, 422 : message de l'API affiché dans le formulaire.
-- 403 : « accès refusé ».
-- 404 : page « introuvable ».
-- 5xx et panne réseau : bandeau générique avec bouton « réessayer ».
-- Pendant une écriture, le bouton est désactivé pour éviter le double envoi.
+- 400, 409, 422: the API's message shown in the form.
+- 403: « accès refusé ».
+- 404: « introuvable » page.
+- 5xx and network failure: generic banner with a « réessayer » button.
+- During a write, the button is disabled to avoid a double submit.
 
 ## Tests
 
-- Vitest + Testing Library, API simulée avec MSW.
-- `api/client` : construction des URL, conversion des erreurs.
-- `auth` : redirection sur 401, garde superadmin, garde par ligue.
-- Un test par page pour le chemin nominal et un cas d'erreur.
-- Matchs : les actions affichées pour chaque statut.
-- Bout en bout : Playwright dans `admin/e2e/`, contre la vraie API et les données de démo (`make e2e`, job « Admin E2E » en CI) : connexion, création d'une saison, programmation d'un match, démarrage, score, fin.
+- Vitest + Testing Library, API mocked with MSW.
+- `api/client`: building URLs, converting errors.
+- `auth`: redirect on 401, superadmin guard, per-league guard.
+- One test per page for the normal path and one error case.
+- Matches: the actions shown for each status.
+- End to end: Playwright in `admin/e2e/`, against the real API and the demo data (`make e2e`, « Admin E2E » job in CI): sign-in, creating a season, scheduling a match, starting it, score, finish.
 
-## Vérification finale
+## Final check
 
-Une fois la webapp terminée et l'API à jour :
+Once the webapp is finished and the API up to date:
 
-1. Créer un jeu de données réel via la webapp : une ligue, une saison, des équipes, des joueurs, des effectifs, des matchs avec scores.
-2. Vérifier que l'app mobile affiche correctement ces données : suivi, classement, équipe, match.
+1. Create a real data set through the webapp: a league, a season, teams, players, squads, matches with scores.
+2. Check that the mobile app shows this data correctly: following, standings, team, match.
 
-## Hors périmètre v1
+## Out of v1 scope
 
-- Envoi de fichiers pour les logos (l'API attend une URL).
-- Pagination (l'API n'en a pas).
-- Journal d'audit, multilingue.
+- File uploads for logos (the API expects a URL).
+- Pagination (the API has none).
+- Audit log, multiple languages.
 
-## Points ouverts
+## Open points
 
-Aucun.
+None.
 
-Réglé : l'utilisateur a confirmé l'embarqué et l'écriture dans `admin/`. `admin/dist` n'est pas versionné, sauf un `.gitkeep`. `ADMIN_URL` accepte un chemin, donc `http://localhost:5173/admin` donne un lien vers `/admin/reset-password`.
+Settled: the user confirmed embedding and writing in `admin/`. `admin/dist` is not versioned, except a `.gitkeep`. `ADMIN_URL` accepts a path, so `http://localhost:5173/admin` gives a link to `/admin/reset-password`.
