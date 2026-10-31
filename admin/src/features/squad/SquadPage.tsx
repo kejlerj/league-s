@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
 import { listSeasonTeams } from '@/api/seasons'
@@ -98,7 +98,16 @@ export function SquadPage() {
   ]
 
   const team = teams.data?.find((item) => item.id === teamId)
-  const present = new Set((squad.data ?? []).filter((member) => member.left_on === null).map((member) => member.player_id))
+  const elsewhere = useQueries({
+    queries: (teams.data ?? [])
+      .filter((item) => item.id !== teamId)
+      .map((item) => ({
+        queryKey: ['season', seasonId, 'squad', item.id, false],
+        queryFn: () => listSquad(leagueId, seasonId, item.id, false),
+      })),
+  })
+  const active = [...(squad.data ?? []), ...elsewhere.flatMap((query) => query.data ?? [])]
+  const present = new Set(active.filter((member) => member.left_on === null).map((member) => member.player_id))
 
   const titles: Record<Dialog['kind'], string> = {
     join: 'Ajouter un joueur',

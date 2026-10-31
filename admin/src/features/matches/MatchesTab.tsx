@@ -12,7 +12,7 @@ import { Field, SelectField } from '@/ui/Field'
 import { Modal } from '@/ui/Modal'
 import { PageState } from '@/ui/PageState'
 import { ACTION_LABELS, matchActions, STATUS_LABELS, type MatchAction } from './matchActions'
-import { DetailsForm, PostponeForm, RescheduleForm, ScheduleForm } from './MatchForm'
+import { EditForm, PostponeForm, ScheduleForm } from './MatchForm'
 import { ScoreForm } from './ScoreForm'
 
 type Pending = { action: MatchAction; match: Match }
@@ -22,8 +22,7 @@ const STATUSES = Object.keys(STATUS_LABELS) as MatchStatus[]
 
 const FORM_TITLES: Partial<Record<MatchAction, string>> = {
   score: 'Score',
-  reschedule: 'Reprogrammer le match',
-  details: 'Détails du match',
+  edit: 'Modifier le match',
   postpone: 'Reporter le match',
 }
 
@@ -155,8 +154,7 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
       <Modal title={formTitle ?? ''} open={formTitle !== undefined} onClose={close}>
         {pending !== null ? <p className="mb-4 text-sm text-slate-600">{describe(pending.match)}</p> : null}
         {pending?.action === 'score' ? <ScoreForm {...common} match={pending.match} /> : null}
-        {pending?.action === 'reschedule' ? <RescheduleForm {...common} match={pending.match} /> : null}
-        {pending?.action === 'details' ? <DetailsForm {...common} match={pending.match} /> : null}
+        {pending?.action === 'edit' ? <EditForm {...common} match={pending.match} /> : null}
         {pending?.action === 'postpone' ? <PostponeForm {...common} match={pending.match} /> : null}
       </Modal>
       <ConfirmDialog

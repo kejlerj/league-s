@@ -22,3 +22,14 @@ const (
 	ErrDeleteNotFound   DeleteError = "league not found"
 	ErrDeleteHasHistory DeleteError = "league still has teams, players or seasons"
 )
+
+type Update struct {
+	Name *string
+	Logo *string
+}
+
+type UpdateError string
+
+func (e UpdateError) Error() string { return string(e) }
+
+const ErrUpdateNotFound UpdateError = "league not found"

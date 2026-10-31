@@ -13,3 +13,11 @@ SELECT * FROM league ORDER BY name;
 -- name: DeleteLeague :one
 DELETE FROM league WHERE id = $1
 RETURNING id;
+
+-- name: UpdateLeague :one
+UPDATE league
+SET name = COALESCE(sqlc.narg(name), name),
+    logo = COALESCE(sqlc.narg(logo), logo),
+    updated_at = now()
+WHERE id = $1
+RETURNING *;

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgconn"
+
 	"league-s/internal/testdb"
 )
 
@@ -47,5 +49,20 @@ func TestStore_WritesAreScopedToTheLeague(t *testing.T) {
 	}
 	if err := store.Delete(t.Context(), f.season.LeagueID, f.season.ID, created.ID()); err != nil {
 		t.Errorf("Delete() from its own league: error = %v", err)
+	}
+}
+
+func TestDatabase_RejectsATeamPlayingItself(t *testing.T) {
+	f := newFixture(t)
+
+	_, err := testPool.Exec(t.Context(),
+		`INSERT INTO match (season_id, home_team_id, away_team_id, matchday) VALUES ($1, $2, $2, 1)`,
+		f.season.ID, f.home.ID)
+	if err == nil {
+		t.Fatal("insert with the same home and away team succeeded, want a CHECK violation")
+	}
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) || pgErr.Code != "23514" {
+		t.Errorf("error = %v, want a check_violation (23514)", err)
 	}
 }

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
 import { listPlayers } from '@/api/players'
 import { joinSquad } from '@/api/squad'
 import { today } from '@/lib/dates'
@@ -53,6 +54,16 @@ export function JoinForm({ leagueId, seasonId, teamId, excludedPlayerIds, onDone
           </option>
         ))}
       </SelectField>
+      {players.isSuccess && available.length === 0 ? (
+        <p className="text-sm text-slate-700">
+          {q === '' ? 'Tous les joueurs de la ligue sont déjà dans un effectif cette saison.' : 'Aucun joueur disponible ne correspond.'} Pour en ajouter un
+          nouveau, créez-le d'abord dans l'onglet{' '}
+          <Link to={`/leagues/${leagueId}?tab=players`} className="text-emerald-800 underline-offset-2 hover:underline">
+            Joueurs
+          </Link>{' '}
+          de la ligue.
+        </p>
+      ) : null}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Numéro" type="number" min={1} max={99} value={number} onChange={(e) => setNumber(e.target.value)} />
         <Field label="Date d'arrivée" type="date" required value={joinedOn} onChange={(e) => setJoinedOn(e.target.value)} />

@@ -46,6 +46,7 @@ export function mockLeague(league: League): void {
   server.use(
     http.get(`${API}/leagues/${league.id}`, () => HttpResponse.json(league)),
     http.get(`${API}/leagues/${league.id}/teams`, () => HttpResponse.json([])),
+    http.get(`${API}/leagues/${league.id}/seasons`, () => HttpResponse.json([])),
   )
 }
 

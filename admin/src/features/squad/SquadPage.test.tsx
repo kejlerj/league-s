@@ -33,6 +33,7 @@ function setup(alls: (string | null)[] = [], ...handlers: Parameters<typeof serv
       alls.push(all)
       return HttpResponse.json(all === 'true' ? [member, gone] : [member])
     }),
+    http.get(`${S}/teams/T2/squad`, () => HttpResponse.json([])),
     http.get(`${API}/leagues/L1/players`, () => HttpResponse.json([playerP1, playerP2])),
     ...handlers,
   )
@@ -137,4 +138,15 @@ test('un joueur parti n\'a plus d\'actions', async () => {
   const row = (await screen.findByText('Ancien Parti')).closest('tr')!
   expect(within(row).queryByRole('button')).not.toBeInTheDocument()
   expect(within(row).getByText('20/09/2026')).toBeInTheDocument()
+})
+
+test("un joueur déjà dans une autre équipe de la saison n'est pas proposé, et le formulaire dit quoi faire", async () => {
+  const { user } = setup()
+  server.use(http.get(`${S}/teams/T2/squad`, () => HttpResponse.json([{ ...member, membership_id: 'M2', player_id: 'P2' }])))
+  await screen.findByText('Léo Dupont')
+  await user.click(screen.getByRole('button', { name: 'Ajouter un joueur' }))
+  const dialog = screen.getByRole('dialog')
+  expect(await within(dialog).findByText(/Tous les joueurs de la ligue sont déjà dans un effectif cette saison/)).toBeInTheDocument()
+  expect(within(dialog).queryByRole('option', { name: 'Max Durand' })).not.toBeInTheDocument()
+  expect(within(dialog).getByRole('link', { name: 'Joueurs' })).toHaveAttribute('href', '/leagues/L1?tab=players')
 })

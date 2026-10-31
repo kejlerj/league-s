@@ -174,3 +174,67 @@ func deref(s *string) string {
 	}
 	return *s
 }
+
+func TestListPlayers(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	league := seed.CreateLeague(testdb.LeagueParams{})
+	other := seed.CreateLeague(testdb.LeagueParams{})
+	seed.CreatePlayer(testdb.PlayerParams{League: &league, Firstname: "Paul", Lastname: "Martin"})
+	seed.CreatePlayer(testdb.PlayerParams{League: &league, Firstname: "Jean", Lastname: "Dupont"})
+	seed.CreatePlayer(testdb.PlayerParams{League: &league, Firstname: "Alice", Lastname: "Dupont"})
+	seed.CreatePlayer(testdb.PlayerParams{League: &other, Firstname: "Jean", Lastname: "Elsewhere"})
+	router := newTestRouter()
+
+	tests := []struct {
+		name  string
+		query string
+		want  []string
+	}{
+		{"all, sorted by last name then first name", "", []string{"Alice Dupont", "Jean Dupont", "Paul Martin"}},
+		{"by last name, whatever the case", "?q=dupONT", []string{"Alice Dupont", "Jean Dupont"}},
+		{"by first name", "?q=paul", []string{"Paul Martin"}},
+		{"first name then last name", "?q=jean+dup", []string{"Jean Dupont"}},
+		{"last name then first name", "?q=dupont+jean", []string{"Jean Dupont"}},
+		{"no match", "?q=zidane", []string{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := testhttp.Do(t, router, http.MethodGet, playersPath(league)+tt.query, "")
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+			}
+			if tt.name == "no match" && strings.TrimSpace(rec.Body.String()) != "[]" {
+				t.Errorf("body = %s, want an empty array", rec.Body)
+			}
+
+			var res []playerResponse
+			if err := json.NewDecoder(rec.Body).Decode(&res); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+
+			got := make([]string, len(res))
+			for i, p := range res {
+				got[i] = p.Firstname + " " + p.Lastname
+			}
+			if strings.Join(got, ", ") != strings.Join(tt.want, ", ") {
+				t.Errorf("players = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestListPlayers_Errors(t *testing.T) {
+	league := testdb.New(t, testPool).CreateLeague(testdb.LeagueParams{})
+	router := newTestRouter()
+
+	rec := testhttp.Do(t, router, http.MethodGet, playersPath(league)+"?q="+strings.Repeat("a", 101), "")
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("search too long: status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+
+	rec = testhttp.Do(t, router, http.MethodGet, "/api/v1/leagues/abc/players", "")
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("invalid league: status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+}

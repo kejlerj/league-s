@@ -44,6 +44,23 @@ func (q *Queries) CreatePlayer(ctx context.Context, arg CreatePlayerParams) (Pla
 	return i, err
 }
 
+const deletePlayer = `-- name: DeletePlayer :execrows
+DELETE FROM player WHERE id = $1 AND league_id = $2
+`
+
+type DeletePlayerParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) DeletePlayer(ctx context.Context, arg DeletePlayerParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deletePlayer, arg.ID, arg.LeagueID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getPlayerByID = `-- name: GetPlayerByID :one
 SELECT id, league_id, firstname, lastname, icon, created_at, updated_at FROM player WHERE id = $1 AND league_id = $2
 `
@@ -68,26 +85,73 @@ func (q *Queries) GetPlayerByID(ctx context.Context, arg GetPlayerByIDParams) (P
 	return i, err
 }
 
+const listPlayers = `-- name: ListPlayers :many
+SELECT id, league_id, firstname, lastname, icon, created_at, updated_at FROM player
+WHERE league_id = $1
+  AND ($2::text = ''
+       OR firstname || ' ' || lastname ILIKE '%' || $2::text || '%'
+       OR lastname || ' ' || firstname ILIKE '%' || $2::text || '%')
+ORDER BY lastname, firstname, id
+`
+
+type ListPlayersParams struct {
+	LeagueID uuid.UUID
+	Search   string
+}
+
+func (q *Queries) ListPlayers(ctx context.Context, arg ListPlayersParams) ([]Player, error) {
+	rows, err := q.db.Query(ctx, listPlayers, arg.LeagueID, arg.Search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Player
+	for rows.Next() {
+		var i Player
+		if err := rows.Scan(
+			&i.ID,
+			&i.LeagueID,
+			&i.Firstname,
+			&i.Lastname,
+			&i.Icon,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updatePlayer = `-- name: UpdatePlayer :one
 UPDATE player
-SET firstname = $1, lastname = $2, updated_at = now()
-WHERE id = $3 AND league_id = $4
+SET firstname = COALESCE($3, firstname),
+    lastname = COALESCE($4, lastname),
+    icon = COALESCE($5, icon),
+    updated_at = now()
+WHERE id = $1 AND league_id = $2
 RETURNING id, league_id, firstname, lastname, icon, created_at, updated_at
 `
 
 type UpdatePlayerParams struct {
-	Firstname string
-	Lastname  string
 	ID        uuid.UUID
 	LeagueID  uuid.UUID
+	Firstname *string
+	Lastname  *string
+	Icon      *string
 }
 
 func (q *Queries) UpdatePlayer(ctx context.Context, arg UpdatePlayerParams) (Player, error) {
 	row := q.db.QueryRow(ctx, updatePlayer,
-		arg.Firstname,
-		arg.Lastname,
 		arg.ID,
 		arg.LeagueID,
+		arg.Firstname,
+		arg.Lastname,
+		arg.Icon,
 	)
 	var i Player
 	err := row.Scan(

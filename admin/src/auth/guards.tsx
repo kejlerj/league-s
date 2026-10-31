@@ -33,7 +33,7 @@ export function RequireLeague() {
   const { canWrite } = useSession()
 
   if (!canWrite(leagueId)) {
-    return <p className="text-sm text-slate-700">Accès refusé.</p>
+    return <Navigate to="/" replace />
   }
   return <Outlet />
 }

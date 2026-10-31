@@ -80,26 +80,10 @@ export function ScheduleForm({ leagueId, seasonId, teams, onDone, onCancel }: Co
   )
 }
 
-export function RescheduleForm({ leagueId, seasonId, match, onDone, onCancel }: Common & { match: Match }) {
+export function EditForm({ leagueId, seasonId, match, onDone, onCancel }: Common & { match: Match }) {
+  const canReschedule = match.status === 'scheduled' || match.status === 'postponed'
   const [matchday, setMatchday] = useState(String(match.matchday))
   const [kickoff, setKickoff] = useState(toLocal(match.kickoff_at))
-  const form = useFormSubmit(
-    () => updateMatch(leagueId, seasonId, match.id, { matchday: toInt(matchday), kickoff_at: toUtc(kickoff) }),
-    onDone,
-  )
-
-  return (
-    <form onSubmit={form.onSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Journée" type="number" min={1} required value={matchday} onChange={(e) => setMatchday(e.target.value)} />
-        <Field label="Coup d'envoi" type="datetime-local" value={kickoff} onChange={(e) => setKickoff(e.target.value)} />
-      </div>
-      <FormActions error={form.error} pending={form.pending} onCancel={onCancel} />
-    </form>
-  )
-}
-
-export function DetailsForm({ leagueId, seasonId, match, onDone, onCancel }: Common & { match: Match }) {
   const [venue, setVenue] = useState(match.venue ?? '')
   const [referee, setReferee] = useState(match.referee ?? '')
   const [convocation, setConvocation] = useState(toLocal(match.convocation_at))
@@ -107,6 +91,8 @@ export function DetailsForm({ leagueId, seasonId, match, onDone, onCancel }: Com
   const form = useFormSubmit(
     () =>
       updateMatch(leagueId, seasonId, match.id, {
+        matchday: canReschedule ? toInt(matchday) : null,
+        kickoff_at: canReschedule ? toUtc(kickoff) : null,
         venue: emptyToNull(venue),
         referee: emptyToNull(referee),
         convocation_at: toUtc(convocation),
@@ -117,6 +103,27 @@ export function DetailsForm({ leagueId, seasonId, match, onDone, onCancel }: Com
 
   return (
     <form onSubmit={form.onSubmit} className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Field
+          label="Journée"
+          type="number"
+          min={1}
+          required
+          disabled={!canReschedule}
+          value={matchday}
+          onChange={(e) => setMatchday(e.target.value)}
+        />
+        <Field
+          label="Coup d'envoi"
+          type="datetime-local"
+          disabled={!canReschedule}
+          value={kickoff}
+          onChange={(e) => setKickoff(e.target.value)}
+        />
+      </div>
+      {canReschedule ? null : (
+        <p className="text-sm text-slate-600">La journée et le coup d'envoi ne changent plus une fois le match démarré.</p>
+      )}
       <Field label="Lieu" maxLength={100} value={venue} onChange={(e) => setVenue(e.target.value)} />
       <Field label="Arbitre" maxLength={100} value={referee} onChange={(e) => setReferee(e.target.value)} />
       <Field label="Convocation" type="datetime-local" value={convocation} onChange={(e) => setConvocation(e.target.value)} />

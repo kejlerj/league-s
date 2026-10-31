@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { adminOne, mockSeason, teamA, teamB } from '@/test/fixtures'
+import { adminOne, leagueL1, mockLeague, mockSeason, teamA, teamB } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
@@ -84,7 +84,15 @@ test('classement vide', async () => {
   expect(await screen.findByText('Aucun match terminé.')).toBeInTheDocument()
 })
 
-test("la saison d'une ligue non administrée est refusée", async () => {
+test("la saison d'une ligue non administrée ramène l'admin dans sa ligue", async () => {
+  mockLeague(leagueL1)
   renderRoute('/leagues/L2/seasons/S9', { me: adminOne })
-  expect(await screen.findByText('Accès refusé.')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
+})
+
+test("quand toutes les équipes sont inscrites, l'onglet explique où en créer une", async () => {
+  setup()
+  server.use(http.get(`${API}/leagues/L1/teams`, () => HttpResponse.json([teamA])))
+  expect(await screen.findByText(/Toutes les équipes de la ligue sont déjà inscrites/)).toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Équipes' })).toHaveAttribute('href', '/leagues/L1?tab=teams')
 })

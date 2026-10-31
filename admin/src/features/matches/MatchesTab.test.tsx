@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { localToUtc } from '@/lib/dates'
+import { localToUtc, utcToLocal } from '@/lib/dates'
 import { adminOne, matchLive, matchScheduled, mockSeason } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
@@ -129,27 +129,35 @@ test('les filtres partent dans la requête', async () => {
   await vi.waitFor(() => expect(queries.some((q) => q.get('matchday') === '2' && q.get('status') === 'live')).toBe(true))
 })
 
-test('Détails : un champ vide est absent du corps', async () => {
+test('Modifier ouvre un formulaire prérempli et envoie les champs renseignés', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.patch(`${M}/M1`, capture(sent)))
-  await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Détails' }))
-  const dialog = screen.getByRole('dialog')
-  await user.type(within(dialog).getByLabelText('Lieu'), 'Stade Nord')
-  await user.click(within(dialog).getByRole('button', { name: 'Enregistrer' }))
-  await vi.waitFor(() => expect(sent.body).toEqual({ venue: 'Stade Nord' }))
-})
-
-test('Reprogrammer envoie la journée et le coup d\'envoi', async () => {
-  const sent: Sent = { calls: 0 }
-  const { user } = setup([], http.patch(`${M}/M1`, capture(sent)))
-  await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Reprogrammer' }))
+  await user.click(within(await rowOf('Programmé')).getByRole('button', { name: 'Modifier' }))
   const dialog = screen.getByRole('dialog')
   const matchday = within(dialog).getByLabelText('Journée')
   expect(matchday).toHaveValue(1)
+  expect(within(dialog).getByLabelText("Coup d'envoi")).toHaveValue(utcToLocal('2026-10-11T13:00:00Z'))
+  expect(within(dialog).getByLabelText('Lieu')).toHaveValue('')
   await user.clear(matchday)
   await user.type(matchday, '4')
+  await user.type(within(dialog).getByLabelText('Lieu'), 'Stade Sud')
   await user.click(within(dialog).getByRole('button', { name: 'Enregistrer' }))
-  await vi.waitFor(() => expect(sent.body).toEqual({ matchday: 4, kickoff_at: '2026-10-11T13:00:00.000Z' }))
+  await vi.waitFor(() =>
+    expect(sent.body).toEqual({ matchday: 4, kickoff_at: '2026-10-11T13:00:00.000Z', venue: 'Stade Sud' }),
+  )
+})
+
+test('Modifier un match en cours : valeurs actuelles affichées, journée et date verrouillées', async () => {
+  const sent: Sent = { calls: 0 }
+  const { user } = setup([], http.patch(`${M}/M2`, capture(sent)))
+  await user.click(within(await rowOf('En cours')).getByRole('button', { name: 'Modifier' }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByLabelText('Lieu')).toHaveValue('Stade Nord')
+  expect(within(dialog).getByLabelText('Journée')).toBeDisabled()
+  expect(within(dialog).getByLabelText("Coup d'envoi")).toBeDisabled()
+  await user.type(within(dialog).getByLabelText('Arbitre'), 'M. Petit')
+  await user.click(within(dialog).getByRole('button', { name: 'Enregistrer' }))
+  await vi.waitFor(() => expect(sent.body).toEqual({ venue: 'Stade Nord', referee: 'M. Petit' }))
 })
 
 test('Démarrer appelle start, et une erreur de l\'API s\'affiche', async () => {

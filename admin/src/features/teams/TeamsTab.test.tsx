@@ -7,7 +7,7 @@ import { API, server } from '@/test/server'
 function setup() {
   mockLeague(leagueL1)
   server.use(http.get(`${API}/leagues/L1/teams`, () => HttpResponse.json([teamA, teamB])))
-  return renderRoute('/leagues/L1', { me: adminOne })
+  return renderRoute('/leagues/L1?tab=teams', { me: adminOne })
 }
 
 test('liste les équipes', async () => {

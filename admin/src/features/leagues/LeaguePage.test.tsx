@@ -4,13 +4,12 @@ import { adminOne, leagueL1, leagueL2, mockLeague } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
-test('LeaguePage affiche les quatre onglets', async () => {
+test('LeaguePage affiche les cinq onglets, Matchs en premier', async () => {
   mockLeague(leagueL1)
   renderRoute('/leagues/L1', { me: adminOne })
   expect(await screen.findByRole('heading', { name: 'District Nord' })).toBeInTheDocument()
-  for (const label of ['Équipes', 'Joueurs', 'Saisons', 'Admins']) {
-    expect(screen.getByRole('tab', { name: label })).toBeInTheDocument()
-  }
+  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Matchs', 'Équipes', 'Joueurs', 'Saisons', 'Admins'])
+  expect(screen.getByRole('tab', { name: 'Matchs' })).toHaveAttribute('aria-selected', 'true')
 })
 
 test('ligue inconnue affiche Introuvable.', async () => {

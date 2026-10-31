@@ -93,3 +93,31 @@ func (q *Queries) GetLeagues(ctx context.Context) ([]League, error) {
 	}
 	return items, nil
 }
+
+const updateLeague = `-- name: UpdateLeague :one
+UPDATE league
+SET name = COALESCE($2, name),
+    logo = COALESCE($3, logo),
+    updated_at = now()
+WHERE id = $1
+RETURNING id, name, logo, created_at, updated_at
+`
+
+type UpdateLeagueParams struct {
+	ID   uuid.UUID
+	Name *string
+	Logo *string
+}
+
+func (q *Queries) UpdateLeague(ctx context.Context, arg UpdateLeagueParams) (League, error) {
+	row := q.db.QueryRow(ctx, updateLeague, arg.ID, arg.Name, arg.Logo)
+	var i League
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Logo,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}

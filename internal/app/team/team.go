@@ -23,3 +23,26 @@ type GetError string
 func (e GetError) Error() string { return string(e) }
 
 const ErrGetNotFound GetError = "team not found"
+
+type Update struct {
+	Name *string
+	Logo *string
+}
+
+type UpdateError string
+
+func (e UpdateError) Error() string { return string(e) }
+
+const (
+	ErrUpdateNotFound  UpdateError = "team not found"
+	ErrUpdateNameTaken UpdateError = "team name is already taken in this league"
+)
+
+type DeleteError string
+
+func (e DeleteError) Error() string { return string(e) }
+
+const (
+	ErrDeleteNotFound   DeleteError = "team not found"
+	ErrDeleteHasHistory DeleteError = "team is registered in a season"
+)

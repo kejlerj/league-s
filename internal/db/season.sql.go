@@ -60,6 +60,23 @@ func (q *Queries) CreateSeason(ctx context.Context, arg CreateSeasonParams) (Sea
 	return i, err
 }
 
+const deleteSeason = `-- name: DeleteSeason :execrows
+DELETE FROM season WHERE id = $1 AND league_id = $2
+`
+
+type DeleteSeasonParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) DeleteSeason(ctx context.Context, arg DeleteSeasonParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteSeason, arg.ID, arg.LeagueID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getSeasonByID = `-- name: GetSeasonByID :one
 SELECT id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, max_squad_size, league_id, created_at, updated_at FROM season WHERE id = $1 AND league_id = $2
 `
@@ -124,4 +141,60 @@ func (q *Queries) GetSeasonsByLeague(ctx context.Context, leagueID uuid.UUID) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateSeason = `-- name: UpdateSeason :one
+UPDATE season
+SET name = COALESCE($3, name),
+    start_on = COALESCE($4, start_on),
+    end_on = COALESCE($5, end_on),
+    match_win_pts = COALESCE($6, match_win_pts),
+    match_draw_pts = COALESCE($7, match_draw_pts),
+    match_loss_pts = COALESCE($8, match_loss_pts),
+    tie_breakers = COALESCE($9, tie_breakers),
+    updated_at = now()
+WHERE id = $1 AND league_id = $2
+RETURNING id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, max_squad_size, league_id, created_at, updated_at
+`
+
+type UpdateSeasonParams struct {
+	ID           uuid.UUID
+	LeagueID     uuid.UUID
+	Name         *string
+	StartOn      *time.Time
+	EndOn        *time.Time
+	MatchWinPts  *int32
+	MatchDrawPts *int32
+	MatchLossPts *int32
+	TieBreakers  []string
+}
+
+func (q *Queries) UpdateSeason(ctx context.Context, arg UpdateSeasonParams) (Season, error) {
+	row := q.db.QueryRow(ctx, updateSeason,
+		arg.ID,
+		arg.LeagueID,
+		arg.Name,
+		arg.StartOn,
+		arg.EndOn,
+		arg.MatchWinPts,
+		arg.MatchDrawPts,
+		arg.MatchLossPts,
+		arg.TieBreakers,
+	)
+	var i Season
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.StartOn,
+		&i.EndOn,
+		&i.MatchWinPts,
+		&i.MatchDrawPts,
+		&i.MatchLossPts,
+		&i.TieBreakers,
+		&i.MaxSquadSize,
+		&i.LeagueID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

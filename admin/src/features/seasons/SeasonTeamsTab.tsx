@@ -72,6 +72,15 @@ export function SeasonTeamsTab({ leagueId, seasonId }: { leagueId: string; seaso
           Inscrire
         </Button>
       </form>
+      {all.isSuccess && available.length === 0 ? (
+        <p className="mb-3 text-sm text-slate-700">
+          Toutes les équipes de la ligue sont déjà inscrites. Pour en ajouter une, créez-la d'abord dans l'onglet{' '}
+          <Link to={`/leagues/${leagueId}?tab=teams`} className="text-emerald-800 underline-offset-2 hover:underline">
+            Équipes
+          </Link>{' '}
+          de la ligue.
+        </p>
+      ) : null}
       <div className="mb-3">
         <FormError message={error} />
       </div>

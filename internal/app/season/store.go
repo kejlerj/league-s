@@ -158,3 +158,49 @@ func toSeason(s db.Season) *Season {
 		LeagueID:     s.LeagueID,
 	}
 }
+
+func (s *PostgresStore) Update(ctx context.Context, leagueID, id uuid.UUID, u Update) (*Season, error) {
+	res, err := s.q.UpdateSeason(ctx, db.UpdateSeasonParams{
+		ID:           id,
+		LeagueID:     leagueID,
+		Name:         u.Name,
+		StartOn:      u.StartOn,
+		EndOn:        u.EndOn,
+		MatchWinPts:  u.MatchWinPts,
+		MatchDrawPts: u.MatchDrawPts,
+		MatchLossPts: u.MatchLossPts,
+		TieBreakers:  u.TieBreakers,
+	})
+
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
+		switch {
+		case pgErr.ConstraintName == "season_league_name_key":
+			return nil, ErrUpdateNameTaken
+		case pgErr.Code == pgerrcode.CheckViolation:
+			return nil, ErrUpdateInvalidDates
+		}
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrUpdateNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("update season %s: %w", id, err)
+	}
+
+	return toSeason(res), nil
+}
+
+func (s *PostgresStore) Delete(ctx context.Context, leagueID, id uuid.UUID) error {
+	n, err := s.q.DeleteSeason(ctx, db.DeleteSeasonParams{ID: id, LeagueID: leagueID})
+
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && (pgErr.Code == pgerrcode.RestrictViolation || pgErr.Code == pgerrcode.ForeignKeyViolation) {
+		return ErrDeleteHasMatches
+	}
+	if err != nil {
+		return fmt.Errorf("delete season %s: %w", id, err)
+	}
+	if n == 0 {
+		return ErrDeleteNotFound
+	}
+	return nil
+}

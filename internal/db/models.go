@@ -57,12 +57,38 @@ func (ns NullMatchStatus) Value() (driver.Value, error) {
 	return string(ns.MatchStatus), nil
 }
 
+type AppUser struct {
+	ID           uuid.UUID
+	Email        string
+	Name         string
+	PasswordHash *string
+	IsSuperadmin bool
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type Invitation struct {
+	ID         uuid.UUID
+	LeagueID   uuid.UUID
+	Email      string
+	TokenHash  []byte
+	ExpiresAt  time.Time
+	AcceptedAt *time.Time
+	CreatedAt  time.Time
+}
+
 type League struct {
 	ID        uuid.UUID
 	Name      string
 	Logo      *string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+type LeagueAdmin struct {
+	UserID    uuid.UUID
+	LeagueID  uuid.UUID
+	CreatedAt time.Time
 }
 
 type Match struct {
@@ -81,6 +107,15 @@ type Match struct {
 	Referee       *string
 	ConvocationAt *time.Time
 	VideoUrl      *string
+}
+
+type PasswordReset struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	TokenHash []byte
+	ExpiresAt time.Time
+	UsedAt    *time.Time
+	CreatedAt time.Time
 }
 
 type Player struct {
@@ -114,6 +149,14 @@ type SeasonTeam struct {
 	LeagueID  uuid.UUID
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+type Session struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	TokenHash []byte
+	ExpiresAt time.Time
+	CreatedAt time.Time
 }
 
 type SquadMembership struct {

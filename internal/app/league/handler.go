@@ -33,6 +33,11 @@ type createLeagueRequest struct {
 	Logo *string `json:"logo" validate:"omitempty,http_url"`
 }
 
+type updateLeagueRequest struct {
+	Name *string `json:"name" validate:"omitempty,min=1,max=50"`
+	Logo *string `json:"logo" validate:"omitempty,http_url"`
+}
+
 type leagueResponse struct {
 	ID   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
@@ -127,4 +132,30 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
+	id, err := httpx.IDParam(r, "leagueID")
+	if err != nil {
+		httpx.Error(w, http.StatusBadRequest, "invalid id")
+		return
+	}
+
+	var req updateLeagueRequest
+	if !httpx.Decode(w, r, &req) {
+		return
+	}
+
+	res, err := h.store.Update(r.Context(), id, Update(req))
+	if errors.Is(err, ErrUpdateNotFound) {
+		httpx.Error(w, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "update league", "err", err, "id", id)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, toResponse(res))
 }

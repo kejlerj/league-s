@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -25,6 +26,12 @@ type createPlayerRequest struct {
 	Icon      *string `json:"icon" validate:"omitempty,http_url"`
 }
 
+type updatePlayerRequest struct {
+	Firstname *string `json:"firstname" validate:"omitempty,min=1,max=50"`
+	Lastname  *string `json:"lastname" validate:"omitempty,min=1,max=50"`
+	Icon      *string `json:"icon" validate:"omitempty,http_url"`
+}
+
 type playerResponse struct {
 	ID        uuid.UUID `json:"id"`
 	LeagueID  uuid.UUID `json:"league_id"`
@@ -40,7 +47,10 @@ func toResponse(p *Player) playerResponse {
 func (h *Handler) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", h.create)
+	r.Get("/", h.list)
 	r.Get("/{playerID}", h.get)
+	r.Patch("/{playerID}", h.update)
+	r.Delete("/{playerID}", h.delete)
 	return r
 }
 
@@ -103,4 +113,86 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, toResponse(player))
+}
+
+const maxSearchLength = 100
+
+func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
+	leagueID, err := httpx.IDParam(r, "leagueID")
+	if err != nil {
+		httpx.Error(w, http.StatusBadRequest, "invalid league ID")
+		return
+	}
+
+	search := strings.TrimSpace(r.URL.Query().Get("q"))
+	if len(search) > maxSearchLength {
+		httpx.Error(w, http.StatusBadRequest, "q must be at most 100 characters long")
+		return
+	}
+
+	players, err := h.store.List(r.Context(), leagueID, search)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "list players", "err", err, "league_id", leagueID)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	res := make([]playerResponse, len(players))
+	for i, p := range players {
+		res[i] = toResponse(p)
+	}
+	httpx.JSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
+	ids, ok := httpx.IDParams(w, r, "leagueID", "playerID")
+	if !ok {
+		return
+	}
+	leagueID, id := ids[0], ids[1]
+
+	var req updatePlayerRequest
+	if !httpx.Decode(w, r, &req) {
+		return
+	}
+
+	res, err := h.store.Update(r.Context(), leagueID, id, Update(req))
+	if errors.Is(err, ErrUpdateNotFound) {
+		httpx.Error(w, http.StatusNotFound, err.Error())
+		return
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "update player", "err", err, "league_id", leagueID, "id", id)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, toResponse(res))
+}
+
+func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
+	ids, ok := httpx.IDParams(w, r, "leagueID", "playerID")
+	if !ok {
+		return
+	}
+	leagueID, id := ids[0], ids[1]
+
+	err := h.store.Delete(r.Context(), leagueID, id)
+	if deleteErr, ok := errors.AsType[DeleteError](err); ok {
+		switch deleteErr {
+		case ErrDeleteNotFound:
+			httpx.Error(w, http.StatusNotFound, deleteErr.Error())
+			return
+		case ErrDeleteHasHistory:
+			httpx.Error(w, http.StatusConflict, deleteErr.Error())
+			return
+		}
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "delete player", "err", err, "league_id", leagueID, "id", id)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -1,12 +1,12 @@
 import type { MatchStatus } from '@/api/types'
 
-export type MatchAction = 'start' | 'score' | 'finish' | 'postpone' | 'cancel' | 'reschedule' | 'details' | 'delete'
+export type MatchAction = 'start' | 'score' | 'finish' | 'postpone' | 'cancel' | 'edit' | 'delete'
 
 const ACTIONS: Record<MatchStatus, MatchAction[]> = {
-  scheduled: ['start', 'reschedule', 'details', 'postpone', 'cancel', 'delete'],
-  live: ['score', 'finish', 'details'],
-  postponed: ['reschedule', 'details', 'cancel'],
-  finished: ['details'],
+  scheduled: ['start', 'edit', 'postpone', 'cancel', 'delete'],
+  live: ['score', 'finish', 'edit'],
+  postponed: ['edit', 'cancel'],
+  finished: ['edit'],
   cancelled: [],
 }
 
@@ -16,8 +16,7 @@ export const ACTION_LABELS: Record<MatchAction, string> = {
   finish: 'Terminer',
   postpone: 'Reporter',
   cancel: 'Annuler',
-  reschedule: 'Reprogrammer',
-  details: 'Détails',
+  edit: 'Modifier',
   delete: 'Supprimer',
 }
 
