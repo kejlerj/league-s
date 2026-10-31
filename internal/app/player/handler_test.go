@@ -275,8 +275,8 @@ func TestGetPlayer_CurrentClub(t *testing.T) {
 	thisYear := seed.CreateSeason(testdb.SeasonParams{StartOn: "2025-08-01", EndOn: "2026-05-31"})
 	seed.RegisterTeams(lastYear, united)
 	seed.RegisterTeams(thisYear, rovers)
-	seed.SquadMember(testdb.SquadMemberParams{Season: lastYear, Team: united, Player: player})
-	seed.SquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: player})
+	seed.CreateSquadMember(testdb.SquadMemberParams{Season: lastYear, Team: united, Player: player})
+	seed.CreateSquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: player})
 
 	got := getPlayerDetail(t, player)
 	if got.ID != player.ID || got.Firstname != "Ada" || got.Lastname != "Martin" {
@@ -294,7 +294,7 @@ func TestGetPlayer_NoCurrentClub(t *testing.T) {
 	seed.RegisterTeams(season, team)
 	free := seed.CreatePlayer(testdb.PlayerParams{})
 	gone := seed.CreatePlayer(testdb.PlayerParams{})
-	seed.SquadMember(testdb.SquadMemberParams{Season: season, Team: team, Player: gone, JoinedOn: "2025-08-01", LeftOn: "2025-12-31"})
+	seed.CreateSquadMember(testdb.SquadMemberParams{Season: season, Team: team, Player: gone, JoinedOn: "2025-08-01", LeftOn: "2025-12-31"})
 
 	for name, p := range map[string]db.Player{"never in a squad": free, "left the squad": gone} {
 		t.Run(name, func(t *testing.T) {

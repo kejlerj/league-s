@@ -438,10 +438,10 @@ func TestPlayerCareer_ListsEveryStintMostRecentFirst(t *testing.T) {
 	thisYear := seed.CreateSeason(testdb.SeasonParams{Name: "2025-26", StartOn: "2025-08-01", EndOn: "2026-05-31"})
 	seed.RegisterTeams(lastYear, rovers, united)
 	seed.RegisterTeams(thisYear, rovers)
-	first := seed.SquadMember(testdb.SquadMemberParams{Season: lastYear, Team: rovers, Player: player, Number: 7, JoinedOn: "2024-08-01", LeftOn: "2025-01-10"})
-	second := seed.SquadMember(testdb.SquadMemberParams{Season: lastYear, Team: united, Player: player, JoinedOn: "2025-01-11", LeftOn: "2025-05-31"})
-	current := seed.SquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: player, Number: 10, JoinedOn: "2025-08-01"})
-	seed.SquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: seed.CreatePlayer(testdb.PlayerParams{}), Number: 9})
+	first := seed.CreateSquadMember(testdb.SquadMemberParams{Season: lastYear, Team: rovers, Player: player, Number: 7, JoinedOn: "2024-08-01", LeftOn: "2025-01-10"})
+	second := seed.CreateSquadMember(testdb.SquadMemberParams{Season: lastYear, Team: united, Player: player, JoinedOn: "2025-01-11", LeftOn: "2025-05-31"})
+	current := seed.CreateSquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: player, Number: 10, JoinedOn: "2025-08-01"})
+	seed.CreateSquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: seed.CreatePlayer(testdb.PlayerParams{}), Number: 9})
 
 	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, careerPath(player), "")
 	if rec.Code != http.StatusOK {
@@ -491,7 +491,7 @@ func TestPlayerCareer_Errors(t *testing.T) {
 	season := seed.CreateSeason(testdb.SeasonParams{League: &other})
 	team := seed.CreateTeam(testdb.TeamParams{League: &other})
 	seed.RegisterTeams(season, team)
-	seed.SquadMember(testdb.SquadMemberParams{Season: season, Team: team, Player: foreign})
+	seed.CreateSquadMember(testdb.SquadMemberParams{Season: season, Team: team, Player: foreign})
 
 	tests := []struct {
 		name string
