@@ -25,6 +25,8 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/", h.create)
 	r.Get("/", h.list)
 	r.Get("/{seasonID}", h.get)
+	r.Patch("/{seasonID}", h.update)
+	r.Delete("/{seasonID}", h.delete)
 	r.Get("/{seasonID}/teams", h.getTeams)
 	r.Post("/{seasonID}/teams/{teamID}", h.addTeam)
 	r.Delete("/{seasonID}/teams/{teamID}", h.removeTeam)
@@ -40,6 +42,16 @@ type createSeasonRequest struct {
 	MatchLossPts *int32   `json:"match_loss_pts" validate:"omitnil,min=0"`
 	TieBreakers  []string `json:"tie_breakers" validate:"omitempty,dive,oneof=goal_difference goals_scored head_to_head fair_play random"`
 	MaxSquadSize *int32   `json:"max_squad_size" validate:"omitnil,min=1"`
+}
+
+type updateSeasonRequest struct {
+	Name         *string    `json:"name" validate:"omitnil,min=1,max=50"`
+	StartOn      *time.Time `json:"start_on"`
+	EndOn        *time.Time `json:"end_on"`
+	MatchWinPts  *int32     `json:"match_win_pts" validate:"omitnil,min=0"`
+	MatchDrawPts *int32     `json:"match_draw_pts" validate:"omitnil,min=0"`
+	MatchLossPts *int32     `json:"match_loss_pts" validate:"omitnil,min=0"`
+	TieBreakers  []string   `json:"tie_breakers" validate:"omitnil,min=1,dive,oneof=goal_difference goals_scored head_to_head fair_play random"`
 }
 
 type seasonResponse struct {
@@ -278,6 +290,68 @@ func (h *Handler) removeTeam(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		slog.ErrorContext(r.Context(), "remove team from season", "err", err, "league_id", leagueID, "season_id", seasonID, "team_id", teamID)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
+	ids, ok := pathIDs(w, r, "leagueID", "seasonID")
+	if !ok {
+		return
+	}
+	leagueID, id := ids[0], ids[1]
+
+	var req updateSeasonRequest
+	if !httpx.Decode(w, r, &req) {
+		return
+	}
+
+	res, err := h.store.Update(r.Context(), leagueID, id, Update(req))
+	if updateErr, ok := errors.AsType[UpdateError](err); ok {
+		switch updateErr {
+		case ErrUpdateNotFound:
+			httpx.Error(w, http.StatusNotFound, updateErr.Error())
+			return
+		case ErrUpdateNameTaken:
+			httpx.Error(w, http.StatusConflict, updateErr.Error())
+			return
+		case ErrUpdateInvalidDates:
+			httpx.Error(w, http.StatusUnprocessableEntity, updateErr.Error())
+			return
+		}
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "update season", "err", err, "league_id", leagueID, "id", id)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, toResponse(res))
+}
+
+func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
+	ids, ok := pathIDs(w, r, "leagueID", "seasonID")
+	if !ok {
+		return
+	}
+	leagueID, id := ids[0], ids[1]
+
+	err := h.store.Delete(r.Context(), leagueID, id)
+	if deleteErr, ok := errors.AsType[DeleteError](err); ok {
+		switch deleteErr {
+		case ErrDeleteNotFound:
+			httpx.Error(w, http.StatusNotFound, deleteErr.Error())
+			return
+		case ErrDeleteHasMatches:
+			httpx.Error(w, http.StatusConflict, deleteErr.Error())
+			return
+		}
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "delete season", "err", err, "league_id", leagueID, "id", id)
 		httpx.Error(w, http.StatusInternalServerError, "internal error")
 		return
 	}

@@ -21,3 +21,30 @@ type GetError string
 func (e GetError) Error() string { return string(e) }
 
 const ErrGetNotFound GetError = "player not found"
+
+type ListError string
+
+func (e ListError) Error() string { return string(e) }
+
+const ErrListLeagueNotFound ListError = "league not found"
+
+type Update struct {
+	Firstname *string
+	Lastname  *string
+	Icon      *string
+}
+
+type UpdateError string
+
+func (e UpdateError) Error() string { return string(e) }
+
+const ErrUpdateNotFound UpdateError = "player not found"
+
+type DeleteError string
+
+func (e DeleteError) Error() string { return string(e) }
+
+const (
+	ErrDeleteNotFound   DeleteError = "player not found"
+	ErrDeleteHasHistory DeleteError = "player has been in a squad"
+)

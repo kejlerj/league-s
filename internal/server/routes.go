@@ -63,7 +63,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 		r.With(auth.Superadmin).Mount("/leagues/{leagueID}/invitations", invitations.LeagueRoutes())
 		r.With(authSvc.LeagueAdmin("leagueID")).Mount("/leagues/{leagueID}/admins", invitations.AdminRoutes())
 
-		r.With(auth.SuperadminWrites).Mount("/leagues", league.NewHandler(league.NewPostgresStore(pool)).Routes())
+		leagues := league.NewHandler(league.NewPostgresStore(pool))
+		r.With(leagueAdmin).Patch("/leagues/{leagueID}", leagues.Update)
+		r.With(auth.SuperadminWrites).Mount("/leagues", leagues.Routes())
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/teams", team.NewHandler(team.NewPostgresStore(pool)).Routes())
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/players", player.NewHandler(player.NewPostgresStore(pool)).Routes())
 		seasonStore := season.NewPostgresStore(pool)

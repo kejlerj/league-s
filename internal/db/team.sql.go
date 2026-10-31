@@ -37,6 +37,23 @@ func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) (Team, e
 	return i, err
 }
 
+const deleteTeam = `-- name: DeleteTeam :execrows
+DELETE FROM team WHERE id = $1 AND league_id = $2
+`
+
+type DeleteTeamParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) DeleteTeam(ctx context.Context, arg DeleteTeamParams) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteTeam, arg.ID, arg.LeagueID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getTeamByID = `-- name: GetTeamByID :one
 SELECT id, league_id, name, logo, created_at, updated_at FROM team WHERE id = $1 AND league_id = $2
 `
@@ -89,4 +106,39 @@ func (q *Queries) GetTeamsByLeagueID(ctx context.Context, leagueID uuid.UUID) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTeam = `-- name: UpdateTeam :one
+UPDATE team
+SET name = COALESCE($3, name),
+    logo = COALESCE($4, logo),
+    updated_at = now()
+WHERE id = $1 AND league_id = $2
+RETURNING id, league_id, name, logo, created_at, updated_at
+`
+
+type UpdateTeamParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+	Name     *string
+	Logo     *string
+}
+
+func (q *Queries) UpdateTeam(ctx context.Context, arg UpdateTeamParams) (Team, error) {
+	row := q.db.QueryRow(ctx, updateTeam,
+		arg.ID,
+		arg.LeagueID,
+		arg.Name,
+		arg.Logo,
+	)
+	var i Team
+	err := row.Scan(
+		&i.ID,
+		&i.LeagueID,
+		&i.Name,
+		&i.Logo,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }

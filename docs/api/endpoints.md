@@ -66,7 +66,7 @@ A body that fails validation gets a 422 with one readable French message per fie
 | Statut | Méthode | Chemin | Accès | Description |
 |---|---|---|---|---|
 | ✅ | `POST` | `/leagues/{leagueID}/players` | admin | Créer un joueur |
-| ✅ | `GET` | `/leagues/{leagueID}/players` | public | Lister les joueurs de la ligue (recherche par nom) |
+| ✅ | `GET` | `/leagues/{leagueID}/players` | public | Lister les joueurs de la ligue, triés par nom puis prénom. `q` cherche dans « prénom nom » et « nom prénom », sans tenir compte de la casse. Ligue inconnue → 404 |
 | ✅ | `GET` | `/leagues/{leagueID}/players/{playerID}` | public | Lire un joueur (plus tard : avec son club actuel) |
 | ✅ | `PATCH` | `/leagues/{leagueID}/players/{playerID}` | admin | Modifier le nom ou l'icône |
 | ✅ | `DELETE` | `/leagues/{leagueID}/players/{playerID}` | admin | Supprimer (refusé s'il a un historique) |
@@ -80,7 +80,7 @@ A body that fails validation gets a 422 with one readable French message per fie
 | ✅ | `GET` | `/leagues/{leagueID}/seasons` | public | Lister les saisons de la ligue, la plus récente d'abord. Ligue inconnue → 404 |
 | ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}` | public | Lire une saison |
 | ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Modifier dates, points ou départages (attention au classement déjà publié) |
-| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Supprimer (refusé si elle a des matchs) |
+| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Supprimer (refusé si elle a des matchs). Ses inscriptions et effectifs sont supprimés avec elle |
 
 ## Équipes inscrites à une saison
 

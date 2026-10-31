@@ -89,3 +89,16 @@ func (s *PostgresStore) Delete(ctx context.Context, id uuid.UUID) error {
 
 	return nil
 }
+
+func (s *PostgresStore) Update(ctx context.Context, id uuid.UUID, u Update) (*League, error) {
+	res, err := s.q.UpdateLeague(ctx, db.UpdateLeagueParams{ID: id, Name: u.Name, Logo: u.Logo})
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrUpdateNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("update league %s: %w", id, err)
+	}
+
+	return &League{ID: res.ID, Name: res.Name, Logo: res.Logo}, nil
+}

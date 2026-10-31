@@ -37,7 +37,7 @@
   - mettre à jour les tests en même temps
 - [ ] **Les endpoints de liste manquants** : saisons d'une ligue (`GetByLeague` existe déjà), équipes et joueurs d'une ligue
   - penser à la pagination dès le début (`limit`, `offset`, ou par curseur)
-- [ ] **Modification et suppression** (`PATCH` / `DELETE`) pour `league`, `team`, `player` et `season`
+- [x] **Modification et suppression** (`PATCH` / `DELETE`) pour `league`, `team`, `player` et `season`
   - mettre `updated_at = now()` dans chaque `UPDATE`
   - `RESTRICT` renverra une violation de clé étrangère si la ressource a un historique : la traduire en 409
 - [ ] **Un helper pour les erreurs Postgres** (`database.ConstraintName(err)`), dès qu'il sera répété dans `squadmembership`

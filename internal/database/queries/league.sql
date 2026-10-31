@@ -15,3 +15,11 @@ DELETE FROM league WHERE id = $1
 RETURNING id;
 -- name: LeagueExists :one
 SELECT EXISTS (SELECT 1 FROM league WHERE id = $1);
+
+-- name: UpdateLeague :one
+UPDATE league
+SET name = COALESCE(sqlc.narg(name), name),
+    logo = COALESCE(sqlc.narg(logo), logo),
+    updated_at = now()
+WHERE id = $1
+RETURNING *;

@@ -21,7 +21,8 @@ Une application pour des ligues de foot amateur (five, foot urbain), pas pour le
 | **Une ligue n'a qu'une seule saison à la fois** : les périodes de ses saisons ne se chevauchent pas | ⚠️ **pas garantie**. À ajouter sur `season` : une contrainte de non-chevauchement sur `(league_id, daterange(start_on, end_on))`, même mécanisme que la décision 008 |
 | Une ligue avec un historique (équipes, joueurs, saisons) ne peut pas être supprimée | ✅ `ON DELETE RESTRICT`, 409 |
 | Nom : obligatoire, 50 caractères max. Logo : URL, optionnel | ✅ validation du DTO |
-| Créer ou supprimer une ligue : superadmin seulement | ⚠️ attend l'authentification |
+| Créer ou supprimer une ligue : superadmin seulement | ✅ `auth.SuperadminWrites` |
+| Un admin de la ligue modifie son nom ou son logo | ✅ `PATCH /leagues/{leagueID}`, seuls les champs envoyés changent |
 
 ## Équipe
 
@@ -33,6 +34,7 @@ Une application pour des ligues de foot amateur (five, foot urbain), pas pour le
 | Une équipe participe à une saison en s'y inscrivant | ✅ table `season_team` |
 | Une équipe ne peut être inscrite qu'une fois à une saison | ✅ clé primaire `(season_id, team_id)`, 409 |
 | Une équipe qui a déjà des matchs dans la saison ne peut pas être désinscrite | ✅ `ON DELETE RESTRICT`, 409 |
+| Une équipe inscrite à une saison ne peut pas être supprimée | ✅ `ON DELETE RESTRICT` sur `season_team`, 409 |
 
 ## Joueur
 
@@ -42,6 +44,7 @@ Une application pour des ligues de foot amateur (five, foot urbain), pas pour le
 | Prénom et nom : obligatoires, 50 caractères max. Icône : URL, optionnelle | ✅ validation du DTO |
 | Deux joueurs peuvent porter le même nom | ✅ pas de contrainte d'unicité |
 | Un joueur n'a pas de poste : en five et en foot urbain les joueurs tournent pendant le match | ✅ aucun champ poste, ni sur le joueur ni dans l'effectif |
+| Un joueur passé par un effectif ne peut pas être supprimé | ✅ `ON DELETE RESTRICT` sur `squad_membership`, 409 |
 
 ## Saison
 
@@ -49,7 +52,8 @@ Une application pour des ligues de foot amateur (five, foot urbain), pas pour le
 |---|---|
 | Les règles de la compétition (points, départages) sont portées par la saison, pas par la ligue : les changer ne réécrit pas les classements passés | ✅ colonnes de `season` |
 | Le nom est unique dans la ligue | ✅ `UNIQUE (league_id, name)`, 409 |
-| La fin est après le début | ✅ `CHECK (end_on > start_on)` et `Season.CheckDates` (422 sur `end_on`). Les dates de saison sont au format `AAAA-MM-JJ` dans l'API (`datetime=2006-01-02`) |
+| La fin est après le début | ✅ `CHECK (end_on > start_on)` et `Season.CheckDates` (422 sur `end_on`). Les dates de saison sont au format `AAAA-MM-JJ` dans l'API (`datetime=2006-01-02`). Au `PATCH`, la contrainte refuse aussi (422 sur `end_on`) une nouvelle date qui place la fin avant le début, même quand une seule des deux est envoyée |
+| Une saison qui a des matchs ne peut pas être supprimée. Sans matchs, ses inscriptions et ses effectifs sont supprimés avec elle | ✅ `ON DELETE RESTRICT` de `match` sur `season_team`, 409. `ON DELETE CASCADE` pour `season_team` et `squad_membership` |
 | **Une seule saison à la fois par ligue** | ⚠️ voir Ligue |
 | Points par défaut : 3 (victoire), 1 (nul), 0 (défaite) | ✅ champs optionnels dans le DTO : un champ omis prend la valeur par défaut (`season.DefaultMatchWinPts`…), un `0` explicite est gardé |
 | Départages possibles : différence de buts, buts marqués, confrontation directe, fair-play, tirage au sort, appliqués dans l'ordre choisi. Par défaut : différence de buts, puis buts marqués | ✅ `tie_breakers` omis à la création → `season.DefaultTieBreakers()` (`goal_difference`, `goals_scored`), comme la valeur par défaut de la colonne. Un seul nom, `goals_scored`, en base et dans le validator. `standing.Compute` applique `goal_difference`, `goals_scored` et `head_to_head`. ⚠️ `fair_play` et `random` sont acceptés mais ignorés : pas de données de cartons, et un tirage au sort recalculé à chaque requête changerait le classement. À égalité complète, l'ordre alphabétique décide |

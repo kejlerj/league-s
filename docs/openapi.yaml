@@ -303,6 +303,34 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateLeague
+      summary: Change a league's name or logo
+      description: "Access: league admin. Only the fields sent change; `null` or omitted keeps the value."
+      tags: [leagues]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLeagueRequest"
+      responses:
+        "200":
+          description: The league after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/League"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
     delete:
       operationId: deleteLeague
       summary: Delete a league
@@ -517,10 +545,87 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateTeam
+      summary: Change a team's name or logo
+      description: "Access: league admin. Only the fields sent change; `null` or omitted keeps the value. The name is unique in the league (409)."
+      tags: [teams]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeamRequest"
+      responses:
+        "200":
+          description: The team after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      operationId: deleteTeam
+      summary: Delete a team
+      description: "Access: league admin. Refused (409) while the team is registered in a season."
+      tags: [teams]
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /api/v1/leagues/{leagueID}/players:
     parameters:
       - $ref: "#/components/parameters/LeagueID"
+    get:
+      operationId: listPlayers
+      summary: List or search the league's players, sorted by last name then first name
+      description: "Access: public. An unknown league is a 404."
+      tags: [players]
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: |
+            Case-insensitive search in "first name last name" and "last name first
+            name". At most 100 characters (400 otherwise).
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        "200":
+          description: The matching players.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Player"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
     post:
       operationId: createPlayer
       summary: Create a player
@@ -571,6 +676,52 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updatePlayer
+      summary: Change a player's name or icon
+      description: "Access: league admin. Only the fields sent change; `null` or omitted keeps the value."
+      tags: [players]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlayerRequest"
+      responses:
+        "200":
+          description: The player after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      operationId: deletePlayer
+      summary: Delete a player
+      description: "Access: league admin. Refused (409) once the player has been in a squad."
+      tags: [players]
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /api/v1/leagues/{leagueID}/seasons:
     parameters:
@@ -644,6 +795,54 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateSeason
+      summary: Change a season's name, dates, points or tie breakers
+      description: "Access: league admin. Only the fields sent change; `null` or omitted keeps the value. The name is unique in the league (409). The end must stay after the start (422). The standings are computed on read, so they follow the new points and tie breakers."
+      tags: [seasons]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSeasonRequest"
+      responses:
+        "200":
+          description: The season after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      operationId: deleteSeason
+      summary: Delete a season
+      description: "Access: league admin. Refused (409) while the season has matches. Its team registrations and squads are deleted with it."
+      tags: [seasons]
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /api/v1/leagues/{leagueID}/seasons/{seasonID}/teams:
     parameters:
@@ -1520,6 +1719,18 @@ components:
           type: [string, "null"]
           format: uri
 
+    UpdateLeagueRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 50
+        logo:
+          type: [string, "null"]
+          format: uri
+
     TeamRef:
       type: object
       required: [id, name, logo]
@@ -1559,6 +1770,18 @@ components:
           type: [string, "null"]
           format: uri
 
+    UpdateTeamRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 50
+        logo:
+          type: [string, "null"]
+          format: uri
+
     Player:
       type: object
       required: [id, league_id, firstname, lastname, icon]
@@ -1586,6 +1809,22 @@ components:
           maxLength: 50
         lastname:
           type: string
+          maxLength: 50
+        icon:
+          type: [string, "null"]
+          format: uri
+
+    UpdatePlayerRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        firstname:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 50
+        lastname:
+          type: [string, "null"]
+          minLength: 1
           maxLength: 50
         icon:
           type: [string, "null"]
@@ -1670,6 +1909,39 @@ components:
           format: int32
           minimum: 1
           description: "Omitted or `null`: no limit."
+
+    UpdateSeasonRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 50
+        start_on:
+          type: [string, "null"]
+          format: date-time
+        end_on:
+          type: [string, "null"]
+          format: date-time
+        match_win_pts:
+          type: [integer, "null"]
+          format: int32
+          minimum: 0
+        match_draw_pts:
+          type: [integer, "null"]
+          format: int32
+          minimum: 0
+        match_loss_pts:
+          type: [integer, "null"]
+          format: int32
+          minimum: 0
+        tie_breakers:
+          type: [array, "null"]
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/TieBreaker"
+          description: Applied in order. Replaces the whole list.
 
     ShirtNumber:
       type: [integer, "null"]
