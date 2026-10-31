@@ -68,6 +68,8 @@ func message(fe validator.FieldError, dstType reflect.Type) string {
 		return "doit être au plus " + fe.Param()
 	case "http_url":
 		return "doit être une URL http ou https"
+	case "email":
+		return "doit être une adresse e-mail valide"
 	case "uuid":
 		return "doit être un identifiant valide"
 	case "datetime":

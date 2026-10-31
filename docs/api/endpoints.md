@@ -16,6 +16,7 @@ A body that fails validation gets a 422 with one readable French message per fie
 | `min` / `max` on text | `<n> caractères minimum` / `<n> caractères maximum` |
 | `min` / `max` on a number | `doit être au moins <n>` / `doit être au plus <n>` |
 | `http_url` | `doit être une URL http ou https` |
+| `email` | `doit être une adresse e-mail valide` |
 | `uuid` | `doit être un identifiant valide` |
 | `datetime=2006-01-02` | `doit être une date au format AAAA-MM-JJ` |
 | `gtfield` | `doit être après <other field>` |

@@ -57,6 +57,7 @@ type messageTarget struct {
 	EndOn       int32    `json:"end_on" validate:"omitempty,gtfield=StartOn"`
 	TieBreakers []string `json:"tie_breakers" validate:"omitempty,dive,oneof=goal_difference goals_scored"`
 	Code        string   `json:"code" validate:"omitempty,alpha"`
+	Email       string   `json:"email" validate:"omitempty,email"`
 }
 
 func TestDecode_ReadableValidationMessages(t *testing.T) {
@@ -78,6 +79,7 @@ func TestDecode_ReadableValidationMessages(t *testing.T) {
 		{"not a date", `{"name": "a", "played_on": "01/08/2025"}`, "played_on", "doit être une date au format AAAA-MM-JJ"},
 		{"not after another field", `{"name": "a", "start_on": 5, "end_on": 3}`, "end_on", "doit être après start_on"},
 		{"not one of the values", `{"name": "a", "tie_breakers": ["coin_toss"]}`, "tie_breakers[0]", "doit valoir goal_difference ou goals_scored"},
+		{"not an email", `{"name": "a", "email": "jean"}`, "email", "doit être une adresse e-mail valide"},
 		{"unknown tag", `{"name": "a", "code": "a1"}`, "code", "invalide"},
 	}
 
