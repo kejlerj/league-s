@@ -1,9 +1,11 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import type { Tabs } from 'expo-router';
 import { ThemedText } from './ThemedText';
 import { fr } from '../i18n/fr';
+
+type TabBarProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 const LABELS: Record<string, string> = {
   suivi: fr.tabs.suivi,
@@ -12,7 +14,7 @@ const LABELS: Record<string, string> = {
   moi: fr.tabs.moi,
 };
 
-export function TabBar({ state, navigation }: BottomTabBarProps) {
+export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
   return (
     <View
