@@ -36,7 +36,7 @@ Rules:
 | Cross-domain flow (season → matches → standings) | `internal/scenario` (after PR-09) | Playwright in `admin/e2e/` (after PR-07) | Maestro in `mobile/e2e/` (after PR-07) |
 | Page or screen | none | Page test with MSW: the normal path and one error | Screen test with a mocked `fetch`: loading, error, data |
 | Pure logic | none | Unit test | Unit test in `src/logic` |
-| API contract (after PR-08) | `docs/openapi.yaml` updated, the route test passes | Generated types updated | Generated types updated |
+| API contract | `docs/openapi.yaml` updated, `TestOpenAPIDescribesEveryRoute` passes | Generated types updated (after #66) | Generated types updated (after #66) |
 
 ## Go conventions
 

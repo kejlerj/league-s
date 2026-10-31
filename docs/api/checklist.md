@@ -152,5 +152,6 @@
 
 ## 🚀 Plus tard
 
-- [ ] **Une documentation OpenAPI** de l'API
+- [x] **Une documentation OpenAPI** de l'API (`docs/openapi.yaml`, checked against the router by `internal/server/openapi_test.go`)
+  - TypeScript types generated from it for the admin and the mobile app: #66
 - [ ] **Le déploiement** : image Docker de l'app, migrations au démarrage ou dans un job séparé
