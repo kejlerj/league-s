@@ -65,9 +65,17 @@ func (s *PostgresStore) Get(ctx context.Context, leagueID, id uuid.UUID) (*Seaso
 
 func (s *PostgresStore) GetByLeague(ctx context.Context, leagueID uuid.UUID) ([]*Season, error) {
 	seasons, err := s.q.GetSeasonsByLeague(ctx, leagueID)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("list seasons: %w", err)
+	}
+	if len(seasons) == 0 {
+		exists, err := s.q.LeagueExists(ctx, leagueID)
+		if err != nil {
+			return nil, fmt.Errorf("check league %s: %w", leagueID, err)
+		}
+		if !exists {
+			return nil, ErrListLeagueNotFound
+		}
 	}
 
 	res := make([]*Season, len(seasons))

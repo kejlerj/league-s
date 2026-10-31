@@ -13,3 +13,5 @@ SELECT * FROM league ORDER BY name;
 -- name: DeleteLeague :one
 DELETE FROM league WHERE id = $1
 RETURNING id;
+-- name: LeagueExists :one
+SELECT EXISTS (SELECT 1 FROM league WHERE id = $1);

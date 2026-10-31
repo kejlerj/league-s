@@ -114,8 +114,11 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Call a service, that will first check if the league exists, and then call the store to list teams.
 	teams, err := h.store.List(r.Context(), leagueID)
+	if errors.Is(err, ErrListLeagueNotFound) {
+		httpx.Error(w, http.StatusNotFound, ErrListLeagueNotFound.Error())
+		return
+	}
 	if err != nil {
 		slog.ErrorContext(r.Context(), "list teams", "err", err, "league_id", leagueID)
 		httpx.Error(w, http.StatusInternalServerError, "internal error")

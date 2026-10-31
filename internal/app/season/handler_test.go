@@ -226,6 +226,18 @@ func TestListSeasons_Empty(t *testing.T) {
 	}
 }
 
+func TestListSeasons_UnknownLeague(t *testing.T) {
+	testdb.New(t, testPool)
+
+	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, "/api/v1/leagues/"+uuid.NewString()+"/seasons", "")
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNotFound, rec.Body)
+	}
+	if body := strings.TrimSpace(rec.Body.String()); body != `{"error":"league not found"}` {
+		t.Errorf("body = %s, want the league not found error", body)
+	}
+}
+
 func TestAddTeamThenListTeams(t *testing.T) {
 	s := testdb.New(t, testPool)
 	season := s.CreateSeason(testdb.SeasonParams{})
@@ -236,8 +248,8 @@ func TestAddTeamThenListTeams(t *testing.T) {
 
 	for _, team := range []db.Team{lyon, lens} {
 		rec := testhttp.Do(t, router, http.MethodPost, seasonTeamPath(season, team), "")
-		if rec.Code != http.StatusOK {
-			t.Fatalf("add team %q: status = %d, want %d, body = %s", team.Name, rec.Code, http.StatusOK, rec.Body)
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("add team %q: status = %d, want %d, body = %s", team.Name, rec.Code, http.StatusCreated, rec.Body)
 		}
 	}
 
@@ -370,8 +382,11 @@ func TestRemoveTeam(t *testing.T) {
 	s.RegisterTeams(season, team)
 
 	rec := testhttp.Do(t, newTestRouter(), http.MethodDelete, seasonTeamPath(season, team), "")
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusNoContent, rec.Body)
+	}
+	if rec.Body.Len() != 0 {
+		t.Errorf("body = %s, want empty", rec.Body)
 	}
 
 	var count int

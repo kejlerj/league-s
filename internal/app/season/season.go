@@ -33,6 +33,12 @@ func (e GetError) Error() string { return string(e) }
 
 const ErrGetNotFound GetError = "season not found"
 
+type ListError string
+
+func (e ListError) Error() string { return string(e) }
+
+const ErrListLeagueNotFound ListError = "league not found"
+
 type AddTeamError string
 
 func (e AddTeamError) Error() string { return string(e) }

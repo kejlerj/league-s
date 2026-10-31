@@ -200,17 +200,13 @@ func TestListTeams_Errors(t *testing.T) {
 		name       string
 		path       string
 		wantStatus int
-		skip       string
 	}{
-		{"invalid league id", "/api/v1/leagues/abc/teams", http.StatusBadRequest, ""},
-		{"unknown league", "/api/v1/leagues/" + uuid.NewString() + "/teams", http.StatusNotFound, "league existence is not checked yet, see the TODO in team.Handler.list"},
+		{"invalid league id", "/api/v1/leagues/abc/teams", http.StatusBadRequest},
+		{"unknown league", "/api/v1/leagues/" + uuid.NewString() + "/teams", http.StatusNotFound},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.skip != "" {
-				t.Skip(tt.skip)
-			}
 			testdb.New(t, testPool)
 
 			rec := testhttp.Do(t, newTestRouter(), http.MethodGet, tt.path, "")

@@ -93,3 +93,14 @@ func (q *Queries) GetLeagues(ctx context.Context) ([]League, error) {
 	}
 	return items, nil
 }
+
+const leagueExists = `-- name: LeagueExists :one
+SELECT EXISTS (SELECT 1 FROM league WHERE id = $1)
+`
+
+func (q *Queries) LeagueExists(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRow(ctx, leagueExists, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
