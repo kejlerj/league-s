@@ -24,12 +24,19 @@ func (h *Handler) Routes() chi.Router {
 	r.Post("/", h.create)
 	r.Get("/", h.list)
 	r.Get("/{teamID}", h.get)
+	r.Patch("/{teamID}", h.update)
+	r.Delete("/{teamID}", h.delete)
 	return r
 }
 
 type createTeamRequest struct {
 	Name string  `json:"name" validate:"required,max=50"`
 	Logo *string `json:"logo" validate:"omitempty,http_url"`
+}
+
+type updateTeamRequest struct {
+	Name *string `json:"name" validate:"omitnil,min=1,max=50"`
+	Logo *string `json:"logo" validate:"omitnil,http_url"`
 }
 
 type teamResponse struct {
@@ -131,4 +138,63 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
+	ids, ok := httpx.IDParams(w, r, "leagueID", "teamID")
+	if !ok {
+		return
+	}
+	leagueID, id := ids[0], ids[1]
+
+	var req updateTeamRequest
+	if !httpx.Decode(w, r, &req) {
+		return
+	}
+
+	res, err := h.store.Update(r.Context(), leagueID, id, Update(req))
+	if updateErr, ok := errors.AsType[UpdateError](err); ok {
+		switch updateErr {
+		case ErrUpdateNotFound:
+			httpx.Error(w, http.StatusNotFound, updateErr.Error())
+			return
+		case ErrUpdateNameTaken:
+			httpx.Error(w, http.StatusConflict, updateErr.Error())
+			return
+		}
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "update team", "err", err, "league_id", leagueID, "id", id)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	httpx.JSON(w, http.StatusOK, toResponse(res))
+}
+
+func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
+	ids, ok := httpx.IDParams(w, r, "leagueID", "teamID")
+	if !ok {
+		return
+	}
+	leagueID, id := ids[0], ids[1]
+
+	err := h.store.Delete(r.Context(), leagueID, id)
+	if deleteErr, ok := errors.AsType[DeleteError](err); ok {
+		switch deleteErr {
+		case ErrDeleteNotFound:
+			httpx.Error(w, http.StatusNotFound, deleteErr.Error())
+			return
+		case ErrDeleteHasHistory:
+			httpx.Error(w, http.StatusConflict, deleteErr.Error())
+			return
+		}
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "delete team", "err", err, "league_id", leagueID, "id", id)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

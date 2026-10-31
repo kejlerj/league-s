@@ -78,3 +78,32 @@ const (
 	ErrRemoveTeamNotRegistered RemoveTeamError = "team is not registered in this season"
 	ErrRemoveTeamHasMatches    RemoveTeamError = "team has matches in this season"
 )
+
+type Update struct {
+	Name         *string
+	StartOn      *time.Time
+	EndOn        *time.Time
+	MatchWinPts  *int32
+	MatchDrawPts *int32
+	MatchLossPts *int32
+	TieBreakers  []string
+}
+
+type UpdateError string
+
+func (e UpdateError) Error() string { return string(e) }
+
+const (
+	ErrUpdateNotFound     UpdateError = "season not found"
+	ErrUpdateNameTaken    UpdateError = "season name is already taken"
+	ErrUpdateInvalidDates UpdateError = "season must end after it starts"
+)
+
+type DeleteError string
+
+func (e DeleteError) Error() string { return string(e) }
+
+const (
+	ErrDeleteNotFound   DeleteError = "season not found"
+	ErrDeleteHasMatches DeleteError = "season has matches"
+)

@@ -88,3 +88,34 @@ func (s *PostgresStore) List(ctx context.Context, leagueID uuid.UUID) ([]*Team, 
 
 	return res, nil
 }
+
+func (s *PostgresStore) Update(ctx context.Context, leagueID, id uuid.UUID, u Update) (*Team, error) {
+	res, err := s.q.UpdateTeam(ctx, db.UpdateTeamParams{ID: id, LeagueID: leagueID, Name: u.Name, Logo: u.Logo})
+
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.ConstraintName == "team_league_name_key" {
+		return nil, ErrUpdateNameTaken
+	}
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrUpdateNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("update team %s: %w", id, err)
+	}
+
+	return toTeam(res), nil
+}
+
+func (s *PostgresStore) Delete(ctx context.Context, leagueID, id uuid.UUID) error {
+	n, err := s.q.DeleteTeam(ctx, db.DeleteTeamParams{ID: id, LeagueID: leagueID})
+
+	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && (pgErr.Code == pgerrcode.RestrictViolation || pgErr.Code == pgerrcode.ForeignKeyViolation) {
+		return ErrDeleteHasHistory
+	}
+	if err != nil {
+		return fmt.Errorf("delete team %s: %w", id, err)
+	}
+	if n == 0 {
+		return ErrDeleteNotFound
+	}
+	return nil
+}
