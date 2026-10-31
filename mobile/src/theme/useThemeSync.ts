@@ -6,6 +6,6 @@ export function useThemeSync() {
   const themeMode = useAppStore((s) => s.themeMode);
 
   useEffect(() => {
-    Appearance.setColorScheme(themeMode === 'system' ? null : themeMode);
+    Appearance.setColorScheme(themeMode === 'system' ? 'unspecified' : themeMode);
   }, [themeMode]);
 }

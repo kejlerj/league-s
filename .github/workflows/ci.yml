@@ -6,8 +6,55 @@ on:
   pull_request:
 
 jobs:
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      admin: ${{ steps.filter.outputs.admin }}
+      mobile: ${{ steps.filter.outputs.mobile }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - id: filter
+        name: Detect the parts that changed
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            files=$(git diff --name-only HEAD^1 HEAD)
+          else
+            files="*"
+          fi
+          echo "$files"
+
+          touched() {
+            [ "$files" = "*" ] && return 0
+            echo "$files" | grep -qE '^\.github/workflows/ci\.yml$' && return 0
+            echo "$files" | grep -qE "$1"
+          }
+
+          go=false
+          touched '(\.go$|^go\.(mod|sum)$|^Makefile$|^\.golangci\.yml$|^sqlc\.yaml$|^migrations/|^internal/)' && go=true
+
+          admin=false
+          [ -f admin/package.json ] && touched '^admin/' && admin=true
+
+          mobile=false
+          [ -f mobile/package.json ] && touched '^mobile/' && mobile=true
+
+          {
+            echo "go=$go"
+            echo "admin=$admin"
+            echo "mobile=$mobile"
+          } | tee -a "$GITHUB_OUTPUT"
+
   lint:
     name: Lint
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -22,6 +69,8 @@ jobs:
 
   vuln:
     name: Vulnerabilities
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -35,6 +84,8 @@ jobs:
 
   unit:
     name: Unit tests
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -51,6 +102,8 @@ jobs:
 
   integration:
     name: Integration tests
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -64,3 +117,58 @@ jobs:
 
       - name: Integration tests
         run: make itest
+
+  admin:
+    name: Admin
+    needs: changes
+    if: needs.changes.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: admin/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Tests
+        run: npm test -- --run
+
+      - name: Types and build
+        run: npm run build
+
+  mobile:
+    name: Mobile
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Tests
+        run: npm test -- --ci
+
+      - name: Expo types
+        run: echo '/// <reference types="expo/types" />' > expo-env.d.ts
+
+      - name: Types
+        run: npx tsc --noEmit
