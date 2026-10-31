@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createPlayer = `-- name: CreatePlayer :one
@@ -62,7 +63,24 @@ func (q *Queries) DeletePlayer(ctx context.Context, arg DeletePlayerParams) (int
 }
 
 const getPlayerByID = `-- name: GetPlayerByID :one
-SELECT id, league_id, firstname, lastname, icon, created_at, updated_at FROM player WHERE id = $1 AND league_id = $2
+SELECT player.id, player.league_id, player.firstname, player.lastname, player.icon, player.created_at, player.updated_at,
+       team.id AS current_team_id,
+       team.name AS current_team_name,
+       team.logo AS current_team_logo
+FROM player
+LEFT JOIN team ON team.league_id = player.league_id
+  AND team.id = (
+    SELECT squad_membership.team_id
+    FROM squad_membership
+    JOIN season ON season.id = squad_membership.season_id
+      AND season.league_id = squad_membership.league_id
+    WHERE squad_membership.player_id = player.id
+      AND squad_membership.league_id = player.league_id
+      AND squad_membership.left_on IS NULL
+    ORDER BY season.start_on DESC
+    LIMIT 1
+  )
+WHERE player.id = $1 AND player.league_id = $2
 `
 
 type GetPlayerByIDParams struct {
@@ -70,17 +88,27 @@ type GetPlayerByIDParams struct {
 	LeagueID uuid.UUID
 }
 
-func (q *Queries) GetPlayerByID(ctx context.Context, arg GetPlayerByIDParams) (Player, error) {
+type GetPlayerByIDRow struct {
+	Player          Player
+	CurrentTeamID   pgtype.UUID
+	CurrentTeamName *string
+	CurrentTeamLogo *string
+}
+
+func (q *Queries) GetPlayerByID(ctx context.Context, arg GetPlayerByIDParams) (GetPlayerByIDRow, error) {
 	row := q.db.QueryRow(ctx, getPlayerByID, arg.ID, arg.LeagueID)
-	var i Player
+	var i GetPlayerByIDRow
 	err := row.Scan(
-		&i.ID,
-		&i.LeagueID,
-		&i.Firstname,
-		&i.Lastname,
-		&i.Icon,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.Player.ID,
+		&i.Player.LeagueID,
+		&i.Player.Firstname,
+		&i.Player.Lastname,
+		&i.Player.Icon,
+		&i.Player.CreatedAt,
+		&i.Player.UpdatedAt,
+		&i.CurrentTeamID,
+		&i.CurrentTeamName,
+		&i.CurrentTeamLogo,
 	)
 	return i, err
 }
@@ -125,6 +153,22 @@ func (q *Queries) ListPlayers(ctx context.Context, arg ListPlayersParams) ([]Pla
 		return nil, err
 	}
 	return items, nil
+}
+
+const playerExists = `-- name: PlayerExists :one
+SELECT EXISTS (SELECT 1 FROM player WHERE id = $1 AND league_id = $2)
+`
+
+type PlayerExistsParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) PlayerExists(ctx context.Context, arg PlayerExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, playerExists, arg.ID, arg.LeagueID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const updatePlayer = `-- name: UpdatePlayer :one

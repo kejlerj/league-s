@@ -19,3 +19,6 @@ RETURNING *;
 
 -- name: DeleteTeam :execrows
 DELETE FROM team WHERE id = $1 AND league_id = $2;
+
+-- name: TeamExists :one
+SELECT EXISTS (SELECT 1 FROM team WHERE id = $1 AND league_id = $2);

@@ -35,6 +35,12 @@ func (h *Handler) TransferRoutes() chi.Router {
 	return r
 }
 
+func (h *Handler) CareerRoutes() chi.Router {
+	r := chi.NewRouter()
+	r.Get("/", h.career)
+	return r
+}
+
 type joinRequest struct {
 	PlayerID string `json:"player_id" validate:"required,uuid"`
 	Number   *int32 `json:"number" validate:"omitempty,min=1,max=99"`
@@ -77,6 +83,37 @@ type memberResponse struct {
 	Number       *int32    `json:"number"`
 	JoinedOn     string    `json:"joined_on"`
 	LeftOn       *string   `json:"left_on"`
+}
+
+type seasonRefResponse struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+}
+
+type teamRefResponse struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Logo *string   `json:"logo"`
+}
+
+type careerResponse struct {
+	MembershipID uuid.UUID         `json:"membership_id"`
+	Season       seasonRefResponse `json:"season"`
+	Team         teamRefResponse   `json:"team"`
+	Number       *int32            `json:"number"`
+	JoinedOn     string            `json:"joined_on"`
+	LeftOn       *string           `json:"left_on"`
+}
+
+func toCareerResponse(s *Stint) careerResponse {
+	return careerResponse{
+		MembershipID: s.MembershipID,
+		Season:       seasonRefResponse{ID: s.SeasonID, Name: s.SeasonName},
+		Team:         teamRefResponse{ID: s.TeamID, Name: s.TeamName, Logo: s.TeamLogo},
+		Number:       s.Number,
+		JoinedOn:     httpx.FormatDate(s.JoinedOn),
+		LeftOn:       httpx.FormatOptionalDate(s.LeftOn),
+	}
 }
 
 func toResponse(m *Membership) membershipResponse {
@@ -279,4 +316,30 @@ func (h *Handler) transfer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpx.JSON(w, http.StatusCreated, toResponse(res))
+}
+
+func (h *Handler) career(w http.ResponseWriter, r *http.Request) {
+	ids, ok := httpx.IDParams(w, r, "leagueID", "playerID")
+	if !ok {
+		return
+	}
+	leagueID, playerID := ids[0], ids[1]
+
+	stints, err := h.store.Career(r.Context(), leagueID, playerID)
+	if errors.Is(err, ErrCareerPlayerNotFound) {
+		httpx.Error(w, http.StatusNotFound, ErrCareerPlayerNotFound.Error())
+		return
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "list player career", "err", err, "league_id", leagueID, "player_id", playerID)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	res := make([]careerResponse, len(stints))
+	for i, s := range stints {
+		res[i] = toCareerResponse(s)
+	}
+
+	httpx.JSON(w, http.StatusOK, res)
 }

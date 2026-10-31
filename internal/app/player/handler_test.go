@@ -252,3 +252,59 @@ func TestListPlayers_Errors(t *testing.T) {
 		})
 	}
 }
+
+func getPlayerDetail(t *testing.T, p db.Player) playerDetailResponse {
+	t.Helper()
+	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, fmt.Sprintf("%s/%s", playersPath(db.League{ID: p.LeagueID}), p.ID), "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+	}
+	var got playerDetailResponse
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	return got
+}
+
+func TestGetPlayer_CurrentClub(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	player := seed.CreatePlayer(testdb.PlayerParams{Firstname: "Ada", Lastname: "Martin"})
+	rovers := seed.CreateTeam(testdb.TeamParams{Name: "Rovers", Logo: "https://example.com/rovers.png"})
+	united := seed.CreateTeam(testdb.TeamParams{Name: "United"})
+	lastYear := seed.CreateSeason(testdb.SeasonParams{StartOn: "2024-08-01", EndOn: "2025-05-31"})
+	thisYear := seed.CreateSeason(testdb.SeasonParams{StartOn: "2025-08-01", EndOn: "2026-05-31"})
+	seed.RegisterTeams(lastYear, united)
+	seed.RegisterTeams(thisYear, rovers)
+	seed.SquadMember(testdb.SquadMemberParams{Season: lastYear, Team: united, Player: player})
+	seed.SquadMember(testdb.SquadMemberParams{Season: thisYear, Team: rovers, Player: player})
+
+	got := getPlayerDetail(t, player)
+	if got.ID != player.ID || got.Firstname != "Ada" || got.Lastname != "Martin" {
+		t.Errorf("player = %+v, want Ada Martin", got.playerResponse)
+	}
+	if got.CurrentTeam == nil || got.CurrentTeam.ID != rovers.ID || got.CurrentTeam.Name != "Rovers" || deref(got.CurrentTeam.Logo) != "https://example.com/rovers.png" {
+		t.Errorf("current_team = %+v, want Rovers, the team of the most recent season", got.CurrentTeam)
+	}
+}
+
+func TestGetPlayer_NoCurrentClub(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	team := seed.CreateTeam(testdb.TeamParams{})
+	season := seed.CreateSeason(testdb.SeasonParams{})
+	seed.RegisterTeams(season, team)
+	free := seed.CreatePlayer(testdb.PlayerParams{})
+	gone := seed.CreatePlayer(testdb.PlayerParams{})
+	seed.SquadMember(testdb.SquadMemberParams{Season: season, Team: team, Player: gone, JoinedOn: "2025-08-01", LeftOn: "2025-12-31"})
+
+	for name, p := range map[string]db.Player{"never in a squad": free, "left the squad": gone} {
+		t.Run(name, func(t *testing.T) {
+			rec := testhttp.Do(t, newTestRouter(), http.MethodGet, fmt.Sprintf("%s/%s", playersPath(db.League{ID: p.LeagueID}), p.ID), "")
+			if !strings.Contains(rec.Body.String(), `"current_team":null`) {
+				t.Errorf("body = %s, want \"current_team\":null", rec.Body)
+			}
+			if got := getPlayerDetail(t, p); got.CurrentTeam != nil {
+				t.Errorf("current_team = %+v, want none", got.CurrentTeam)
+			}
+		})
+	}
+}

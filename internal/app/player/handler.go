@@ -40,6 +40,25 @@ type playerResponse struct {
 	Icon      *string   `json:"icon"`
 }
 
+type clubResponse struct {
+	ID   uuid.UUID `json:"id"`
+	Name string    `json:"name"`
+	Logo *string   `json:"logo"`
+}
+
+type playerDetailResponse struct {
+	playerResponse
+	CurrentTeam *clubResponse `json:"current_team"`
+}
+
+func toDetailResponse(p *Profile) playerDetailResponse {
+	res := playerDetailResponse{playerResponse: toResponse(&p.Player)}
+	if c := p.CurrentTeam; c != nil {
+		res.CurrentTeam = &clubResponse{ID: c.ID, Name: c.Name, Logo: c.Logo}
+	}
+	return res
+}
+
 func toResponse(p *Player) playerResponse {
 	return playerResponse{ID: p.ID, LeagueID: p.LeagueID, Firstname: p.Firstname, Lastname: p.Lastname, Icon: p.Icon}
 }
@@ -97,7 +116,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	player, err := h.store.Get(r.Context(), leagueID, id)
+	profile, err := h.store.Get(r.Context(), leagueID, id)
 
 	if getErr, ok := errors.AsType[GetError](err); ok {
 		switch getErr {
@@ -112,7 +131,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpx.JSON(w, http.StatusOK, toResponse(player))
+	httpx.JSON(w, http.StatusOK, toDetailResponse(profile))
 }
 
 const maxSearchLength = 100

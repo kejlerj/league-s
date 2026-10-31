@@ -51,6 +51,15 @@ type SeasonParams struct {
 	EndOn   string
 }
 
+type SquadMemberParams struct {
+	Season   db.Season
+	Team     db.Team
+	Player   db.Player
+	Number   int32
+	JoinedOn string
+	LeftOn   string
+}
+
 type MatchParams struct {
 	Season   db.Season
 	Home     db.Team
@@ -150,6 +159,44 @@ func (s *Seeder) RegisterTeams(season db.Season, teams ...db.Team) {
 			s.t.Fatalf("register team %q in season %q: %v", team.Name, season.Name, err)
 		}
 	}
+}
+
+func (s *Seeder) SquadMember(p SquadMemberParams) db.SquadMembership {
+	s.t.Helper()
+	if p.JoinedOn == "" {
+		p.JoinedOn = p.Season.StartOn.Format(time.DateOnly)
+	}
+	var number *int32
+	if p.Number != 0 {
+		number = &p.Number
+	}
+
+	m, err := s.q.CreateSquadMembership(context.Background(), db.CreateSquadMembershipParams{
+		PlayerID: p.Player.ID,
+		SeasonID: p.Season.ID,
+		TeamID:   p.Team.ID,
+		LeagueID: p.Season.LeagueID,
+		Number:   number,
+		JoinedOn: s.date(p.JoinedOn),
+	})
+	if err != nil {
+		s.t.Fatalf("add player %s to team %q in season %q: %v", p.Player.Lastname, p.Team.Name, p.Season.Name, err)
+	}
+	if p.LeftOn == "" {
+		return m
+	}
+
+	m, err = s.q.CloseSquadMembership(context.Background(), db.CloseSquadMembershipParams{
+		LeftOn:   s.date(p.LeftOn),
+		PlayerID: p.Player.ID,
+		SeasonID: p.Season.ID,
+		TeamID:   p.Team.ID,
+		LeagueID: p.Season.LeagueID,
+	})
+	if err != nil {
+		s.t.Fatalf("close membership of player %s in team %q: %v", p.Player.Lastname, p.Team.Name, err)
+	}
+	return m
 }
 
 func (s *Seeder) CreateMatch(p MatchParams) uuid.UUID {

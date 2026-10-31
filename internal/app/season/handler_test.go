@@ -21,8 +21,14 @@ import (
 
 func newTestRouter() http.Handler {
 	r := chi.NewRouter()
-	r.Mount("/api/v1/leagues/{leagueID}/seasons", NewHandler(NewPostgresStore(testPool)).Routes())
+	h := NewHandler(NewPostgresStore(testPool))
+	r.Mount("/api/v1/leagues/{leagueID}/seasons", h.Routes())
+	r.Mount("/api/v1/leagues/{leagueID}/teams/{teamID}/seasons", h.TeamRoutes())
 	return r
+}
+
+func teamSeasonsPath(t db.Team) string {
+	return fmt.Sprintf("/api/v1/leagues/%s/teams/%s/seasons", t.LeagueID, t.ID)
 }
 
 func seasonsPath(l db.League) string {
@@ -526,6 +532,70 @@ func TestRemoveTeam_Errors(t *testing.T) {
 			rec := testhttp.Do(t, newTestRouter(), http.MethodDelete, tt.path(f), "")
 			if rec.Code != tt.wantStatus {
 				t.Errorf("status = %d, want %d, body = %s", rec.Code, tt.wantStatus, rec.Body)
+			}
+		})
+	}
+}
+
+func TestListTeamSeasons_MostRecentFirst(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	team := seed.CreateTeam(testdb.TeamParams{})
+	older := seed.CreateSeason(testdb.SeasonParams{Name: "2024-25", StartOn: "2024-08-01", EndOn: "2025-05-31"})
+	newer := seed.CreateSeason(testdb.SeasonParams{Name: "2025-26", StartOn: "2025-08-01", EndOn: "2026-05-31"})
+	seed.CreateSeason(testdb.SeasonParams{Name: "2026-27", StartOn: "2026-08-01", EndOn: "2027-05-31"})
+	seed.RegisterTeams(older, team)
+	seed.RegisterTeams(newer, team)
+
+	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, teamSeasonsPath(team), "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+	}
+	var got []seasonResponse
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got) != 2 || got[0].ID != newer.ID || got[1].ID != older.ID {
+		t.Fatalf("seasons = %+v, want %s then %s", got, newer.Name, older.Name)
+	}
+	if got[0].Name != "2025-26" || got[0].StartOn != "2025-08-01" || got[0].LeagueID != team.LeagueID {
+		t.Errorf("first season = %+v, want the full season 2025-26", got[0])
+	}
+}
+
+func TestListTeamSeasons_NoSeason(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	team := seed.CreateTeam(testdb.TeamParams{})
+	seed.CreateSeason(testdb.SeasonParams{})
+
+	assertEmptyList(t, teamSeasonsPath(team))
+}
+
+func TestListTeamSeasons_Errors(t *testing.T) {
+	seed := testdb.New(t, testPool)
+	other := seed.CreateLeague(testdb.LeagueParams{})
+	team := seed.CreateTeam(testdb.TeamParams{})
+	foreign := seed.CreateTeam(testdb.TeamParams{League: &other})
+	season := seed.CreateSeason(testdb.SeasonParams{League: &other})
+	seed.RegisterTeams(season, foreign)
+
+	tests := []struct {
+		name string
+		path string
+		want int
+	}{
+		{"team of another league", fmt.Sprintf("/api/v1/leagues/%s/teams/%s/seasons", team.LeagueID, foreign.ID), http.StatusNotFound},
+		{"unknown team", fmt.Sprintf("/api/v1/leagues/%s/teams/%s/seasons", team.LeagueID, uuid.New()), http.StatusNotFound},
+		{"invalid team id", fmt.Sprintf("/api/v1/leagues/%s/teams/abc/seasons", team.LeagueID), http.StatusBadRequest},
+		{"invalid league id", fmt.Sprintf("/api/v1/leagues/abc/teams/%s/seasons", team.ID), http.StatusBadRequest},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := testhttp.Do(t, newTestRouter(), http.MethodGet, tt.path, "")
+			if rec.Code != tt.want {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, tt.want, rec.Body)
+			}
+			if !strings.Contains(rec.Body.String(), `"error"`) {
+				t.Errorf("body = %s, want an error message", rec.Body)
 			}
 		})
 	}

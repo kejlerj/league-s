@@ -73,3 +73,16 @@ WHERE season_id = sqlc.arg(season_id)
   AND team_id = sqlc.arg(team_id)
   AND league_id = sqlc.arg(league_id)
   AND left_on IS NULL;
+
+-- name: ListPlayerCareer :many
+SELECT squad_membership.id, squad_membership.number, squad_membership.joined_on, squad_membership.left_on,
+       season.id AS season_id, season.name AS season_name,
+       team.id AS team_id, team.name AS team_name, team.logo AS team_logo
+FROM squad_membership
+JOIN season ON season.id = squad_membership.season_id
+  AND season.league_id = squad_membership.league_id
+JOIN team ON team.id = squad_membership.team_id
+  AND team.league_id = squad_membership.league_id
+WHERE squad_membership.player_id = sqlc.arg(player_id)
+  AND squad_membership.league_id = sqlc.arg(league_id)
+ORDER BY squad_membership.joined_on DESC, squad_membership.id DESC;
