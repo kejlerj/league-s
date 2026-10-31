@@ -78,6 +78,7 @@ Rebase the child on the parent's new tip, rerun the checks, and `git push --forc
 - **Scope.** A PR does one plan item. Something else found on the way becomes a new issue (see Follow-up issues), not an extra change.
 - **Size.** Aim for less than about 600 changed lines, generated code excluded. Bigger means split the item into two PRs.
 - **Parallel work.** No limit on PRs open at the same time. If the Pro plan's usage limit is hit, sessions wait for the reset. Two PRs that both add a migration, or that touch the same files, run one after the other.
+- **Review workflow changes.** The Claude action refuses to run on a PR that changes `.github/workflows/claude-review.yml` (the file must match `main`, so a PR can't rewrite the reviewer). Such a PR gets no review: put the change in its own small PR, label it `needs-human`, and the owner reviews and merges it.
 - **Decisions.** A product question the specs don't answer, a business rule change, or a new library, tool or service is never decided by an agent (`CLAUDE.md` › Decisions that need the user). Label the issue `needs-decision`, write the question in a comment (options, trade-offs, recommendation), and move to the next issue.
 
 ## Follow-up issues
