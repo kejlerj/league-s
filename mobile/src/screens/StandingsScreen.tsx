@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { HeaderCard } from '../components/HeaderCard';
-import { Card, CardRow } from '../components/Card';
 import { SegmentedTabs } from '../components/SegmentedTabs';
 import { ThemedText } from '../components/ThemedText';
-import { Crest } from '../components/Avatar';
+import { StandingsTable } from '../components/StandingsTable';
 import { Skeleton } from '../components/Skeleton';
 import { ErrorState } from '../components/ErrorState';
 import { useAsync } from '../hooks/useAsync';
@@ -67,37 +66,11 @@ export function StandingsScreen() {
         )}
 
         {standings.data && standings.data.length > 0 && (
-          <>
-            <View className="flex-row items-center gap-3 px-1">
-              <ThemedText tone="faint" mono size={10.5} style={{ width: 20 }}>{fr.standings.columnHeaders.rank}</ThemedText>
-              <ThemedText tone="faint" mono size={10.5} className="flex-1">{fr.standings.columnHeaders.team}</ThemedText>
-              <View style={{ width: 112 }} className="flex-row justify-between">
-                <ThemedText tone="faint" mono size={10.5}>{fr.standings.columnHeaders.played}</ThemedText>
-                <ThemedText tone="faint" mono size={10.5}>{fr.standings.columnHeaders.diff}</ThemedText>
-                <ThemedText tone="faint" mono size={10.5}>{fr.standings.columnHeaders.pts}</ThemedText>
-              </View>
-            </View>
-            <Card>
-              {standings.data.map((row, index) => (
-                <Pressable key={row.team_id} onPress={() => router.push(`/standings/team/${row.team_id}`)}>
-                  <CardRow
-                    isFirst={index === 0}
-                    testID={`standings-row-${row.team_id}`}
-                    className={followedTeamIds.includes(row.team_id) ? 'bg-accent/5 dark:bg-accentDark/10' : undefined}
-                  >
-                    <ThemedText mono weight="semibold" size={14} style={{ width: 20 }}>{row.rank}</ThemedText>
-                    <Crest size={26} />
-                    <ThemedText weight="medium" size={14.5} className="flex-1">{row.team_name}</ThemedText>
-                    <View style={{ width: 112 }} className="flex-row justify-between">
-                      <ThemedText tone="muted" weight="medium" size={13.5}>{row.played}</ThemedText>
-                      <ThemedText tone="muted" weight="medium" size={13.5}>{row.goal_difference}</ThemedText>
-                      <ThemedText weight="semibold" size={13.5}>{row.points}</ThemedText>
-                    </View>
-                  </CardRow>
-                </Pressable>
-              ))}
-            </Card>
-          </>
+          <StandingsTable
+            rows={standings.data}
+            highlightedTeamIds={followedTeamIds}
+            onPressTeam={(teamId) => router.push(`/standings/team/${teamId}`)}
+          />
         )}
       </View>
     </Screen>

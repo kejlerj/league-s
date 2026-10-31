@@ -8,6 +8,7 @@ export default function StandingsLayout() {
       <Stack.Screen name="team/[id]" />
       <Stack.Screen name="squad/[teamId]" />
       <Stack.Screen name="player/[id]" />
+      <Stack.Screen name="season/[seasonId]" />
     </Stack>
   );
 }

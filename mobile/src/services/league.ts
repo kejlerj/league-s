@@ -44,3 +44,11 @@ export function getPlayer(leagueId: string, playerId: string): Promise<PlayerDet
 export function getPlayerCareer(leagueId: string, playerId: string): Promise<CareerEntry[]> {
   return apiGet<CareerEntry[]>(`${leaguePath(leagueId)}/players/${pathSegment(playerId)}/career`);
 }
+
+export function getSeason(leagueId: string, seasonId: string): Promise<Season> {
+  return apiGet<Season>(`${leaguePath(leagueId)}/seasons/${pathSegment(seasonId)}`);
+}
+
+export function listTeamSeasons(leagueId: string, teamId: string): Promise<Season[]> {
+  return apiGet<Season[]>(`${leaguePath(leagueId)}/teams/${pathSegment(teamId)}/seasons`);
+}

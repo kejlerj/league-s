@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react-native';
 import { TeamScreen } from './TeamScreen';
 import * as leagueService from '../services/league';
 import * as matchesService from '../services/matches';
@@ -16,6 +16,7 @@ jest.mock('../services/matches');
 
 const SEASON = { id: 'season-1', league_id: 'l', name: '2026-2027', start_on: '2026-08-29', end_on: '2027-05-30' };
 const TEAM_ID = 'team-us';
+const OLD_SEASON = { id: 'season-0', league_id: 'l', name: '2025-2026', start_on: '2025-08-30', end_on: '2026-05-31' };
 
 const finished: ApiMatch = {
   id: 'm-finished', season_id: SEASON.id,
@@ -34,6 +35,7 @@ const scheduled: ApiMatch = {
 beforeEach(() => {
   useAppStore.setState({ themeMode: 'system', leagueId: 'l', followsByLeague: {} });
   jest.mocked(leagueService.listSeasons).mockResolvedValue([SEASON]);
+  jest.mocked(leagueService.listTeamSeasons).mockResolvedValue([SEASON, OLD_SEASON]);
   jest.mocked(leagueService.getTeam).mockResolvedValue({ id: TEAM_ID, league_id: 'l', name: 'US Bastille', logo: null });
   jest.mocked(leagueService.getStandings).mockResolvedValue([
     { rank: 2, team_id: TEAM_ID, team_name: 'US Bastille', played: 5, won: 3, drawn: 1, lost: 1, goals_for: 9, goals_against: 5, goal_difference: 4, points: 10 },
@@ -70,8 +72,40 @@ test('follow toggles the button label and the store', async () => {
 test('Voir l\'effectif complet opens the full squad in the same tab', async () => {
   render(<TeamScreen id={TEAM_ID} origin="following" />);
   await waitFor(() => expect(screen.getByText(fr.team.fullSquad)).toBeTruthy());
+  expect(within(screen.getByTestId('team-squad')).getByText(fr.team.fullSquad)).toBeTruthy();
 
   fireEvent.press(screen.getByText(fr.team.fullSquad));
 
   expect(mockPush).toHaveBeenCalledWith(`/following/squad/${TEAM_ID}`);
+});
+
+test('lists the seasons the team played, most recent first', async () => {
+  render(<TeamScreen id={TEAM_ID} origin="following" />);
+  await waitFor(() => expect(screen.getByText(fr.team.seasons)).toBeTruthy());
+
+  expect(leagueService.listTeamSeasons).toHaveBeenCalledWith('l', TEAM_ID);
+  const seasons = within(screen.getByTestId('team-seasons'));
+  expect(seasons.getByText('2026-2027')).toBeTruthy();
+  expect(seasons.getByText('2025-2026')).toBeTruthy();
+});
+
+test('opening a season shows its standings in the same tab', async () => {
+  render(<TeamScreen id={TEAM_ID} origin="standings" />);
+  await waitFor(() => expect(screen.getByText('2025-2026')).toBeTruthy());
+
+  fireEvent.press(screen.getByText('2025-2026'));
+
+  expect(mockPush).toHaveBeenCalledWith(`/standings/season/${OLD_SEASON.id}?team=${TEAM_ID}`);
+});
+
+test('a team with no season yet says so', async () => {
+  jest.mocked(leagueService.listTeamSeasons).mockResolvedValue([]);
+  render(<TeamScreen id={TEAM_ID} origin="following" />);
+  await waitFor(() => expect(screen.getByText(fr.team.noSeasons)).toBeTruthy());
+});
+
+test('the seasons failing to load shows the error state', async () => {
+  jest.mocked(leagueService.listTeamSeasons).mockRejectedValueOnce(new Error('network'));
+  render(<TeamScreen id={TEAM_ID} origin="following" />);
+  await waitFor(() => expect(screen.getByText(fr.team.error)).toBeTruthy());
 });

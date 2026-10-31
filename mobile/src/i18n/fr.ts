@@ -46,7 +46,14 @@ export const fr = {
     squad: (count: number) => `Effectif · ${count} joueurs`,
     noSquad: 'Effectif non disponible.',
     fullSquad: "Voir l'effectif complet",
+    seasons: 'Saisons',
+    noSeasons: 'Aucune saison pour le moment.',
     error: 'Impossible de charger cette équipe.',
+  },
+  seasonStandings: {
+    back: 'Retour',
+    title: (name: string) => `Classement ${name}`,
+    error: 'Impossible de charger ce classement.',
   },
   squad: {
     back: 'Retour',
