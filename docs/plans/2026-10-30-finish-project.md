@@ -159,7 +159,7 @@ Each line becomes one GitHub issue (label `plan`, with dependencies). Its PR is 
 | PR | Content | Parts | Depends on |
 |---|---|---|---|
 | PR-01 | **Auth, invitations, PATCH/DELETE.** Commit the uncommitted Go work from `feat/auth` onto a clean branch from `main`. Run `make itest` with Docker. Update `checklist.md` (invitations are done). | B | none |
-| PR-02 | **Admin webapp.** The 14 admin commits plus the uncommitted admin changes (`LeagueMatchesTab`…). | A | PR-01 |
+| PR-02 | **Admin webapp.** The 14 admin commits plus the uncommitted admin changes (`LeagueMatchesTab`…). Add an `npm` entry for `/admin` to `.github/dependabot.yml`, grouped minor and patch like the others. | A | PR-01 |
 | PR-03 | **Sentry.** Rebase PR #4 on `main`, check that reset and invitation links never reach Sentry, merge. | B | PR-01 |
 | PR-04 | **Monorepo** (§2). Done on branch `chore/monorepo`, on top of `chore/agent-harness`. Merge it right after the harness PR. | M | harness PR |
 
