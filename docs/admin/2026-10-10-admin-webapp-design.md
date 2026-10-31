@@ -194,6 +194,7 @@ Toutes sous `/admin`.
 - `auth` : redirection sur 401, garde superadmin, garde par ligue.
 - Un test par page pour le chemin nominal et un cas d'erreur.
 - Matchs : les actions affichées pour chaque statut.
+- Bout en bout : Playwright dans `admin/e2e/`, contre la vraie API et les données de démo (`make e2e`, job « Admin E2E » en CI) : connexion, création d'une saison, programmation d'un match, démarrage, score, fin.
 
 ## Vérification finale
 

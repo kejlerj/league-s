@@ -54,8 +54,28 @@ IDs are fixed, so E2E tests can use them. The league ID is fixed; the mobile app
 | Player | `03` | 8 per team, in team order |
 | Squad membership | `04` | 2025-2026 first, then 2026-2027 |
 | Match | `05` | 2025-2026 first, then 2026-2027, by matchday and kickoff |
+| User | `06` | the demo admin is `…-8006-000000000001` |
 
-`make seed` prints the league, season and team IDs.
+The seed also creates a demo admin of the league, to log in to the admin at http://localhost:8080/admin: `demo-admin@league-s.test`, password `demo-admin-password`. It is a test account for the local stack only.
+
+`make seed` prints the league, admin, season and team IDs.
+
+### Admin E2E tests
+
+Playwright tests in `admin/e2e/` drive the built admin, served by the API, against the seeded database. Install them once:
+
+```bash
+npm --prefix admin ci
+npx --prefix admin playwright install chromium
+```
+
+Then, with `.env` in place:
+
+```bash
+make e2e
+```
+
+`make e2e` starts Postgres and Mailpit, then `make e2e-run` migrates, builds the admin, reseeds and runs the tests. Playwright starts the API itself, or reuses one already listening on `PORT`. CI runs `make e2e-run` against a Postgres service container.
 
 ## Database schema
 
