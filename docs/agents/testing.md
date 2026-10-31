@@ -1,6 +1,25 @@
 # Testing
 
-Every PR adds tests. The reviewer refuses a behaviour change without one.
+A PR that changes behaviour adds tests. The reviewer refuses a behaviour change without one.
+
+## PRs that don't need new tests
+
+Some PRs change no behaviour. They don't need new tests, but they still need every existing check to pass:
+
+| Kind of PR | Examples | What proves it works |
+|---|---|---|
+| CI and tooling | workflows, Makefile, linters, scripts | the CI run of the PR itself |
+| Types only | fixing TypeScript errors without changing what runs | `tsc` passes, existing tests pass |
+| Pure refactor | rename, move, extract, with the same behaviour | existing tests pass unchanged |
+| Docs | specs, README, guidelines | none |
+| Dependency bump | Dependabot, version upgrades | existing tests pass |
+| Config | `.env.example`, app config with no logic | the app or the API starts |
+
+Rules:
+- Say it in the PR's "Tests" section: `No new tests: <kind> — <why behaviour doesn't change>`.
+- A pure refactor that has to change existing tests isn't pure. Explain each changed test, or add tests.
+- A refactor of code with no tests at all adds tests first, so the refactor is checked.
+- If a fix in one of these PRs changes behaviour after all (a type fix that was hiding a bug, for example), that part needs a test like any other change.
 
 ## Two kinds of tests, required on both front and back
 
