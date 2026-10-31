@@ -5,6 +5,7 @@ labels: plan
 ---
 
 **Plan item:** PR-
+**Phase:** (set the milestone too)
 **Depends on:** none
 **Parts:** back / admin / mobile
 **Simulator check:** yes / no
