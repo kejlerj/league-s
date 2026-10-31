@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 
+	"league-s/admin"
 	"league-s/internal/app/auth"
 	"league-s/internal/app/league"
 	"league-s/internal/app/match"
@@ -22,6 +23,8 @@ import (
 	"league-s/internal/httpx"
 	"league-s/internal/logging"
 )
+
+const adminContentSecurityPolicy = "default-src 'self'; img-src 'self' https:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
@@ -41,6 +44,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	}))
 
 	r.Get("/health", s.healthHandler)
+	r.With(httpx.ContentSecurityPolicy(adminContentSecurityPolicy)).Mount("/admin", http.StripPrefix("/admin", admin.Handler()))
 
 	pool := s.db.Pool()
 

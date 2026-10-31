@@ -35,6 +35,29 @@ func TestEveryResponseCarriesTheSecurityHeaders(t *testing.T) {
 	}
 }
 
+func TestTheAdminHasItsOwnContentSecurityPolicy(t *testing.T) {
+	testdb.New(t, testPool)
+	router := (&Server{db: poolService{testPool}}).RegisterRoutes()
+
+	admin := "default-src 'self'; img-src 'self' https:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+	tests := []struct {
+		path string
+		want string
+	}{
+		{"/admin/", admin},
+		{"/admin/leagues/42", admin},
+		{"/api/v1/leagues", "default-src 'none'; frame-ancestors 'none'"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			h := testhttp.Do(t, router, http.MethodGet, tt.path, "").Header()
+			if got := h.Values("Content-Security-Policy"); len(got) != 1 || got[0] != tt.want {
+				t.Errorf("Content-Security-Policy = %q, want only %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestAuthenticatedResponsesAreNotStored(t *testing.T) {
 	testdb.New(t, testPool)
 	svc := auth.NewService(auth.NewPostgresStore(testPool), auth.EmailNotifier{Mailer: mailer.Disabled{}})
