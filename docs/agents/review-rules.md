@@ -17,13 +17,22 @@ What the reviewer (`claude[bot]`, `.github/workflows/claude-review.yml`) checks.
    - mobile change: jest screen tests cover it, and the description lists the affected screens. Until PR-26 is merged, a missing simulator run or Maestro flow is **not** blocking. After PR-26, both are required.
 7. **Docs.** Spec docs updated: ⚠️ → ✅, new routes, ticked checklist items.
 8. **Conventions** (`CLAUDE.md`, `docs/agents/code-style.md`):
-   - code in English (identifiers, test names, commits), UI copy in French,
+   - PR title `<type>: [SOC-<issue>] <Summary>`, with the type matching the change (a `refactor` that changes behaviour is a `feat` or a `fix`),
+   - code and docs in English (identifiers, test names, commits), only UI copy in French,
    - no code comments, snake_case JSON,
    - the existing structure of the package,
    - KISS, YAGNI and DRY as that file applies them.
 9. **Stacked PR** (body says `Stacked on #N`): review only this PR's own diff against its base. Auto-merge must be off while its base is not `main`.
 
 Don't comment on formatting that the linters handle.
+
+## Problems outside the diff
+
+When you see existing code that the PR doesn't touch and that breaks the guidelines, needs a refactor, or has a bug: don't block the PR for it. Open a follow-up issue as described in `docs/agents/pr-workflow.md` › Follow-up issues (search for a duplicate first), and link it in your review summary.
+
+## New dependencies
+
+A new library, tool, CI action or external service in the diff (`go.mod`, `package.json`, workflows) is `[blocking]` unless the plan or the specs name it, or an issue labelled `needs-decision` shows the user chose it. Point to `CLAUDE.md` › Decisions that need the user.
 
 ## How to comment
 

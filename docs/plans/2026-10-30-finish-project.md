@@ -21,7 +21,7 @@ Goal: finish the API, the admin webapp and the mobile app through a series of sm
 
 ## 2. Step 0: one repository (monorepo)
 
-**Done on 2026-10-31, branch `chore/monorepo`.** The repository now lives in `dev/league-s`. The mobile app was imported into `mobile/` with its history. The old mobile repo is kept as `dev/league-s-mobile-backup` until this branch is merged.
+**Done on 2026-10-31, branch `chore/monorepo`.** The mobile app was imported into `mobile/` with its history. The old local mobile repo is kept as a backup until this branch is merged.
 
 Recommendation: **move the mobile app into the Go repo**, not into a new parent folder.
 
@@ -62,7 +62,7 @@ The reviewer has to be a different GitHub identity from the author: **GitHub ref
 
 ### 3.2 Loop for one PR
 
-1. The orchestrator picks the next PR whose dependencies are merged. It starts an author session with the PR's GitHub issue as the brief.
+1. The orchestrator starts an author session for every issue that is ready (dependencies merged, or stackable), with the issue as the brief. Anything waiting on the user is skipped, along with what depends on it; everything else keeps going (skill `orchestrate-plan`).
 2. The author creates `feat/<slug>` from `main`, writes the tests first (TDD), then the code.
 3. The author runs the local checks (§3.4). Simulator checks are paused until PR-26: mobile changes rely on jest screen tests.
 4. The author opens the PR **as a draft** with the template (`Closes #<issue>`, what changed, the tests added, simulator proof).
@@ -150,7 +150,7 @@ These come from the v5 design. They were out of scope or were removed when the a
 
 ## 5. PR list
 
-Each line becomes one GitHub issue (label `plan`, with dependencies). The orchestrator runs them in order and in parallel where the dependencies allow.
+Each line becomes one GitHub issue (label `plan`, with dependencies). Its PR is titled `<type>: [SOC-<issue number>] <Summary>`. The orchestrator runs them in order and in parallel where the dependencies allow.
 
 **🧪** = needs simulator testing. Paused: these screens are checked together in PR-26. **B / A / M** = touches back / admin / mobile.
 
@@ -173,6 +173,8 @@ Each line becomes one GitHub issue (label `plan`, with dependencies). The orches
 | PR-08 | **OpenAPI contract.** `docs/openapi.yaml` for every route. A Go test fails if a router route is missing from it. TS types generated for admin and mobile, plus a CI check that they are up to date. | B A M | PR-05 |
 | PR-09 | **Scenario tests.** `internal/scenario`: a full season up to the standings, a mid-season transfer, a postponed then rescheduled match. Seeder helpers `SquadMember` and `Match`. | B | PR-01 |
 | PR-10 | **Mobile E2E in CI** (optional, after PR-26). macOS runner (free on a public repo), simulator build, API with Postgres, Maestro. Lets the reviewer see real simulator proof. | M 🧪 | PR-26 |
+| PR-27 | **Translate the specs to English.** `docs/api/*`, `docs/admin/*` and the remaining French parts of `docs/mobile/*`. Meaning unchanged, French UI copy quoted in the specs stays in French. Docs only, no new tests. | docs | harness PR |
+| PR-28 | **Rename French identifiers to English.** Mobile screens and components (`SuiviScreen` → `FollowingScreen`…), routes (`/suivi`, `/classement`, `/moi`), `fr.ts` keys (`journee`…), French test names, in admin and Go too if any. Pure refactor: tests unchanged except names, the UI text stays French. | M A B | PR-05 |
 
 ### Phase 2: API debt (small PRs, each with its admin follow-up)
 

@@ -18,7 +18,7 @@
 - **No backend calls.** Every screen's server data comes from `src/services/*`, which read `src/data/*` mock fixtures. Screens never import `src/data/*` directly.
 - **TDD.** Every task with a `Test:` file writes the failing test before the implementation, per the Step numbering below. `npm test` must be green after every task's last step.
 - Numeric/tabular values (scores, points, minutes, mono stat columns) use `mono` on `ThemedText` (IBM Plex Mono); everything else uses the system font.
-- Package manager: `npm`. Run all commands from the repo root (`/Users/jeje/Documents/dev/league-s`) unless a step says otherwise.
+- Package manager: `npm`. Run all commands from the repo root (now `mobile/`) unless a step says otherwise.
 
 ---
 
@@ -35,7 +35,7 @@
 
 - [ ] **Step 1: Scaffold into a temp directory, then move into the repo root**
 
-The repo root (`/Users/jeje/Documents/dev/league-s`) currently holds only `.DS_Store` and the `docs/` tree from planning — not empty, so `create-expo-app` needs a temp target:
+The repo root (now `mobile/`) currently holds only `.DS_Store` and the `docs/` tree from planning — not empty, so `create-expo-app` needs a temp target:
 
 ```bash
 cd /tmp
@@ -45,14 +45,14 @@ npx create-expo-app@latest ligue-amateur-scaffold
 Accept the default template (TypeScript, Expo Router already included in current Expo SDKs).
 
 ```bash
-rsync -a --exclude='.git' /tmp/ligue-amateur-scaffold/ /Users/jeje/Documents/dev/league-s/
+rsync -a --exclude='.git' /tmp/ligue-amateur-scaffold/ ./
 rm -rf /tmp/ligue-amateur-scaffold
 ```
 
 - [ ] **Step 2: Initialize git at the repo root and commit the raw scaffold**
 
 ```bash
-cd /Users/jeje/Documents/dev/league-s
+cd mobile
 git init
 git add -A
 git commit -m "chore: scaffold Expo Router app"

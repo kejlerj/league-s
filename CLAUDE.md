@@ -12,8 +12,6 @@ Three parts in one repository:
 
 Each part has its own `package.json` or `go.mod`. There is no npm workspace: run npm commands with `--prefix admin` or `--prefix mobile`.
 
-Older docs in `docs/admin/` and `docs/mobile/` mention `go-blueprint/league-s` and a separate mobile repo. Those folders no longer exist: everything is in this repository now.
-
 ## Read first
 
 - `docs/plans/2026-10-30-finish-project.md`: the plan. The list of PRs and their order.
@@ -21,7 +19,7 @@ Older docs in `docs/admin/` and `docs/mobile/` mention `go-blueprint/league-s` a
 - `docs/agents/testing.md`: which tests each change needs.
 - `docs/agents/review-rules.md`: what the reviewer checks. Read it before opening a PR.
 - `docs/agents/code-style.md`: language idioms and design principles.
-- Specs (the source of truth, in French):
+- Specs (the source of truth; still in French until PR-27 translates them):
   - API: `docs/api/spec.md` (business rules), `docs/api/endpoints.md` (routes), `docs/api/decision.md` (technical decisions), `docs/api/checklist.md` (tasks)
   - Admin: `docs/admin/2026-10-10-admin-webapp-design.md`
   - Mobile: `docs/mobile/2026-09-10-ligue-amateur-v5-design.md`. Commit `233f68a` of the mobile app later removed odds, events, MVP and positions, because the API has no data for them.
@@ -48,11 +46,10 @@ Local API: `docker compose up -d`, `make migrate-up`, then `make run` (port 8080
 
 ## Rules for code
 
-- **Code in English, UI in French.**
-  - English: identifiers (variables, functions, types, packages, files), test names, commit messages, PR titles and descriptions, error strings in logs, SQL names.
-  - French: only what the user reads: UI copy, API error messages shown in the admin, mobile strings (in `mobile/src/i18n/fr.ts`).
-  - Exception: existing names that mirror the French tabs of the mobile app (`SuiviScreen`, `ClassementScreen`, `MoiScreen`, the `/suivi` and `/classement` routes, the keys of `fr.ts`). Keep them, don't rename them. New code uses English.
-  - The spec docs stay in French.
+- **Everything in English, except what users read.**
+  - English: identifiers (variables, functions, types, packages, files, routes, i18n keys), test names, commits, PR and issue texts, log messages, SQL names, docs and specs.
+  - French: only text shown to users. UI copy, API error messages displayed in the admin, mobile strings (the values in `mobile/src/i18n/fr.ts`).
+  - Existing French names (`SuiviScreen`, `ClassementScreen`, `MoiScreen`, the `/suivi` and `/classement` routes, `fr.ts` keys such as `journee`) are renamed in PR-28. Until then, don't rename them in unrelated PRs, and use English for anything new.
 - **No code comments**, unless the user approves them.
 - Style, idioms and design principles: `docs/agents/code-style.md`.
 - Leagues never mix: every query filters on the `leagueID` of the URL. A resource of another league is a 404.
@@ -64,12 +61,21 @@ Local API: `docker compose up -d`, `make migrate-up`, then `make run` (port 8080
 
 ## Rules for git
 
-- Never commit to `main`. One branch per PR: `feat/<slug>`, `fix/<slug>`, `chore/<slug>`, `test/<slug>`, `docs/<slug>`.
-- Conventional commit titles: `feat(match): ...`, `fix(admin): ...`.
+- Never commit to `main`. One branch per PR: `<type>/SOC-<issue>-<slug>`, e.g. `feat/SOC-32-season-overlap`.
+- **PR title**: `<type>: [SOC-<issue>] <Summary>`, e.g. `feat: [SOC-32] Refuse overlapping seasons`. `<issue>` is the GitHub issue number the PR closes. The squash merge uses this title as the commit on `main`.
+- Types: `feat` (new behaviour), `fix` (bug), `refactor` (same behaviour), `test` (tests only), `docs`, `ci` (workflows), `config` (env, app or tool configuration), `chore` (dependencies, housekeeping), `perf`.
+- Commits inside a PR: conventional titles (`feat(match): ...`). They disappear in the squash merge.
 - Open PRs as **drafts**. Mark one ready (`gh pr ready`) only when every local check passes. The reviewer runs only on ready PRs.
 - Never force-push a branch that is under review. Push new commits, so the reviewer can see what changed. One exception: restacking a stacked PR after its parent is merged (`docs/agents/pr-workflow.md` › Stacked PRs), with `git push --force-with-lease` only.
 - Never merge by hand and never bypass branch protection. Turn on auto-merge (`gh pr merge --auto --squash`) on a PR whose base is `main`. GitHub then merges it once it is approved and green. Never turn it on for a PR stacked on another branch.
 - Don't run destructive commands on the local database (`migrate-reset`, `docker compose down -v`) without asking.
+
+## Decisions that need the user
+
+Never decide these alone. Open an issue labelled `needs-decision` (template: options, trade-offs, your recommendation), and move on to other work:
+- a new library, framework, tool, external service or language, in any part (`go.mod`, `package.json`, CI actions, hosting). Libraries already named in the plan or the specs (Playwright, Maestro, testcontainers, an OpenAPI generator) are already approved, but the choice of a specific package among several still needs a decision,
+- a product question the specs don't answer,
+- a change to a business rule written in the specs.
 
 ## Models
 
