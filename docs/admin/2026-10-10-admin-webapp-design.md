@@ -26,7 +26,7 @@ Deux rôles :
 
 ## API
 
-L'API est dans `/Users/jeje/Documents/dev/go-blueprint/league-s` (session 6bb213). Tous les chemins commencent par `/api/v1`.
+L'API est à la racine du dépôt. Tous les chemins commencent par `/api/v1`.
 
 Conventions : JSON en snake_case, identifiants UUID, dates-heures en UTC (RFC 3339), dates simples `YYYY-MM-DD`.
 
@@ -66,7 +66,7 @@ Deux formes : `{"error": "message"}`, et pour la validation des champs (422) `{"
 - **Match** : `{id, season_id, home_team, away_team, matchday, kickoff_at, status, home_score, away_score, venue, referee, convocation_at, video_url}`. Programmer `{home_team_id, away_team_id, matchday, kickoff_at?, venue?}`. Actions : `start`, `score` (`{home, away}`), `finish`, `postpone` (`{kickoff_at?}`), `cancel`.
 - **Classement** : lignes `{rank, team_id, team_name, played, won, drawn, lost, goals_for, goals_against, goal_difference, points}`.
 
-### Endpoints ajoutés pour la webapp (implémentés par 6bb213, vérifiés le 2026-10-10)
+### Endpoints ajoutés pour la webapp (implémentés et vérifiés le 2026-10-10)
 
 | Méthode | Chemin | Accès | Corps | Réponse |
 |---|---|---|---|---|
@@ -94,9 +94,9 @@ Invitation : le superadmin invite une adresse sur une ligue. Le lien `{ADMIN_URL
 
 ### Emplacement
 
-Sources dans `go-blueprint/league-s/admin/`, avec son propre `package.json`. `go:embed` exige que `dist` soit dans le module Go, d'où ce choix.
+Sources dans `admin/`, avec son propre `package.json`. `go:embed` exige que `dist` soit dans le module Go, d'où ce choix.
 
-Côté Go, écrit par 6bb213 et pas par cette session : `admin/embed.go` avec `//go:embed all:dist`, et une route `GET /admin/*` qui sert les fichiers et retombe sur `index.html` pour les routes de la SPA.
+Côté Go : `admin/embed.go` avec `//go:embed all:dist`, et une route `GET /admin/*` qui sert les fichiers et retombe sur `index.html` pour les routes de la SPA.
 
 ### Dev et prod
 
@@ -200,7 +200,7 @@ Toutes sous `/admin`.
 Une fois la webapp terminée et l'API à jour :
 
 1. Créer un jeu de données réel via la webapp : une ligue, une saison, des équipes, des joueurs, des effectifs, des matchs avec scores.
-2. Avec la session 6bb213 (API) et la session 7d0da1 (app mobile), vérifier que l'app mobile affiche correctement ces données : suivi, classement, équipe, match.
+2. Vérifier que l'app mobile affiche correctement ces données : suivi, classement, équipe, match.
 
 ## Hors périmètre v1
 
@@ -212,4 +212,4 @@ Une fois la webapp terminée et l'API à jour :
 
 Aucun.
 
-Réglé : l'utilisateur a confirmé l'embarqué et l'écriture dans `go-blueprint/league-s/admin/`. `admin/dist` n'est pas versionné, sauf un `.gitkeep`. `ADMIN_URL` accepte un chemin, donc `http://localhost:5173/admin` donne un lien vers `/admin/reset-password`.
+Réglé : l'utilisateur a confirmé l'embarqué et l'écriture dans `admin/`. `admin/dist` n'est pas versionné, sauf un `.gitkeep`. `ADMIN_URL` accepte un chemin, donc `http://localhost:5173/admin` donne un lien vers `/admin/reset-password`.

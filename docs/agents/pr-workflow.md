@@ -24,15 +24,15 @@ When the issue and the specs disagree, the specs win. Say so in the PR descripti
 
 ## Steps
 
-1. **Branch.** In a worktree, named `feat/<slug>`:
+1. **Branch.** In a worktree, named `<type>/SOC-<issue>-<slug>`:
    - from the latest `origin/main` when every dependency is merged,
    - from the parent PR's branch when a dependency is still open (see Stacked PRs).
 2. **Plan.** For more than a few files, write a short task list first (skill `superpowers:writing-plans`). Keep it in the session, not in the repo.
 3. **Tests first.** Write the failing spec tests, then the code (skill `superpowers:test-driven-development`). See `testing.md`.
 4. **Docs.** Update `docs/api/*.md` and the specs touched by the change.
 5. **Local checks.** Run every check of the parts you touched (`CLAUDE.md` › Commands). Simulator checks are paused until PR-26.
-6. **Draft PR.** `gh pr create --draft`, filling in `.github/pull_request_template.md`. The body says `Closes #<issue>`.
-7. **Ready.** When CI is green on the draft, run `gh pr ready`. That starts the review. If the PR's base is `main`, also turn on auto-merge: `gh pr merge --auto --squash`.
+6. **Draft PR.** `gh pr create --draft`, titled `<type>: [SOC-<issue>] <Summary>` (`CLAUDE.md` › Rules for git), filling in `.github/pull_request_template.md`. The body says `Closes #<issue>`.
+7. **Ready.** When CI is green on the draft, run `gh pr ready`. That starts the review. If the PR's base is `main`, also turn on auto-merge: `gh pr merge --auto --squash`. Exception: a design spec PR for a product feature (Phase 6) never gets auto-merge. Label it `needs-decision` instead: the user approves the spec by merging it.
 8. **Review loop.** For each reviewer comment:
    - **blocking**: fix it, or explain why the comment is wrong (with a reference to the spec or the code),
    - **nit**: fix it if cheap, otherwise reply why not,
@@ -52,19 +52,22 @@ When an issue depends on a PR that is open but not merged yet, the work can star
 - The child needs the parent's code. A dependency that is only about ordering (e.g. two migrations) is not a reason to stack: wait for the merge.
 
 **How**
-1. Branch from the parent's branch: `git worktree add -b feat/<slug> .claude/worktrees/<slug> refs/remotes/origin/<parent-branch>`.
+1. Branch from the parent's branch: `git worktree add -b <type>/SOC-<issue>-<slug> .claude/worktrees/SOC-<issue> refs/remotes/origin/<parent-branch>`.
 2. Open the PR with the parent's branch as base: `gh pr create --draft --base <parent-branch>`. The reviewer then sees only the child's own changes.
 3. In the PR body, add `Stacked on #<parent PR>` under `Closes #<issue>`.
 4. Mark it ready as usual. Don't turn on auto-merge: its base isn't `main`, so it would merge into the parent branch.
 
 **When the parent is merged**
-The parent is squash-merged, so its commits on `main` have new SHAs, and the child's history no longer matches.
+The parent is squash-merged: its work is now one new commit on `main`, but the child branch still carries the parent's original commits. They have to go, otherwise they show up again in the child's diff and conflict with the squash commit.
 1. `git fetch origin`
-2. `git rebase --onto origin/main <old tip of the parent branch> feat/<slug>`. The old tip is the parent's last commit, the one the child was built on.
-3. Rerun the local checks.
-4. `git push --force-with-lease`
-5. `gh pr edit <PR> --base main`. GitHub may already have done it when it deleted the parent branch.
-6. `gh pr merge --auto --squash`
+2. `git rebase --onto origin/main <old tip of the parent branch> <your branch>`. The old tip is the parent's last commit, the one the child was built on (written down when the child was created). This replays only the child's own commits on top of `main` and drops the parent's original ones.
+3. Check that only the child's commits are left: `git log --oneline origin/main..HEAD`. If a parent commit is still listed, the old tip was wrong: `git rebase --abort` if the rebase is still in progress, otherwise `git reset --hard ORIG_HEAD`, then redo step 2 with the right SHA (`git reflog` shows it).
+4. `git diff origin/main...HEAD --stat` should list only the child's files.
+5. Rerun the local checks.
+6. `git push --force-with-lease`
+7. `gh pr edit <PR> --base main`. GitHub may already have done it when it deleted the parent branch.
+8. `gh pr merge --auto --squash`
+9. Comment on the PR that it was restacked on `main`, so the reviewer knows the base moved.
 
 **When the parent changes during its review**
 Rebase the child on the parent's new tip, rerun the checks, and `git push --force-with-lease`. Say so in a PR comment, so the reviewer knows the base moved.
@@ -72,10 +75,24 @@ Rebase the child on the parent's new tip, rerun the checks, and `git push --forc
 ## Limits
 
 - **3 review rounds.** After the third "changes requested" with blocking comments still open, the reviewer adds the `needs-human` label and stops reviewing that PR. The author stops too and reports to the orchestrator.
-- **Scope.** A PR does one plan item. Something else found on the way becomes a new issue, labelled `plan` and `found-during-review`, not an extra change.
+- **Scope.** A PR does one plan item. Something else found on the way becomes a new issue (see Follow-up issues), not an extra change.
 - **Size.** Aim for less than about 600 changed lines, generated code excluded. Bigger means split the item into two PRs.
 - **Parallel work.** No limit on PRs open at the same time. If the Pro plan's usage limit is hit, sessions wait for the reset. Two PRs that both add a migration, or that touch the same files, run one after the other.
-- **Blocked.** A product question that the specs don't answer is never guessed. Label the issue `blocked`, write the question in a comment, move to the next issue.
+- **Decisions.** A product question the specs don't answer, a business rule change, or a new library, tool or service is never decided by an agent (`CLAUDE.md` › Decisions that need the user). Label the issue `needs-decision`, write the question in a comment (options, trade-offs, recommendation), and move to the next issue.
+
+## Follow-up issues
+
+Authors and the reviewer open an issue whenever they find, outside the PR's scope:
+- existing code that breaks `docs/agents/code-style.md` or `CLAUDE.md` (French identifiers, duplicated business rule, layer mixing…),
+- code that should be refactored (too complex, dead, wrong abstraction),
+- a bug, a missing test, or a spec item nobody planned.
+
+How:
+1. Search first, to avoid duplicates: `gh issue list --search "<keywords>" --state open`. If one exists, add a comment instead.
+2. Create it with the `plan` label, plus `tech-debt` (guidelines, refactor) or `bug`, plus the parts touched. Use the plan item template: scope, acceptance criteria, files concerned, `Depends on`.
+3. Don't fix it in the current PR, unless the PR can't be correct without it.
+
+The orchestrator picks these issues up like any other plan item. A refactor issue never changes behaviour (`refactor:` PR, no new tests needed if existing tests cover the code).
 
 ## Repository settings this relies on
 
@@ -90,6 +107,7 @@ Rebase the child on the parent's new tip, rerun the checks, and `git push --forc
 | `plan` | An item of the plan |
 | `back`, `admin`, `mobile` | Parts touched |
 | `simulator` | Needs a simulator check |
-| `blocked` | Waiting for a product decision |
+| `needs-decision` | Waiting for the user: product question, business rule, new library or tool |
+| `tech-debt` | Existing code to fix against the guidelines, or to refactor |
+| `bug` | A bug found outside a PR's scope |
 | `needs-human` | The review loop gave up |
-| `found-during-review` | Found while working on another PR |

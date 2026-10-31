@@ -10,9 +10,9 @@ Goal: finish the API, the admin webapp and the mobile app through a series of sm
 
 | Part | Where | State |
 |---|---|---|
-| Go API | `go-blueprint/league-s` (GitHub `kejlerj/league-s`) | All domains done (league, team, player, season, squad, match, standings). **Auth, invitations and PATCH/DELETE are written but not committed** (branch `feat/auth`, about 50 modified files plus new `internal/app/auth`, `internal/mailer`, migrations 00009 and 00010). Unit tests pass. Integration tests were not run (Docker was off). |
+| Go API | repo root (GitHub `kejlerj/league-s`) | All domains done (league, team, player, season, squad, match, standings). **Auth, invitations and PATCH/DELETE are written but not committed** (branch `feat/auth`, about 50 modified files plus new `internal/app/auth`, `internal/mailer`, migrations 00009 and 00010). Unit tests pass. Integration tests were not run (Docker was off). |
 | Sentry | PR `kejlerj/league-s#4` | Open since 2026-10-05, not merged. |
-| Admin webapp | `go-blueprint/league-s/admin` | Plan tasks 1 to 12 are committed on `feat/auth` (never pushed). Some changes are still uncommitted, including a new `LeagueMatchesTab`. 141 tests pass. Task 13 (build, embed, end-to-end check) is not done. |
+| Admin webapp | `admin/` | Plan tasks 1 to 12 are committed on `feat/auth` (never pushed). Some changes are still uncommitted, including a new `LeagueMatchesTab`. 141 tests pass. Task 13 (build, embed, end-to-end check) is not done. |
 | Mobile app | `league-s` (local git only, **no remote**, branch `docs/admin-webapp-spec`, default `master`) | Reads the real API: Suivi, Classement, Team, Match, Moi (theme). 58 tests pass. **2 TypeScript errors** (`app/`, `src/theme/useThemeSync.ts`). `LEAGUE_ID` is hard-coded. `src/config.ts` has an uncommitted change. |
 | Leftover | `.claude/worktrees/finish-plan` (branch `feat/mobile-read-endpoints`) | Mostly merged through PR `kejlerj/league-s#3`. Still holds `cmd/seed/main.go`, a demo data seeder that is worth keeping. |
 | CI | `.github/workflows/ci.yml` | Go only: lint, vuln, unit, integration. Nothing for admin or mobile. No branch protection on `main`. |
@@ -60,7 +60,7 @@ The reviewer has to be a different GitHub identity from the author: **GitHub ref
 
 ### 3.2 Loop for one PR
 
-1. The orchestrator picks the next PR whose dependencies are merged. It starts an author session with the PR's GitHub issue as the brief.
+1. The orchestrator starts an author session for every issue that is ready (dependencies merged, or stackable), with the issue as the brief. Anything waiting on the user is skipped, along with what depends on it; everything else keeps going (skill `orchestrate-plan`).
 2. The author creates `feat/<slug>` from `main`, writes the tests first (TDD), then the code.
 3. The author runs the local checks (§3.4). Simulator checks are paused until PR-26: mobile changes rely on jest screen tests.
 4. The author opens the PR **as a draft** with the template (`Closes #<issue>`, what changed, the tests added, simulator proof).
@@ -148,7 +148,7 @@ These come from the v5 design. They were out of scope or were removed when the a
 
 ## 5. PR list
 
-Each line becomes one GitHub issue (label `plan`, with dependencies). The orchestrator runs them in order and in parallel where the dependencies allow.
+Each line becomes one GitHub issue (label `plan`, with dependencies). Its PR is titled `<type>: [SOC-<issue number>] <Summary>`. The orchestrator runs them in order and in parallel where the dependencies allow.
 
 **🧪** = needs simulator testing. Paused: these screens are checked together in PR-26. **B / A / M** = touches back / admin / mobile.
 
@@ -171,6 +171,8 @@ Each line becomes one GitHub issue (label `plan`, with dependencies). The orches
 | PR-08 | **OpenAPI contract.** `docs/openapi.yaml` for every route. A Go test fails if a router route is missing from it. TS types generated for admin and mobile, plus a CI check that they are up to date. | B A M | PR-05 |
 | PR-09 | **Scenario tests.** `internal/scenario`: a full season up to the standings, a mid-season transfer, a postponed then rescheduled match. Seeder helpers `SquadMember` and `Match`. | B | PR-01 |
 | PR-10 | **Mobile E2E in CI** (optional, after PR-26). macOS runner (free on a public repo), simulator build, API with Postgres, Maestro. Lets the reviewer see real simulator proof. | M 🧪 | PR-26 |
+| PR-27 | **Translate the specs to English.** `docs/api/*`, `docs/admin/*` and the remaining French parts of `docs/mobile/*`. Meaning unchanged, French UI copy quoted in the specs stays in French. Docs only, no new tests. | docs | harness PR |
+| PR-28 | **Rename French identifiers to English.** Mobile screens and components (`SuiviScreen` → `FollowingScreen`…), routes (`/suivi`, `/classement`, `/moi`), `fr.ts` keys (`journee`…), French test names, in admin and Go too if any. Pure refactor: tests unchanged except names, the UI text stays French. | M A B | PR-05 |
 
 ### Phase 2: API debt (small PRs, each with its admin follow-up)
 

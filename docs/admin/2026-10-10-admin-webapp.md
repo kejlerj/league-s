@@ -8,11 +8,11 @@
 
 **Tech Stack:** Vite, React 19, TypeScript strict, Tailwind v4 (`@tailwindcss/vite`), React Router v7 (`react-router`), TanStack Query v5, Vitest, Testing Library, MSW v2.
 
-**Spec:** `/Users/jeje/Documents/dev/league-s/docs/superpowers/specs/2026-10-10-admin-webapp-design.md`
+**Spec:** `docs/admin/2026-10-10-admin-webapp-design.md`
 
 ## Global Constraints
 
-- Tout le code va dans `/Users/jeje/Documents/dev/go-blueprint/league-s/admin/`. Aucun fichier hors de ce dossier n'est créé ni modifié dans ce repo. `admin/embed.go`, `internal/server/routes.go` et le `.gitignore` racine appartiennent à la session 6bb213.
+- Tout le code va dans `admin/`. Aucun fichier hors de ce dossier n'est créé ni modifié dans ce repo. `admin/embed.go`, `internal/server/routes.go` et le `.gitignore` racine relèvent de l'API.
 - Le repo Go a du travail non commité sur `feat/auth`. Chaque commit se fait avec un pathspec : `git add admin && git commit -m "<msg>" -- admin`. Jamais de `git add -A`, `git stash`, `git checkout` ni changement de branche dans ce repo.
 - Aucun commentaire dans le code.
 - Interface en français. Aucun texte anglais visible, y compris les messages d'erreur connus.
@@ -611,12 +611,12 @@ test.each([
 **Files:**
 - Create: `admin/README.md` (commandes dev, test, build ; valeur de `ADMIN_URL`)
 
-Cette tâche se fait avec les sessions 6bb213 (API) et 7d0da1 (app mobile), pas en autonomie.
+Cette tâche se fait avec l'API et l'app mobile lancées en local.
 
 - [ ] **Step 1: Build** — Run: `npm test -- --run && npx tsc --noEmit && npm run build`. Expected: tout passe, `admin/dist/index.html` existe.
-- [ ] **Step 2: Prévenir 6bb213** que `admin/dist` existe pour qu'il câble `admin/embed.go` et `GET /admin/*`. Lui demander l'état des endpoints manquants de la spec, et comment obtenir un compte superadmin en local (`SUPERADMIN_EMAIL`).
-- [ ] **Step 3: Vérifier en dev** — API lancée par 6bb213 sur `:8080`, `npm run dev`, ouvrir `http://localhost:5173/admin/`. Se connecter en superadmin. Parcourir chaque écran. Noter tout écart entre le contrat proposé et l'API réelle, puis corriger côté webapp ou le signaler à 6bb213.
+- [ ] **Step 2: Vérifier** que `admin/dist` existe pour qu'il câble `admin/embed.go` et `GET /admin/*`. Lui demander l'état des endpoints manquants de la spec, et comment obtenir un compte superadmin en local (`SUPERADMIN_EMAIL`).
+- [ ] **Step 3: Vérifier en dev** — API lancée sur `:8080`, `npm run dev`, ouvrir `http://localhost:5173/admin/`. Se connecter en superadmin. Parcourir chaque écran. Noter tout écart entre le contrat proposé et l'API réelle, puis corriger côté webapp ou côté API.
 - [ ] **Step 4: Créer le jeu de données via la webapp** — une ligue, une saison 2026-2027, 6 équipes inscrites, 8 joueurs par équipe avec numéros, 3 journées de matchs : la première terminée avec scores, un match en cours, un reporté, un annulé, le reste programmé. Un lien vidéo sur un match terminé.
-- [ ] **Step 5: Vérifier l'app mobile avec 7d0da1 et 6bb213** — donner à 7d0da1 l'identifiant de la ligue créée (l'app lit `LEAGUE_ID` dans `src/config.ts`). Contrôler les écrans Suivi, Classement, Équipe et Match contre les données saisies : scores, classement, effectifs, statuts, lien vidéo. Tout écart est attribué à la webapp, à l'API ou à l'app, et corrigé par la session concernée.
-- [ ] **Step 6: Vérifier le binaire** — une fois le handler embed en place : build Go par 6bb213, ouvrir `http://localhost:8080/admin/`, recharger sur un lien profond, se connecter.
+- [ ] **Step 5: Vérifier l'app mobile** — donner à l'app l'identifiant de la ligue créée (l'app lit `LEAGUE_ID` dans `src/config.ts`). Contrôler les écrans Suivi, Classement, Équipe et Match contre les données saisies : scores, classement, effectifs, statuts, lien vidéo. Tout écart est attribué à la webapp, à l'API ou à l'app, et corrigé par la session concernée.
+- [ ] **Step 6: Vérifier le binaire** — une fois le handler embed en place : build Go, ouvrir `http://localhost:8080/admin/`, recharger sur un lien profond, se connecter.
 - [ ] **Step 7: Commit** — `docs(admin): README`
