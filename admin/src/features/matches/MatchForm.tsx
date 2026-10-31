@@ -142,6 +142,9 @@ export function PostponeForm({ leagueId, seasonId, match, onDone, onCancel }: Co
   return (
     <form onSubmit={form.onSubmit} className="space-y-4">
       <p className="text-sm text-slate-700">Sans nouvelle date, le match reste « Reporté » jusqu'à sa reprogrammation.</p>
+      {match.status === 'live' ? (
+        <p className="text-sm text-slate-700">Le match est interrompu : son score est conservé jusqu'à sa reprogrammation, puis il repartira de 0 – 0.</p>
+      ) : null}
       <Field label="Nouvelle date" {...form.field('kickoff_at')} type="datetime-local" value={kickoff} onChange={(e) => setKickoff(e.target.value)} />
       <FormActions error={form.error} pending={form.pending} onCancel={onCancel} submitLabel="Reporter" />
     </form>

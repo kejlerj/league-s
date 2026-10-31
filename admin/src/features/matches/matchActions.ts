@@ -4,7 +4,7 @@ export type MatchAction = 'start' | 'score' | 'finish' | 'postpone' | 'cancel' |
 
 const ACTIONS: Record<MatchStatus, MatchAction[]> = {
   scheduled: ['start', 'edit', 'postpone', 'cancel', 'delete'],
-  live: ['score', 'finish', 'edit'],
+  live: ['score', 'finish', 'postpone', 'cancel', 'edit'],
   postponed: ['edit', 'cancel'],
   finished: ['edit'],
   cancelled: [],

@@ -3,7 +3,7 @@ import { matchActions } from '@/features/matches/matchActions'
 
 test.each([
   ['scheduled', ['start', 'edit', 'postpone', 'cancel', 'delete']],
-  ['live', ['score', 'finish', 'edit']],
+  ['live', ['score', 'finish', 'postpone', 'cancel', 'edit']],
   ['postponed', ['edit', 'cancel']],
   ['finished', ['edit']],
   ['cancelled', []],

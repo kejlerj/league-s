@@ -1376,10 +1376,12 @@ paths:
       - $ref: "#/components/parameters/MatchID"
     post:
       operationId: postponeMatch
-      summary: Postpone a scheduled match
+      summary: Postpone a scheduled or live match
       description: |
         Access: league admin. Without `kickoff_at`, the match becomes `postponed`.
         With it, the match is rescheduled at that time.
+        A live match keeps its score while postponed. Once it has a new kickoff, it is scheduled again without a score.
+        A finished, postponed or cancelled match can't be postponed (409).
       tags: [matches]
       requestBody:
         required: true
@@ -1410,8 +1412,10 @@ paths:
       - $ref: "#/components/parameters/MatchID"
     post:
       operationId: cancelMatch
-      summary: Cancel a scheduled or postponed match
-      description: "Access: league admin."
+      summary: Cancel a scheduled, postponed or live match
+      description: |
+        Access: league admin. A live match keeps its score for the record, but doesn't count in the standings.
+        A finished or cancelled match can't be cancelled (409).
       tags: [matches]
       responses:
         "200":

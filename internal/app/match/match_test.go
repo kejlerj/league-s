@@ -74,8 +74,8 @@ func TestTransitions(t *testing.T) {
 		{
 			name:    "Postpone",
 			apply:   (*Match).Postpone,
-			allowed: map[Status]Status{StatusScheduled: StatusPostponed},
-			wantErr: ErrPostponeNotScheduled,
+			allowed: map[Status]Status{StatusScheduled: StatusPostponed, StatusLive: StatusPostponed},
+			wantErr: ErrPostponeNotAllowed,
 		},
 		{
 			name:    "Reschedule with a kickoff",
@@ -92,8 +92,8 @@ func TestTransitions(t *testing.T) {
 		{
 			name:    "Cancel",
 			apply:   (*Match).Cancel,
-			allowed: map[Status]Status{StatusScheduled: StatusCancelled, StatusPostponed: StatusCancelled},
-			wantErr: ErrCancelNotPending,
+			allowed: map[Status]Status{StatusScheduled: StatusCancelled, StatusPostponed: StatusCancelled, StatusLive: StatusCancelled},
+			wantErr: ErrCancelNotAllowed,
 		},
 		{
 			name:    "CheckDeletable",
@@ -151,6 +151,63 @@ func TestSetScore(t *testing.T) {
 	}
 	if score := m.Score(); score == nil || *score != (Score{Home: 2, Away: 1}) {
 		t.Errorf("score = %v, want 2-1", score)
+	}
+}
+
+func interrupted(t *testing.T, interrupt func(m *Match) error) *Match {
+	t.Helper()
+	m := matchIn(StatusScheduled)
+	if err := m.Start(); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := m.SetScore(2, 1); err != nil {
+		t.Fatalf("SetScore() error = %v", err)
+	}
+	if err := interrupt(m); err != nil {
+		t.Fatalf("interrupt error = %v", err)
+	}
+	return m
+}
+
+func TestInterruptingALiveMatch_KeepsItsScore(t *testing.T) {
+	for name, interrupt := range map[string]func(m *Match) error{
+		"Postpone": (*Match).Postpone,
+		"Cancel":   (*Match).Cancel,
+	} {
+		t.Run(name, func(t *testing.T) {
+			m := interrupted(t, interrupt)
+			if score := m.Score(); score == nil || *score != (Score{Home: 2, Away: 1}) {
+				t.Errorf("score = %v, want 2-1 kept for the record", score)
+			}
+			if _, _, err := m.Winner(); !errors.Is(err, ErrWinnerNotFinished) {
+				t.Errorf("Winner() error = %v, want ErrWinnerNotFinished: an interrupted match has no result", err)
+			}
+		})
+	}
+}
+
+func TestReschedule_AnInterruptedMatchLosesItsScore(t *testing.T) {
+	m := interrupted(t, (*Match).Postpone)
+
+	if err := m.Reschedule(1, nil); err != nil {
+		t.Fatalf("Reschedule() without a kickoff error = %v", err)
+	}
+	if m.Score() == nil {
+		t.Errorf("score = nil while still postponed, want it kept")
+	}
+
+	if err := m.Reschedule(1, new(time.Date(2025, time.November, 8, 18, 0, 0, 0, time.UTC))); err != nil {
+		t.Fatalf("Reschedule() error = %v", err)
+	}
+	if m.Status() != StatusScheduled || m.Score() != nil {
+		t.Errorf("match = status %s, score %v, want scheduled without a score", m.Status(), m.Score())
+	}
+
+	if err := m.Start(); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if score := m.Score(); score == nil || *score != (Score{}) {
+		t.Errorf("score after restart = %v, want 0-0", score)
 	}
 }
 
