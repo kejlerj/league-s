@@ -5,6 +5,7 @@ import * as leagueService from '../services/league';
 import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
 import type { SquadRow } from '../types';
+import { season } from '../test/fixtures';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
@@ -12,7 +13,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('../services/league');
 
-const SEASON = { id: 'season-1', league_id: 'l', name: '2026-2027', start_on: '2026-08-29', end_on: '2027-05-30' };
+const SEASON = season({ id: 'season-1', league_id: 'l', name: '2026-2027', start_on: '2026-08-29', end_on: '2027-05-30' });
 const TEAM_ID = 'team-us';
 
 function member(id: string, firstname: string, lastname: string, number: number, left_on: string | null): SquadRow {
