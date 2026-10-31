@@ -16,6 +16,17 @@ func (e CreateError) Error() string { return string(e) }
 
 const ErrCreateLeagueNotFound CreateError = "league not found"
 
+type Club struct {
+	ID   uuid.UUID
+	Name string
+	Logo *string
+}
+
+type Profile struct {
+	Player
+	CurrentTeam *Club
+}
+
 type GetError string
 
 func (e GetError) Error() string { return string(e) }

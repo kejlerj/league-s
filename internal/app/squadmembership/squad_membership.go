@@ -27,6 +27,18 @@ type Member struct {
 	LeftOn       *time.Time
 }
 
+type Stint struct {
+	MembershipID uuid.UUID
+	SeasonID     uuid.UUID
+	SeasonName   string
+	TeamID       uuid.UUID
+	TeamName     string
+	TeamLogo     *string
+	Number       *int32
+	JoinedOn     time.Time
+	LeftOn       *time.Time
+}
+
 type SquadRules struct {
 	SeasonStartOn time.Time
 	SeasonEndOn   time.Time
@@ -121,3 +133,9 @@ const (
 	ErrChangeNumberNotActive ChangeNumberError = "membership not found or no longer active"
 	ErrChangeNumberTaken     ChangeNumberError = "number is already taken in this squad"
 )
+
+type CareerError string
+
+func (e CareerError) Error() string { return string(e) }
+
+const ErrCareerPlayerNotFound CareerError = "player not found"

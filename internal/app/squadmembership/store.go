@@ -196,6 +196,38 @@ func (s *PostgresStore) List(ctx context.Context, leagueID, seasonID, teamID uui
 	return res, nil
 }
 
+func (s *PostgresStore) Career(ctx context.Context, leagueID, playerID uuid.UUID) ([]*Stint, error) {
+	rows, err := s.q.ListPlayerCareer(ctx, db.ListPlayerCareerParams{PlayerID: playerID, LeagueID: leagueID})
+	if err != nil {
+		return nil, fmt.Errorf("list career of player %s: %w", playerID, err)
+	}
+	if len(rows) == 0 {
+		exists, err := s.q.PlayerExists(ctx, db.PlayerExistsParams{ID: playerID, LeagueID: leagueID})
+		if err != nil {
+			return nil, fmt.Errorf("check player %s: %w", playerID, err)
+		}
+		if !exists {
+			return nil, ErrCareerPlayerNotFound
+		}
+	}
+
+	res := make([]*Stint, len(rows))
+	for i, r := range rows {
+		res[i] = &Stint{
+			MembershipID: r.ID,
+			SeasonID:     r.SeasonID,
+			SeasonName:   r.SeasonName,
+			TeamID:       r.TeamID,
+			TeamName:     r.TeamName,
+			TeamLogo:     r.TeamLogo,
+			Number:       r.Number,
+			JoinedOn:     r.JoinedOn,
+			LeftOn:       r.LeftOn,
+		}
+	}
+	return res, nil
+}
+
 func (s *PostgresStore) Rules(ctx context.Context, leagueID, seasonID, teamID uuid.UUID) (*SquadRules, error) {
 	res, err := s.q.GetSquadRules(ctx, db.GetSquadRulesParams{
 		SeasonID: seasonID,

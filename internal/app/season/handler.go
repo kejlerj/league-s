@@ -34,6 +34,12 @@ func (h *Handler) Routes() chi.Router {
 	return r
 }
 
+func (h *Handler) TeamRoutes() chi.Router {
+	r := chi.NewRouter()
+	r.Get("/", h.listByTeam)
+	return r
+}
+
 type createSeasonRequest struct {
 	Name         string   `json:"name" validate:"required,max=50"`
 	StartOn      string   `json:"start_on" validate:"required,datetime=2006-01-02"`
@@ -182,6 +188,32 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		slog.ErrorContext(r.Context(), "list seasons", "err", err, "league_id", leagueID)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	res := make([]seasonResponse, len(seasons))
+	for i, s := range seasons {
+		res[i] = toResponse(s)
+	}
+
+	httpx.JSON(w, http.StatusOK, res)
+}
+
+func (h *Handler) listByTeam(w http.ResponseWriter, r *http.Request) {
+	ids, ok := pathIDs(w, r, "leagueID", "teamID")
+	if !ok {
+		return
+	}
+	leagueID, teamID := ids[0], ids[1]
+
+	seasons, err := h.store.ListByTeam(r.Context(), leagueID, teamID)
+	if errors.Is(err, ErrListByTeamNotFound) {
+		httpx.Error(w, http.StatusNotFound, ErrListByTeamNotFound.Error())
+		return
+	}
+	if err != nil {
+		slog.ErrorContext(r.Context(), "list team seasons", "err", err, "league_id", leagueID, "team_id", teamID)
 		httpx.Error(w, http.StatusInternalServerError, "internal error")
 		return
 	}

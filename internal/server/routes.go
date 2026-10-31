@@ -70,12 +70,15 @@ func (s *Server) RegisterRoutes() http.Handler {
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/teams", team.NewHandler(team.NewPostgresStore(pool)).Routes())
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/players", player.NewHandler(player.NewPostgresStore(pool)).Routes())
 		seasonStore := season.NewPostgresStore(pool)
-		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons", season.NewHandler(seasonStore).Routes())
+		seasons := season.NewHandler(seasonStore)
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons", seasons.Routes())
+		r.Mount("/leagues/{leagueID}/teams/{teamID}/seasons", seasons.TeamRoutes())
 
 		squadStore := squadmembership.NewPostgresStore(pool)
 		squad := squadmembership.NewHandler(squadmembership.NewService(squadStore), squadStore)
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad", squad.Routes())
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/transfers", squad.TransferRoutes())
+		r.Mount("/leagues/{leagueID}/players/{playerID}/career", squad.CareerRoutes())
 
 		matchStore := match.NewPostgresStore(pool)
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/matches", match.NewHandler(match.NewService(matchStore), matchStore, seasonStore).Routes())

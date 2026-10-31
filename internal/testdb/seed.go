@@ -73,6 +73,7 @@ type SquadMemberParams struct {
 	Player   db.Player
 	Number   int32
 	JoinedOn string
+	LeftOn   string
 }
 
 func (s *Seeder) CreateLeague(p LeagueParams) db.League {
@@ -211,6 +212,20 @@ func (s *Seeder) CreateSquadMember(p SquadMemberParams) db.SquadMembership {
 	})
 	if err != nil {
 		s.t.Fatalf("add %s %s to the squad of %q: %v", p.Player.Firstname, p.Player.Lastname, p.Team.Name, err)
+	}
+	if p.LeftOn == "" {
+		return m
+	}
+
+	m, err = s.q.CloseSquadMembership(context.Background(), db.CloseSquadMembershipParams{
+		LeftOn:   s.date(p.LeftOn),
+		PlayerID: p.Player.ID,
+		SeasonID: p.Season.ID,
+		TeamID:   p.Team.ID,
+		LeagueID: p.Season.LeagueID,
+	})
+	if err != nil {
+		s.t.Fatalf("close the membership of %s %s in %q: %v", p.Player.Firstname, p.Player.Lastname, p.Team.Name, err)
 	}
 	return m
 }

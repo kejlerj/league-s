@@ -108,6 +108,22 @@ func (q *Queries) GetTeamsByLeagueID(ctx context.Context, leagueID uuid.UUID) ([
 	return items, nil
 }
 
+const teamExists = `-- name: TeamExists :one
+SELECT EXISTS (SELECT 1 FROM team WHERE id = $1 AND league_id = $2)
+`
+
+type TeamExistsParams struct {
+	ID       uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) TeamExists(ctx context.Context, arg TeamExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, teamExists, arg.ID, arg.LeagueID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const updateTeam = `-- name: UpdateTeam :one
 UPDATE team
 SET name = COALESCE($3, name),

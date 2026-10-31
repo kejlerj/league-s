@@ -89,6 +89,28 @@ func (s *PostgresStore) GetByLeague(ctx context.Context, leagueID uuid.UUID) ([]
 	return res, nil
 }
 
+func (s *PostgresStore) ListByTeam(ctx context.Context, leagueID, teamID uuid.UUID) ([]*Season, error) {
+	seasons, err := s.q.GetSeasonsByTeam(ctx, db.GetSeasonsByTeamParams{TeamID: teamID, LeagueID: leagueID})
+	if err != nil {
+		return nil, fmt.Errorf("list seasons of team %s: %w", teamID, err)
+	}
+	if len(seasons) == 0 {
+		exists, err := s.q.TeamExists(ctx, db.TeamExistsParams{ID: teamID, LeagueID: leagueID})
+		if err != nil {
+			return nil, fmt.Errorf("check team %s: %w", teamID, err)
+		}
+		if !exists {
+			return nil, ErrListByTeamNotFound
+		}
+	}
+
+	res := make([]*Season, len(seasons))
+	for i, season := range seasons {
+		res[i] = toSeason(season)
+	}
+	return res, nil
+}
+
 func (s *PostgresStore) AddTeam(ctx context.Context, leagueID, seasonID, teamID uuid.UUID) error {
 	_, err := s.q.AddTeamToSeason(ctx, db.AddTeamToSeasonParams{
 		SeasonID: seasonID,

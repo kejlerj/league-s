@@ -36,6 +36,53 @@ func (q *Queries) AddTeamToSeason(ctx context.Context, arg AddTeamToSeasonParams
 	return i, err
 }
 
+const getSeasonsByTeam = `-- name: GetSeasonsByTeam :many
+SELECT season.id, season.name, season.start_on, season.end_on, season.match_win_pts, season.match_draw_pts, season.match_loss_pts, season.tie_breakers, season.max_squad_size, season.league_id, season.created_at, season.updated_at FROM season
+JOIN season_team ON season_team.season_id = season.id
+  AND season_team.league_id = season.league_id
+WHERE season_team.team_id = $1
+  AND season_team.league_id = $2
+ORDER BY season.start_on DESC
+`
+
+type GetSeasonsByTeamParams struct {
+	TeamID   uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) GetSeasonsByTeam(ctx context.Context, arg GetSeasonsByTeamParams) ([]Season, error) {
+	rows, err := q.db.Query(ctx, getSeasonsByTeam, arg.TeamID, arg.LeagueID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Season
+	for rows.Next() {
+		var i Season
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.StartOn,
+			&i.EndOn,
+			&i.MatchWinPts,
+			&i.MatchDrawPts,
+			&i.MatchLossPts,
+			&i.TieBreakers,
+			&i.MaxSquadSize,
+			&i.LeagueID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTeamsBySeason = `-- name: GetTeamsBySeason :many
 SELECT team.id, team.league_id, team.name, team.logo, team.created_at, team.updated_at FROM team
 JOIN season_team ON season_team.team_id = team.id
