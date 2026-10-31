@@ -1,8 +1,6 @@
 import { omitEmpty } from '@/lib/form'
 import { api, seg } from './client'
-import type { Player } from './types'
-
-export type PlayerInput = { firstname: string; lastname: string; icon: string | null }
+import type { Player, PlayerInput, PlayerPatch } from './types'
 
 const base = (leagueId: string) => `/leagues/${seg(leagueId)}/players`
 
@@ -14,7 +12,7 @@ export function createPlayer(leagueId: string, input: PlayerInput): Promise<Play
   return api<Player>('POST', base(leagueId), { body: input })
 }
 
-export function updatePlayer(leagueId: string, playerId: string, input: Partial<PlayerInput>): Promise<Player> {
+export function updatePlayer(leagueId: string, playerId: string, input: PlayerPatch): Promise<Player> {
   return api<Player>('PATCH', `${base(leagueId)}/${seg(playerId)}`, { body: omitEmpty(input) })
 }
 

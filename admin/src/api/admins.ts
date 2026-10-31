@@ -1,7 +1,5 @@
 import { api, seg } from './client'
-import type { Invitation, InvitationPreview, LeagueAdmin } from './types'
-
-export type CreatedInvitation = Invitation & { link: string }
+import type { CreatedInvitation, Invitation, InvitationPreview, LeagueAdmin } from './types'
 
 const base = (leagueId: string) => `/leagues/${seg(leagueId)}`
 

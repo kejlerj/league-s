@@ -1,15 +1,5 @@
 import { api, seg } from './client'
-import type { SquadMember } from './types'
-
-export type JoinInput = { player_id: string; number: number | null; joined_on: string }
-
-export type TransferInput = {
-  player_id: string
-  from_team_id: string
-  to_team_id: string
-  number: number | null
-  on: string
-}
+import type { JoinInput, SquadMember, TransferInput } from './types'
 
 const season = (leagueId: string, seasonId: string) => `/leagues/${seg(leagueId)}/seasons/${seg(seasonId)}`
 const squad = (leagueId: string, seasonId: string, teamId: string) =>

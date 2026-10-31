@@ -1,18 +1,5 @@
 import { api, seg } from './client'
-import type { Season, SeasonTeam, TieBreaker } from './types'
-
-export type SeasonInput = {
-  name: string
-  start_on: string
-  end_on: string
-  match_win_pts: number
-  match_draw_pts: number
-  match_loss_pts: number
-  tie_breakers: TieBreaker[]
-  max_squad_size?: number
-}
-
-export type SeasonPatch = Omit<SeasonInput, 'max_squad_size'>
+import type { Season, SeasonInput, SeasonPatch, SeasonTeam } from './types'
 
 const base = (leagueId: string) => `/leagues/${seg(leagueId)}/seasons`
 const one = (leagueId: string, seasonId: string) => `${base(leagueId)}/${seg(seasonId)}`

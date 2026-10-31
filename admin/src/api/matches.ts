@@ -1,25 +1,8 @@
 import { omitEmpty } from '@/lib/form'
 import { api, seg } from './client'
-import type { Match, MatchStatus } from './types'
+import type { Match, MatchPatch, MatchStatus, ScheduleInput } from './types'
 
 export type MatchFilters = { matchday?: string; status?: MatchStatus }
-
-export type ScheduleInput = {
-  home_team_id: string
-  away_team_id: string
-  matchday: number
-  kickoff_at: string | null
-  venue: string | null
-}
-
-export type MatchPatch = {
-  matchday?: number | null
-  kickoff_at?: string | null
-  venue?: string | null
-  referee?: string | null
-  convocation_at?: string | null
-  video_url?: string | null
-}
 
 const base = (leagueId: string, seasonId: string) => `/leagues/${seg(leagueId)}/seasons/${seg(seasonId)}/matches`
 const one = (leagueId: string, seasonId: string, matchId: string) => `${base(leagueId, seasonId)}/${seg(matchId)}`

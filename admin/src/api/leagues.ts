@@ -1,8 +1,6 @@
 import { omitEmpty } from '@/lib/form'
 import { api, seg } from './client'
-import type { League } from './types'
-
-export type LeagueInput = { name: string; logo: string | null }
+import type { League, LeagueInput, LeaguePatch } from './types'
 
 export function listLeagues(): Promise<League[]> {
   return api<League[]>('GET', '/leagues')
@@ -16,7 +14,7 @@ export function createLeague(input: LeagueInput): Promise<League> {
   return api<League>('POST', '/leagues', { body: input })
 }
 
-export function updateLeague(id: string, input: Partial<LeagueInput>): Promise<League> {
+export function updateLeague(id: string, input: LeaguePatch): Promise<League> {
   return api<League>('PATCH', `/leagues/${seg(id)}`, { body: omitEmpty(input) })
 }
 
