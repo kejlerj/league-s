@@ -1,159 +1,159 @@
-# Checklist league-s
+# league-s checklist
 
-## ✅ Fait
+## ✅ Done
 
-- [x] **Infrastructure** : Postgres dans Docker, `pgxpool`, goose (`make migrate-*`), sqlc (avec `time.Time` via les `overrides`), gotestsum
-- [x] **Schéma** : 7 tables, multi-tenant par ligue, clés composites, index, enum `match_status`
-- [x] **Domaines** : `league`, `team`, `player`, `season` (avec `season_team`), chacun avec son handler, son store, sa validation et la traduction de ses erreurs
-- [x] **Seeder de test** : `testdb.New(t, pool)` (base vidée + seeder), ligue par défaut, options (`WithName`, `InLeague`…), plus aucun ID en dur dans les tests de domaine
-- [x] **Tests** : 94 tests d'intégration, les helpers `testdb` et `testhttp`, le tag `integration`, `make test` et `make itest`
-- [x] **Config** : package `internal/config` (lecture et validation de l'environnement, DSN échappée), `database.New(ctx, dsn)`, `server.NewServer(port, db)`, 13 tests unitaires
-- [x] **Lint** : golangci-lint v2 (`.golangci.yml`, `make lint`, `make fmt`, job de CI), imports groupés avec `gci` et `goimports`
-- [x] **CI** : `.github/workflows/ci.yml` (vérifié avec actionlint, pas encore poussé)
-- [x] **README** : schéma, notes de conception, endpoints
-- [x] **Stack locale et données de démo** : `make dev-up` (Postgres, migrations, API) et `make seed` (`cmd/seed`, package `internal/demo`) : une ligue de démo, 10 équipes de 8 joueurs, deux saisons aller-retour, IDs fixes pour les tests E2E
+- [x] **Infrastructure**: Postgres in Docker, `pgxpool`, goose (`make migrate-*`), sqlc (with `time.Time` through `overrides`), gotestsum
+- [x] **Schema**: 7 tables, multi-tenant per league, composite keys, indexes, enum `match_status`
+- [x] **Domains**: `league`, `team`, `player`, `season` (with `season_team`), each with its handler, its store, its validation and the translation of its errors
+- [x] **Test seeder**: `testdb.New(t, pool)` (emptied database + seeder), default league, options (`WithName`, `InLeague`…), no hard-coded ID left in the domain tests
+- [x] **Tests**: 94 integration tests, the `testdb` and `testhttp` helpers, the `integration` tag, `make test` and `make itest`
+- [x] **Config**: package `internal/config` (reads and validates the environment, escaped DSN), `database.New(ctx, dsn)`, `server.NewServer(port, db)`, 13 unit tests
+- [x] **Lint**: golangci-lint v2 (`.golangci.yml`, `make lint`, `make fmt`, CI job), imports grouped with `gci` and `goimports`
+- [x] **CI**: `.github/workflows/ci.yml` (checked with actionlint, not pushed yet)
+- [x] **README**: schema, design notes, endpoints
+- [x] **Local stack and demo data**: `make dev-up` (Postgres, migrations, API) and `make seed` (`cmd/seed`, package `internal/demo`): one demo league, 10 teams of 8 players, two home-and-away seasons, fixed IDs for the E2E tests
 
-## 🔜 Avant le prochain commit
+## 🔜 Before the next commit
 
-- [x] **Recréer la base locale** : migrations renumérotées, passage à Postgres 18 et aux UUID v7
-  - `docker compose down -v`, `make docker-run`, puis `make migrate-up`
-- [ ] **Commiter et pousser**, puis vérifier que les deux jobs de CI passent sur GitHub
-  - premier vrai test de testcontainers sur les runners GitHub
-- [x] **Ajouter un `.env.example`** avec les variables attendues, sans vrais secrets
-- [x] **Corriger une incohérence** : la valeur par défaut de `tie_breakers` en base est `{goal_difference,goals_for}`, mais le validator n'accepte que `goals_scored`
-  - choisir un seul nom, sinon une saison créée avec les valeurs par défaut ne pourra plus être renvoyée telle quelle à l'API
+- [x] **Recreate the local database**: migrations renumbered, move to Postgres 18 and to UUID v7
+  - `docker compose down -v`, `make docker-run`, then `make migrate-up`
+- [ ] **Commit and push**, then check that both CI jobs pass on GitHub
+  - first real test of testcontainers on the GitHub runners
+- [x] **Add a `.env.example`** with the expected variables, without real secrets
+- [x] **Fix an inconsistency**: the database default for `tie_breakers` is `{goal_difference,goals_for}`, but the validator only accepts `goals_scored`
+  - pick a single name, otherwise a season created with the defaults can no longer be sent back as is to the API
 
-## 🧹 Dette technique
+## 🧹 Technical debt
 
-- [x] **Une seule saison à la fois par ligue** (voir `spec.md`) : contrainte de non-chevauchement sur `season`
-  - `EXCLUDE USING gist (league_id WITH =, daterange(start_on, end_on, '[]') WITH &&)`, avec `btree_gist` (décision 008)
-  - la traduire en 409 dans `season.CreateError` et `season.UpdateError`
-- [x] **Les points par défaut d'une saison** : si le client omet `match_win_pts`…, la saison est créée avec 0/0/0 au lieu de 3/1/0
-  - pointeurs dans le DTO, ou valeurs par défaut appliquées dans le handler
-- [x] **Des messages de validation lisibles** : `httpx.Decode` renvoie encore le tag brut (`"required"`, `"url"`)
-- [x] **Des dates au format `2025-08-01`** dans les DTO de saison, au lieu de `time.Time` complet
-  - `string` avec `validate:"datetime=2006-01-02"`, puis `time.Parse(time.DateOnly, …)`
-- [x] **Les codes HTTP** : 201 pour l'inscription d'une équipe, 204 pour la désinscription
-  - mettre à jour les tests en même temps
-- [ ] **Les endpoints de liste manquants** : saisons d'une ligue (`GetByLeague` existe déjà), équipes et joueurs d'une ligue
-  - penser à la pagination dès le début (`limit`, `offset`, ou par curseur)
-- [x] **Modification et suppression** (`PATCH` / `DELETE`) pour `league`, `team`, `player` et `season`
-  - mettre `updated_at = now()` dans chaque `UPDATE`
-  - `RESTRICT` renverra une violation de clé étrangère si la ressource a un historique : la traduire en 409
-- [ ] **Un helper pour les erreurs Postgres** (`database.ConstraintName(err)`), dès qu'il sera répété dans `squadmembership`
+- [x] **Only one season at a time per league** (see `spec.md`): non-overlap constraint on `season`
+  - `EXCLUDE USING gist (league_id WITH =, daterange(start_on, end_on, '[]') WITH &&)`, with `btree_gist` (decision 008)
+  - translate it to 409 in `season.CreateError` and `season.UpdateError`
+- [x] **A season's default points**: if the client omits `match_win_pts`…, the season is created with 0/0/0 instead of 3/1/0
+  - pointers in the DTO, or defaults applied in the handler
+- [x] **Readable validation messages**: `httpx.Decode` still returns the raw tag (`"required"`, `"url"`)
+- [x] **Dates in `2025-08-01` format** in the season DTOs, instead of a full `time.Time`
+  - `string` with `validate:"datetime=2006-01-02"`, then `time.Parse(time.DateOnly, …)`
+- [x] **HTTP status codes**: 201 for registering a team, 204 for unregistering it
+  - update the tests at the same time
+- [ ] **The missing list endpoints**: a league's seasons (`GetByLeague` already exists), a league's teams and players
+  - think about pagination from the start (`limit`, `offset`, or cursor-based)
+- [x] **Update and delete** (`PATCH` / `DELETE`) for `league`, `team`, `player` and `season`
+  - set `updated_at = now()` in every `UPDATE`
+  - `RESTRICT` returns a foreign key violation if the resource has a history: translate it to 409
+- [ ] **A helper for Postgres errors** (`database.ConstraintName(err)`), as soon as it is repeated in `squadmembership`
 
-## ⚽ Squad (effectifs)
+## ⚽ Squad
 
-- [x] **Créer le package `internal/app/squadmembership`** : types, erreurs par opération, requêtes SQL et store (`Join`, `Leave`, `Active`, `List`, `WithTx`)
-  - `SquadPlayer` et `GetByTeamAndSeason` retirés de `player`, remplacés par `squadmembership.Member` et `List`
-- [x] **Les routes** sous `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad`, et `/transfers` sous la saison
-  - faire entrer un joueur, le faire partir (`left_on`), lister l'effectif (actifs par défaut, option pour tout l'historique)
-- [x] **Toujours insérer `league_id`**, pris dans l'URL : les clés composites en ont besoin
-- [x] **Les IDs dans le body** (`player_id`…) : un champ `string` avec `validate:"required,uuid"`, puis `uuid.Parse`
-  - pas de champ `uuid.UUID` directement dans le DTO : le décodage JSON accepterait les formats non standards (`urn:uuid:`, accolades, sans tirets)
-- [x] **Traduire les erreurs par nom de contrainte** (dans le store, codes HTTP à choisir dans le handler)
-  - `squad_membership_active_number` → numéro déjà pris (409)
-  - `squad_membership_active_player` → joueur déjà actif dans une équipe cette saison (409)
-  - `squad_membership_player_fkey` → joueur inconnu ou d'une autre ligue (404)
-  - `squad_membership_season_team_fkey` → équipe non inscrite à la saison (404 ou 422)
-- [x] **Le transfert** = un départ suivi d'une arrivée, dans une transaction
-  - `Service.Transfer` passe par `store.InTx`, et applique les mêmes règles que `Join` et `Leave`
-- [x] **Valider les dates** : `joined_on` et `left_on` pendant la saison (`SquadRules.CheckJoin` et `CheckLeave`, appelées par le service)
-- [x] **La taille maximale de l'effectif** : `Service.Join` verrouille `season_team`, compte les actifs, puis décide (`ErrJoinSquadFull`)
-  - `left_on` après `joined_on` : déjà garanti par la contrainte `squad_membership_left_after_joined`, traduite en `ErrLeaveBeforeJoining`
-- [x] **Des tests de store directs** pour les transferts, là où l'API seule est pénible à préparer
-- [x] Optionnel : le club actuel dans `GET /players/{playerID}` (requête avec `LEFT JOIN`, pas `LATERAL`)
+- [x] **Create the package `internal/app/squadmembership`**: types, errors per operation, SQL queries and store (`Join`, `Leave`, `Active`, `List`, `WithTx`)
+  - `SquadPlayer` and `GetByTeamAndSeason` removed from `player`, replaced by `squadmembership.Member` and `List`
+- [x] **The routes** under `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad`, and `/transfers` under the season
+  - add a player, make them leave (`left_on`), list the squad (active by default, option for the full history)
+- [x] **Always insert `league_id`**, taken from the URL: the composite keys need it
+- [x] **IDs in the body** (`player_id`…): a `string` field with `validate:"required,uuid"`, then `uuid.Parse`
+  - no `uuid.UUID` field directly in the DTO: JSON decoding would accept non-standard formats (`urn:uuid:`, braces, no dashes)
+- [x] **Translate errors by constraint name** (in the store, HTTP status codes chosen in the handler)
+  - `squad_membership_active_number` → number already taken (409)
+  - `squad_membership_active_player` → player already active in a team this season (409)
+  - `squad_membership_player_fkey` → unknown player or player of another league (404)
+  - `squad_membership_season_team_fkey` → team not registered for the season (404 or 422)
+- [x] **The transfer** = leaving followed by joining, in one transaction
+  - `Service.Transfer` goes through `store.InTx`, and applies the same rules as `Join` and `Leave`
+- [x] **Validate the dates**: `joined_on` and `left_on` during the season (`SquadRules.CheckJoin` and `CheckLeave`, called by the service)
+- [x] **The maximum squad size**: `Service.Join` locks `season_team`, counts the active members, then decides (`ErrJoinSquadFull`)
+  - `left_on` after `joined_on`: already enforced by the constraint `squad_membership_left_after_joined`, translated to `ErrLeaveBeforeJoining`
+- [x] **Direct store tests** for transfers, where the API alone is tedious to set up
+- [x] Optional: the current club in `GET /players/{playerID}` (query with `LEFT JOIN`, not `LATERAL`)
 
 ## 🥅 Match
 
-- [x] **L'entité avec ses règles** : `match.New`, `Start`, `SetScore`, `Finish`, `Postpone`, `Reschedule`, `Cancel`, `Winner`
-  - des tests unitaires sans tag
-- [x] **Un service** pour le cycle « charger → appliquer la règle → sauvegarder »
-- [x] **Traduire l'enum** `db.MatchStatus` vers `match.Status` dans le store
-- [x] **Les routes** sous `/leagues/{leagueID}/seasons/{seasonID}/matches`
-  - le calendrier : filtres `matchday`, `team`, `from` et `to`, avec `sqlc.narg`
-- [x] **⚠️ Le filtrage par ligue** : `match` n'a pas de `league_id`
-  - chaque lecture joint `season` et filtre sur `season.league_id`
-  - testé : un match est introuvable depuis l'URL d'une autre ligue
-- [x] **Les erreurs** : `match_home_team_fkey` ou `match_away_team_fkey` → équipe non inscrite (422)
-- [x] **Les règles de calendrier dans le service** : une seule rencontre par équipe et par journée, coup d'envoi pendant la saison
+- [x] **The entity with its rules**: `match.New`, `Start`, `SetScore`, `Finish`, `Postpone`, `Reschedule`, `Cancel`, `Winner`
+  - unit tests without a tag
+- [x] **A service** for the "load → apply the rule → save" cycle
+- [x] **Translate the enum** `db.MatchStatus` to `match.Status` in the store
+- [x] **The routes** under `/leagues/{leagueID}/seasons/{seasonID}/matches`
+  - the fixtures: filters `matchday`, `team`, `from` and `to`, with `sqlc.narg`
+- [x] **⚠️ Filtering by league**: `match` has no `league_id`
+  - every read joins `season` and filters on `season.league_id`
+  - tested: a match can't be found from another league's URL
+- [x] **Errors**: `match_home_team_fkey` or `match_away_team_fkey` → team not registered (422)
+- [x] **Fixture rules in the service**: a single match per team and per matchday, kickoff during the season
 
-## 📊 Classement
+## 📊 Standings
 
-- [x] **`standing.Compute(teams, matches, rules)`** : une fonction pure qui réutilise `Match.Winner()`
-- [x] **Des tests unitaires table-driven**
-- [x] **Les départages dans l'ordre défini par la saison** : différence de buts, buts marqués, confrontation directe
-  - la confrontation directe est le cas le plus délicat, avec plusieurs équipes à égalité
-  - `fair_play` et `random` restent à décider : ils sont ignorés pour l'instant
-- [x] **L'endpoint** `GET /leagues/{leagueID}/seasons/{seasonID}/standings`, qui ne compte que les matchs `finished`
+- [x] **`standing.Compute(teams, matches, rules)`**: a pure function that reuses `Match.Winner()`
+- [x] **Table-driven unit tests**
+- [x] **Tie-breakers in the order set by the season**: goal difference, goals scored, head-to-head
+  - head-to-head is the trickiest case, with several tied teams
+  - `fair_play` and `random` are still to be decided: they are ignored for now
+- [x] **The endpoint** `GET /leagues/{leagueID}/seasons/{seasonID}/standings`, which counts only `finished` matches
 
-## 🧪 Tests de scénario
+## 🧪 Scenario tests
 
-- [x] **Le package `internal/scenario`**, sur le vrai routeur (`server.NewServer`), connecté comme admin de la ligue
-- [x] **3 à 5 parcours** : une saison complète jusqu'au classement, un transfert en cours de saison, un match reporté puis reprogrammé
-- [x] **Étendre le seeder** (`internal/testdb/seed.go`) à chaque nouveau domaine : `s.CreateSquadMember(...)` avec `squad`, `s.CreateMatch(...)` avec options (coup d'envoi, statut, score) avec `match`, `MaxSquadSize` sur la saison
+- [x] **The package `internal/scenario`**, on the real router (`server.NewServer`), signed in as the league's admin
+- [x] **3 to 5 journeys**: a full season up to the standings, a mid-season transfer, a match postponed then rescheduled
+- [x] **Extend the seeder** (`internal/testdb/seed.go`) with each new domain: `s.CreateSquadMember(...)` with `squad`, `s.CreateMatch(...)` with options (kickoff, status, score) with `match`, `MaxSquadSize` on the season
 
-## 🔐 Authentification et rôles
+## 🔐 Authentication and roles
 
-- [x] **Les tables** `app_user` (avec `is_superadmin`), `league_admin (user_id, league_id)` et `session`
-- [x] **Le hachage des mots de passe** avec bcrypt, jamais en clair (10 caractères minimum)
-- [x] **Sessions plutôt que JWT** : un jeton aléatoire, dont seul le condensat est en base. Cookie `HttpOnly` pour le web, en-tête `Authorization: Bearer` pour le mobile
-- [x] **Un middleware d'authentification**, qui place l'utilisateur dans le `context`
-- [x] **Un middleware d'autorisation**, qui lit `{leagueID}` dans l'URL et vérifie le rôle
-  - les `GET` restent publics, seules les écritures sont protégées
-  - créer et supprimer une ligue : réservé au superadmin
-- [x] **Des tests** 401 (non connecté), 403 (admin d'une autre ligue) et 201 (bon admin, superadmin)
-- [x] **Le premier superadmin** : créé au démarrage depuis `SUPERADMIN_EMAIL`, sans mot de passe, avec un lien de configuration envoyé par e-mail (SMTP, Mailpit en local sur http://localhost:8025)
-- [x] **Mot de passe oublié et changement de mot de passe** : lien de réinitialisation à usage unique envoyé par e-mail (`auth.EmailNotifier`, SMTP). Sans `SMTP_HOST`, aucun e-mail ne part et le lien n'est écrit nulle part
-- [x] **Les invitations** : le superadmin invite un admin sur une ligue par un lien à usage unique, valable 7 jours
-  - table `invitation` (ligue, e-mail, condensat du jeton, expiration, date d'acceptation)
-  - accepter le lien crée le compte, ou rattache la ligue à un compte existant
-  - lister et retirer les admins d'une ligue
-- [ ] **Nettoyer les sessions expirées** (une requête périodique, ou à la connexion)
+- [x] **The tables** `app_user` (with `is_superadmin`), `league_admin (user_id, league_id)` and `session`
+- [x] **Password hashing** with bcrypt, never in clear (10 characters minimum)
+- [x] **Sessions rather than JWT**: a random token, of which only the hash is in the database. `HttpOnly` cookie for the web, `Authorization: Bearer` header for mobile
+- [x] **An authentication middleware**, which puts the user in the `context`
+- [x] **An authorization middleware**, which reads `{leagueID}` in the URL and checks the role
+  - `GET` requests stay public, only writes are protected
+  - creating and deleting a league: superadmin only
+- [x] **Tests** 401 (not signed in), 403 (admin of another league) and 201 (right admin, superadmin)
+- [x] **The first superadmin**: created at startup from `SUPERADMIN_EMAIL`, without a password, with a setup link sent by email (SMTP, Mailpit locally on http://localhost:8025)
+- [x] **Forgotten password and password change**: single-use reset link sent by email (`auth.EmailNotifier`, SMTP). Without `SMTP_HOST`, no email is sent and the link is written nowhere
+- [x] **Invitations**: the superadmin invites an admin to a league through a single-use link, valid for 7 days
+  - table `invitation` (league, email, token hash, expiry, acceptance date)
+  - accepting the link creates the account, or attaches the league to an existing account
+  - list and remove a league's admins
+- [ ] **Clean up expired sessions** (a periodic query, or on sign-in)
 
-## 🔒 Sécurité
+## 🔒 Security
 
-- [x] **Resserrer le CORS** : `AllowedOrigins: https://*` avec `AllowCredentials: true` accepte n'importe quel site
-  - lire la liste des origines autorisées depuis la config (`CORS_ORIGINS`)
-  - à faire avant l'authentification, sinon n'importe quel site pourra appeler l'API avec la session d'un admin
-- [x] **Limiter la taille des body** dans `httpx.Decode` : `http.MaxBytesReader` (par exemple 1 Mo), sinon un client peut envoyer un body énorme
-- [x] **Refuser les champs inconnus** dans `httpx.Decode` : `DisallowUnknownFields()`
-  - un `"league_id"` envoyé dans le body renverra 400 au lieu d'être ignoré en silence
-- [x] **Des headers de sécurité** via un middleware, pour toutes les réponses (`httpx.SecurityHeaders`, `/admin` pose sa propre CSP avec `httpx.ContentSecurityPolicy`) :
+- [x] **Tighten CORS**: `AllowedOrigins: https://*` with `AllowCredentials: true` accepts any site
+  - read the list of allowed origins from the config (`CORS_ORIGINS`)
+  - to do before authentication, otherwise any site could call the API with an admin's session
+- [x] **Limit body size** in `httpx.Decode`: `http.MaxBytesReader` (for example 1 MB), otherwise a client can send a huge body
+- [x] **Refuse unknown fields** in `httpx.Decode`: `DisallowUnknownFields()`
+  - a `"league_id"` sent in the body returns 400 instead of being silently ignored
+- [x] **Security headers** through a middleware, for every response (`httpx.SecurityHeaders`, `/admin` sets its own CSP with `httpx.ContentSecurityPolicy`):
   - `X-Content-Type-Options: nosniff`
-  - `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` (une API JSON n'a rien à charger ni à afficher dans une iframe)
+  - `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` (a JSON API has nothing to load nor to show in an iframe)
   - `Referrer-Policy: no-referrer`
-  - `Cache-Control: no-store` sur les réponses authentifiées : toute requête qui porte une session (cookie ou `Bearer`), et `/auth` et `/invitations` qui en créent
-  - `Strict-Transport-Security` seulement si l'app gère elle-même le TLS, sinon c'est au reverse proxy de l'ajouter. L'app ne gère pas le TLS : pas de HSTS dans l'app
-- [x] **Sécuriser `/health`** : il est public, répond 200 même quand la base est down, et renvoie l'erreur brute de pgx et les stats du pool
-  - en public : juste `{"status":"up"}` ou `"down"`, avec un 503 quand c'est down
-  - l'erreur détaillée va dans les logs (et dans Sentry), pas dans la réponse
-- [x] **Du rate limiting**, au moins sur la connexion une fois l'auth en place (`github.com/go-chi/httprate`)
-- [x] **Épingler la version de Postgres** (`postgres:18`) : `postgres:latest` dans `docker-compose.yml`, `testdb` et `database_test.go`
-  - sinon une nouvelle version majeure peut arriver sans prévenir, en local comme en CI
-- [x] **Lancer `govulncheck`** en CI (`make vuln`, job `Vulnerabilities`) : il signale les dépendances qui ont une faille connue *et* dont le code vulnérable est réellement appelé
-- [x] **Passer les IDs en UUID v7** (décision 006), avant `squad`, `match` et `app_user`
-  - migrations : `UUID PRIMARY KEY DEFAULT uuidv7()`, et toutes les clés étrangères en `UUID`, y compris `league_id`
-  - `sqlc.yaml` : `override` de `uuid` vers `github.com/google/uuid.UUID`, puis `sqlc generate`
-  - Go : `int64` → `uuid.UUID` dans les types du domaine, les stores et les DTO. `httpx.IDParam` avec `uuid.Parse`
-  - tests : un `uuid.New()` à la place de `999` pour les IDs inconnus, `%s` à la place de `%d`
-  - recréer la base locale
+  - `Cache-Control: no-store` on authenticated responses: every request that carries a session (cookie or `Bearer`), and `/auth` and `/invitations`, which create one
+  - `Strict-Transport-Security` only if the app handles TLS itself, otherwise the reverse proxy adds it. The app doesn't handle TLS: no HSTS in the app
+- [x] **Secure `/health`**: it is public, answers 200 even when the database is down, and returns the raw pgx error and the pool stats
+  - in public: just `{"status":"up"}` or `"down"`, with a 503 when it's down
+  - the detailed error goes to the logs (and to Sentry), not to the response
+- [x] **Rate limiting**, at least on sign-in once auth is in place (`github.com/go-chi/httprate`)
+- [x] **Pin the Postgres version** (`postgres:18`): `postgres:latest` in `docker-compose.yml`, `testdb` and `database_test.go`
+  - otherwise a new major version can arrive without warning, locally and in CI
+- [x] **Run `govulncheck`** in CI (`make vuln`, job `Vulnerabilities`): it reports dependencies that have a known vulnerability *and* whose vulnerable code is actually called
+- [x] **Move IDs to UUID v7** (decision 006), before `squad`, `match` and `app_user`
+  - migrations: `UUID PRIMARY KEY DEFAULT uuidv7()`, and every foreign key as `UUID`, including `league_id`
+  - `sqlc.yaml`: `override` from `uuid` to `github.com/google/uuid.UUID`, then `sqlc generate`
+  - Go: `int64` → `uuid.UUID` in the domain types, the stores and the DTOs. `httpx.IDParam` with `uuid.Parse`
+  - tests: a `uuid.New()` instead of `999` for unknown IDs, `%s` instead of `%d`
+  - recreate the local database
 
-## 📡 Observabilité
+## 📡 Observability
 
-- [x] **Intégrer Sentry** (`github.com/getsentry/sentry-go`, `internal/logging/sentry.go`)
-  - `SENTRY_DSN` dans la config, optionnel : pas de DSN en local ni en test, donc rien n'est envoyé
-  - `Environment` depuis `APP_ENV`. `Release` : celle que le SDK trouve (variable `SENTRY_RELEASE`, sinon le commit git quand le binaire tourne dans un dépôt)
-  - le middleware `sentryhttp` (avec `Repanic`) après `middleware.Recoverer` : il remonte les panics, puis le `Recoverer` répond 500 comme avant
-  - chaque `slog.ErrorContext` qui porte une erreur part vers Sentry, avec le message et les attributs de la ligne : les 500 des handlers remontent sans toucher aux handlers
-  - ce qui part : pas de body, pas de cookies, pas de query string, seulement les headers `Accept`, `Content-Type` et `User-Agent`
-  - les liens de réinitialisation et d'invitation ne partent jamais : `BeforeSend` remplace toute valeur `token=` par `[Filtered]`, et les attributs `token`, `password`, `secret`… sont masqués
-  - `sentry.Flush` au shutdown, sinon les dernières erreurs sont perdues
-- [x] **Des logs `slog` en JSON** et un request ID (`internal/logging`, `LOG_FORMAT`, `LOG_LEVEL`)
-  - le request ID part dans les événements Sentry (contexte `log`), pour relier une erreur à ses logs
+- [x] **Integrate Sentry** (`github.com/getsentry/sentry-go`, `internal/logging/sentry.go`)
+  - `SENTRY_DSN` in the config, optional: no DSN locally or in tests, so nothing is sent
+  - `Environment` from `APP_ENV`. `Release`: the one the SDK finds (variable `SENTRY_RELEASE`, otherwise the git commit when the binary runs in a repository)
+  - the `sentryhttp` middleware (with `Repanic`) after `middleware.Recoverer`: it reports panics, then the `Recoverer` answers 500 as before
+  - every `slog.ErrorContext` that carries an error is sent to Sentry, with the line's message and attributes: handler 500s are reported without touching the handlers
+  - what is sent: no body, no cookies, no query string, only the `Accept`, `Content-Type` and `User-Agent` headers
+  - reset and invitation links are never sent: `BeforeSend` replaces any `token=` value with `[Filtered]`, and the attributes `token`, `password`, `secret`… are masked
+  - `sentry.Flush` on shutdown, otherwise the last errors are lost
+- [x] **`slog` logs in JSON** and a request ID (`internal/logging`, `LOG_FORMAT`, `LOG_LEVEL`)
+  - the request ID goes into Sentry events (`log` context), to link an error to its logs
 
-## 🚀 Plus tard
+## 🚀 Later
 
-- [x] **Une documentation OpenAPI** de l'API (`docs/openapi.yaml`, checked against the router by `internal/server/openapi_test.go`)
+- [x] **OpenAPI documentation** of the API (`docs/openapi.yaml`, checked against the router by `internal/server/openapi_test.go`)
   - TypeScript types generated from it for the admin and the mobile app: #66
-- [ ] **Le déploiement** : image Docker de l'app, migrations au démarrage ou dans un job séparé
+- [ ] **Deployment**: Docker image of the app, migrations at startup or in a separate job

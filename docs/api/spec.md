@@ -1,124 +1,124 @@
-# Spécifications métier league-s
+# league-s business specifications
 
-Les règles du métier, indépendamment de la façon dont elles sont codées. Pour chaque règle : où elle est garantie aujourd'hui, ou ce qu'il reste à faire.
+The business rules, independent of how they are coded. For each rule: where it is enforced today, or what is left to do.
 
-Les choix techniques sont dans `decision.md`, les tâches dans `checklist.md`, les routes dans `endpoints.md`.
+Technical choices are in `decision.md`, tasks in `checklist.md`, routes in `endpoints.md`.
 
-**Légende**
-- ✅ garantie (l'endroit est indiqué)
-- ⚠️ pas encore garantie
-- ❓ à confirmer (question métier ouverte)
+**Legend**
+- ✅ enforced (the place is given)
+- ⚠️ not enforced yet
+- ❓ to confirm (open business question)
 
-## Contexte
+## Context
 
-Une application pour des ligues de foot amateur (five, foot urbain), pas pour le foot pro. Chaque ligue est gérée par ses organisateurs et totalement indépendante des autres.
+An app for amateur football leagues (five-a-side, urban football), not for professional football. Each league is run by its organizers and is fully independent of the others.
 
-## Ligue
+## League
 
-| Règle | Statut |
+| Rule | Status |
 |---|---|
-| Une ligue est isolée des autres : ses équipes, joueurs, saisons et matchs ne sont ni visibles ni modifiables depuis une autre ligue | ✅ filtres `league_id` + clés étrangères composites (décision 002) |
-| **Une ligue n'a qu'une seule saison à la fois** : les périodes de ses saisons ne se chevauchent pas (premier et dernier jour inclus) | ✅ contrainte `season_league_no_overlap` (`EXCLUDE USING gist (league_id WITH =, daterange(start_on, end_on, '[]') WITH &&)`, `btree_gist`), 409 à la création et à la modification |
-| Une ligue avec un historique (équipes, joueurs, saisons) ne peut pas être supprimée | ✅ `ON DELETE RESTRICT`, 409 |
-| Nom : obligatoire, 50 caractères max. Logo : URL, optionnel | ✅ validation du DTO |
-| Créer ou supprimer une ligue : superadmin seulement | ✅ `auth.SuperadminWrites` |
-| Un admin de la ligue modifie son nom ou son logo | ✅ `PATCH /leagues/{leagueID}`, seuls les champs envoyés changent |
+| A league is isolated from the others: its teams, players, seasons and matches can be neither seen nor changed from another league | ✅ `league_id` filters + composite foreign keys (decision 002) |
+| **A league has only one season at a time**: the periods of its seasons don't overlap (first and last day included) | ✅ constraint `season_league_no_overlap` (`EXCLUDE USING gist (league_id WITH =, daterange(start_on, end_on, '[]') WITH &&)`, `btree_gist`), 409 on create and on update |
+| A league with a history (teams, players, seasons) can't be deleted | ✅ `ON DELETE RESTRICT`, 409 |
+| Name: required, 50 characters max. Logo: URL, optional | ✅ DTO validation |
+| Creating or deleting a league: superadmin only | ✅ `auth.SuperadminWrites` |
+| A league admin changes its name or its logo | ✅ `PATCH /leagues/{leagueID}`, only the fields sent change |
 
-## Équipe
+## Team
 
-| Règle | Statut |
+| Rule | Status |
 |---|---|
-| Une équipe appartient à une seule ligue | ✅ `team.league_id` |
-| Le nom est unique dans la ligue (deux ligues peuvent avoir une équipe du même nom) | ✅ `UNIQUE (league_id, name)`, 409 |
-| Nom : obligatoire, 50 caractères max. Logo : URL, optionnel | ✅ validation du DTO |
-| Une équipe participe à une saison en s'y inscrivant | ✅ table `season_team` |
-| Une équipe ne peut être inscrite qu'une fois à une saison | ✅ clé primaire `(season_id, team_id)`, 409 |
-| Une équipe qui a déjà des matchs dans la saison ne peut pas être désinscrite | ✅ `ON DELETE RESTRICT`, 409 |
-| Une équipe inscrite à une saison ne peut pas être supprimée | ✅ `ON DELETE RESTRICT` sur `season_team`, 409 |
+| A team belongs to a single league | ✅ `team.league_id` |
+| The name is unique within the league (two leagues can each have a team with the same name) | ✅ `UNIQUE (league_id, name)`, 409 |
+| Name: required, 50 characters max. Logo: URL, optional | ✅ DTO validation |
+| A team takes part in a season by registering for it | ✅ table `season_team` |
+| A team can be registered only once for a season | ✅ primary key `(season_id, team_id)`, 409 |
+| A team that already has matches in the season can't be unregistered | ✅ `ON DELETE RESTRICT`, 409 |
+| A team registered for a season can't be deleted | ✅ `ON DELETE RESTRICT` on `season_team`, 409 |
 
-## Joueur
+## Player
 
-| Règle | Statut |
+| Rule | Status |
 |---|---|
-| Un joueur appartient à une seule ligue. Une même personne qui joue dans deux ligues a deux fiches joueur | ✅ `player.league_id` |
-| Prénom et nom : obligatoires, 50 caractères max. Icône : URL, optionnelle | ✅ validation du DTO |
-| Deux joueurs peuvent porter le même nom | ✅ pas de contrainte d'unicité |
-| Un joueur n'a pas de poste : en five et en foot urbain les joueurs tournent pendant le match | ✅ aucun champ poste, ni sur le joueur ni dans l'effectif |
-| Un joueur passé par un effectif ne peut pas être supprimé | ✅ `ON DELETE RESTRICT` sur `squad_membership`, 409 |
+| A player belongs to a single league. The same person playing in two leagues has two player records | ✅ `player.league_id` |
+| First and last name: required, 50 characters max. Icon: URL, optional | ✅ DTO validation |
+| Two players can have the same name | ✅ no uniqueness constraint |
+| A player has no position: in five-a-side and urban football, players rotate during the match | ✅ no position field, neither on the player nor in the squad |
+| A player who has been in a squad can't be deleted | ✅ `ON DELETE RESTRICT` on `squad_membership`, 409 |
 
-## Saison
+## Season
 
-| Règle | Statut |
+| Rule | Status |
 |---|---|
-| Les règles de la compétition (points, départages) sont portées par la saison, pas par la ligue : les changer ne réécrit pas les classements passés | ✅ colonnes de `season` |
-| Le nom est unique dans la ligue | ✅ `UNIQUE (league_id, name)`, 409 |
-| La fin est après le début | ✅ `CHECK (end_on > start_on)` et `Season.CheckDates` (422 sur `end_on`). Les dates de saison sont au format `AAAA-MM-JJ` dans l'API (`datetime=2006-01-02`). Au `PATCH`, la contrainte refuse aussi (422 sur `end_on`) une nouvelle date qui place la fin avant le début, même quand une seule des deux est envoyée |
-| Une saison qui a des matchs ne peut pas être supprimée. Sans matchs, ses inscriptions et ses effectifs sont supprimés avec elle | ✅ `ON DELETE RESTRICT` de `match` sur `season_team`, 409. `ON DELETE CASCADE` pour `season_team` et `squad_membership` |
-| **Une seule saison à la fois par ligue** | ✅ voir Ligue |
-| Points par défaut : 3 (victoire), 1 (nul), 0 (défaite) | ✅ champs optionnels dans le DTO : un champ omis prend la valeur par défaut (`season.DefaultMatchWinPts`…), un `0` explicite est gardé |
-| Départages possibles : différence de buts, buts marqués, confrontation directe, fair-play, tirage au sort, appliqués dans l'ordre choisi. Par défaut : différence de buts, puis buts marqués | ✅ `tie_breakers` omis à la création → `season.DefaultTieBreakers()` (`goal_difference`, `goals_scored`), comme la valeur par défaut de la colonne. Un seul nom, `goals_scored`, en base et dans le validator. `standing.Compute` applique `goal_difference`, `goals_scored` et `head_to_head`. ⚠️ `fair_play` et `random` sont acceptés mais ignorés : pas de données de cartons, et un tirage au sort recalculé à chaque requête changerait le classement. À égalité complète, l'ordre alphabétique décide |
-| Taille maximale d'un effectif, optionnelle | ✅ `max_squad_size` (`NULL` = pas de limite, `CHECK > 0`), accepté à la création (`min=1`, 422 sinon) et renvoyé par l'API des saisons |
+| The competition rules (points, tie-breakers) belong to the season, not to the league: changing them doesn't rewrite past standings | ✅ columns of `season` |
+| The name is unique within the league | ✅ `UNIQUE (league_id, name)`, 409 |
+| The end is after the start | ✅ `CHECK (end_on > start_on)` and `Season.CheckDates` (422 on `end_on`). Season dates are in `YYYY-MM-DD` format in the API (`datetime=2006-01-02`). On `PATCH`, the constraint also refuses (422 on `end_on`) a new date that puts the end before the start, even when only one of the two is sent |
+| A season that has matches can't be deleted. Without matches, its registrations and squads are deleted with it | ✅ `ON DELETE RESTRICT` from `match` on `season_team`, 409. `ON DELETE CASCADE` for `season_team` and `squad_membership` |
+| **Only one season at a time per league** | ✅ see League |
+| Default points: 3 (win), 1 (draw), 0 (loss) | ✅ optional fields in the DTO: an omitted field takes the default value (`season.DefaultMatchWinPts`…), an explicit `0` is kept |
+| Possible tie-breakers: goal difference, goals scored, head-to-head, fair play, drawing lots, applied in the chosen order. By default: goal difference, then goals scored | ✅ `tie_breakers` omitted on create → `season.DefaultTieBreakers()` (`goal_difference`, `goals_scored`), like the column's default value. A single name, `goals_scored`, in the database and in the validator. `standing.Compute` applies `goal_difference`, `goals_scored` and `head_to_head`. ⚠️ `fair_play` and `random` are accepted but ignored: there is no card data, and drawing lots again on every request would change the standings. On a complete tie, alphabetical order decides |
+| Maximum squad size, optional | ✅ `max_squad_size` (`NULL` = no limit, `CHECK > 0`), accepted on create (`min=1`, 422 otherwise) and returned by the seasons API |
 
-## Effectif (squad)
+## Squad
 
-**Vocabulaire**
-- un **passage** (`Membership`, une ligne de `squad_membership`) : un joueur, dans une équipe, pour une saison, entre deux dates ;
-- l'**effectif** (squad) d'une équipe pour une saison : l'ensemble de ses passages. Il n'a pas de table à lui : il est ancré sur la ligne `season_team` (l'inscription de l'équipe à la saison).
+**Vocabulary**
+- a **membership** (`Membership`, one row of `squad_membership`): one player, in one team, for one season, between two dates;
+- a team's **squad** for a season: all its memberships. It has no table of its own: it is anchored on the `season_team` row (the team's registration for the season).
 
-| Règle | Statut |
+| Rule | Status |
 |---|---|
-| Seule une équipe inscrite à la saison peut avoir un effectif | ✅ clé étrangère vers `season_team` |
-| Le joueur et l'équipe sont de la même ligue | ✅ clés étrangères composites |
-| Un joueur n'est actif que dans une seule équipe à la fois. Comme une ligue n'a qu'une saison à la fois, « une par saison » revient à « une dans la ligue » | ✅ index partiel `squad_membership_active_player`, 409 (dépend de la règle « une saison à la fois ») |
-| Un joueur peut quitter une équipe et revenir : chaque passage est une ligne | ✅ modèle de données |
-| Un départ ne supprime rien : il renseigne `left_on`, et l'historique reste consultable | ✅ `CloseSquadMembership`, `ListSquadMemberships` avec historique |
-| Le départ est le même jour ou après l'arrivée | ✅ `CHECK squad_membership_left_after_joined`, `ErrLeaveBeforeJoining` |
-| Deux passages d'un même joueur ne se chevauchent pas, même dans le passé | ⚠️ seuls les passages actifs sont protégés (décision 008) |
-| Numéro de maillot : optionnel, entre 1 et 99 | ✅ `CHECK` en base et validation du DTO (422) |
-| Un numéro est unique dans l'effectif actif. Il se libère quand le joueur part | ✅ index partiel `squad_membership_active_number`, 409 |
-| L'arrivée et le départ ont lieu pendant la saison (premier et dernier jour inclus) | ✅ `SquadRules.CheckJoin` et `CheckLeave`, appelées par le service : `ErrJoinOutsideSeason`, `ErrLeaveOutsideSeason` |
-| L'effectif ne dépasse pas la taille maximale de la saison | ✅ `Service.Join` : `LockSquad` (verrou sur `season_team`), `CountActive`, puis `SquadRules.CheckJoin` → `ErrJoinSquadFull`. Vaut aussi pour l'équipe d'arrivée d'un transfert |
-| Un transfert (départ puis arrivée) est tout ou rien | ✅ `Service.Transfer`, dans `store.InTx` |
-| ❓ `left_on` : dernier jour dans l'équipe, ou premier jour où le joueur n'y est plus ? | ❓ à trancher avec la décision 008. La seconde option permet un transfert le même jour |
+| Only a team registered for the season can have a squad | ✅ foreign key to `season_team` |
+| The player and the team are from the same league | ✅ composite foreign keys |
+| A player is active in only one team at a time. Since a league has only one season at a time, "one per season" means "one in the league" | ✅ partial index `squad_membership_active_player`, 409 (depends on the "one season at a time" rule) |
+| A player can leave a team and come back: each membership is a row | ✅ data model |
+| Leaving deletes nothing: it sets `left_on`, and the history stays readable | ✅ `CloseSquadMembership`, `ListSquadMemberships` with history |
+| Leaving is on the same day as joining or later | ✅ `CHECK squad_membership_left_after_joined`, `ErrLeaveBeforeJoining` |
+| Two memberships of the same player don't overlap, even in the past | ⚠️ only active memberships are protected (decision 008) |
+| Shirt number: optional, between 1 and 99 | ✅ `CHECK` in the database and DTO validation (422) |
+| A number is unique within the active squad. It becomes free when the player leaves | ✅ partial index `squad_membership_active_number`, 409 |
+| Joining and leaving happen during the season (first and last day included) | ✅ `SquadRules.CheckJoin` and `CheckLeave`, called by the service: `ErrJoinOutsideSeason`, `ErrLeaveOutsideSeason` |
+| The squad doesn't exceed the season's maximum size | ✅ `Service.Join`: `LockSquad` (lock on `season_team`), `CountActive`, then `SquadRules.CheckJoin` → `ErrJoinSquadFull`. Also applies to the receiving team of a transfer |
+| A transfer (leaving then joining) is all or nothing | ✅ `Service.Transfer`, inside `store.InTx` |
+| ❓ `left_on`: last day in the team, or first day the player is no longer in it? | ❓ to settle with decision 008. The second option allows a same-day transfer |
 
-## Match (prévu)
+## Match (planned)
 
-| Règle | Statut |
+| Rule | Status |
 |---|---|
-| Un match oppose deux équipes différentes, toutes deux inscrites à la saison | ✅ `CHECK (home_team_id <> away_team_id)` + clés étrangères vers `season_team` |
-| Numéro de journée strictement positif | ✅ `CHECK (matchday > 0)` |
-| Le score est complet (les deux équipes) ou absent, jamais négatif | ✅ `CHECK` en base |
-| Un match terminé a un score | ✅ `CHECK (status <> 'finished' OR home_score IS NOT NULL)` |
-| Cycle de vie : programmé, en cours, terminé, reporté, annulé, avec des transitions interdites | ✅ entité riche `match.Match` (décision 007), 409 sur une transition interdite. Le service verrouille le match (`FOR UPDATE`) le temps de la transition |
-| ❓ Transitions exactes : un match reporté peut-il être annulé ? Un match en cours peut-il être interrompu ? | ❓ à confirmer. Choix provisoire du code : un match reporté peut être annulé, un match en cours ne peut être ni annulé ni reporté |
-| Le score démarre à 0-0 au coup d'envoi et ne change que pendant le match | ✅ `Match.Start`, `Match.SetScore` |
-| Reporter sans nouvelle date met le match en `postponed`. Lui donner un coup d'envoi le reprogramme | ✅ `Match.Postpone`, `Match.Reschedule` |
-| Une équipe n'a pas de stade attitré : le lieu (le terrain réservé) est propre à chaque match, optionnel, donné à la programmation ou plus tard | ✅ `match.venue`, accepté par `POST` et `PATCH` |
-| Arbitre, heure de convocation et lien vidéo sont optionnels et renseignés par l'admin, quel que soit le statut du match | ✅ `Match.UpdateDetails`, par le `PATCH`. Le lien vidéo doit être en `http` ou `https` |
-| Changer la journée ou le coup d'envoi reste réservé aux matchs programmés ou reportés | ✅ `Match.Reschedule`, 409. Un `PATCH` refusé ne modifie rien, même pas les détails envoyés avec |
-| Les dates et heures sont stockées et renvoyées en UTC. Le fuseau d'affichage est celui de l'appareil du lecteur | ✅ `TIMESTAMPTZ` en base, `kickoff_at` et `convocation_at` renvoyés avec le suffixe `Z` |
-| Seul un match encore programmé peut être supprimé | ✅ `Match.CheckDeletable`, 409 |
-| Une équipe joue au plus un match par journée (les matchs annulés ne comptent pas) | ✅ `match.Service`, avec un verrou sur la saison contre les créations simultanées, 409 |
-| Le coup d'envoi a lieu pendant la saison (premier et dernier jour inclus, en UTC) | ✅ `match.Service`, 422 |
+| A match is between two different teams, both registered for the season | ✅ `CHECK (home_team_id <> away_team_id)` + foreign keys to `season_team` |
+| Matchday number strictly positive | ✅ `CHECK (matchday > 0)` |
+| The score is complete (both teams) or absent, never negative | ✅ `CHECK` in the database |
+| A finished match has a score | ✅ `CHECK (status <> 'finished' OR home_score IS NOT NULL)` |
+| Lifecycle: scheduled, in progress, finished, postponed, cancelled, with forbidden transitions | ✅ rich entity `match.Match` (decision 007), 409 on a forbidden transition. The service locks the match (`FOR UPDATE`) during the transition |
+| ❓ Exact transitions: can a postponed match be cancelled? Can a match in progress be interrupted? | ❓ to confirm. Current choice in the code: a postponed match can be cancelled, a match in progress can be neither cancelled nor postponed |
+| The score starts at 0-0 at kickoff and only changes during the match | ✅ `Match.Start`, `Match.SetScore` |
+| Postponing without a new date sets the match to `postponed`. Giving it a kickoff reschedules it | ✅ `Match.Postpone`, `Match.Reschedule` |
+| A team has no home ground: the venue (the booked pitch) belongs to each match, is optional, and is given when scheduling or later | ✅ `match.venue`, accepted by `POST` and `PATCH` |
+| Referee, call time and video link are optional and filled in by the admin, whatever the match status | ✅ `Match.UpdateDetails`, through the `PATCH`. The video link must be `http` or `https` |
+| Changing the matchday or the kickoff is only allowed for scheduled or postponed matches | ✅ `Match.Reschedule`, 409. A refused `PATCH` changes nothing, not even the details sent with it |
+| Dates and times are stored and returned in UTC. The display time zone is the reader's device time zone | ✅ `TIMESTAMPTZ` in the database, `kickoff_at` and `convocation_at` returned with the `Z` suffix |
+| Only a match that is still scheduled can be deleted | ✅ `Match.CheckDeletable`, 409 |
+| A team plays at most one match per matchday (cancelled matches don't count) | ✅ `match.Service`, with a lock on the season against concurrent creates, 409 |
+| The kickoff is during the season (first and last day included, in UTC) | ✅ `match.Service`, 422 |
 
-## Classement (prévu)
+## Standings (planned)
 
-| Règle | Statut |
+| Rule | Status |
 |---|---|
-| Le classement n'est pas stocké : il est calculé à partir des matchs, avec les règles de la saison | ✅ `standing.Compute` |
-| Seuls les matchs terminés comptent | ✅ `Match.Winner` refuse les autres |
-| Les départages s'appliquent dans l'ordre défini par la saison | ✅ `standing.Compute`. La confrontation directe ne compte que les matchs entre les équipes à égalité, et se recalcule sur le sous-groupe restant |
+| The standings are not stored: they are computed from the matches, with the season's rules | ✅ `standing.Compute` |
+| Only finished matches count | ✅ `Match.Winner` refuses the others |
+| Tie-breakers apply in the order set by the season | ✅ `standing.Compute`. Head-to-head counts only the matches between the tied teams, and is recomputed on the remaining subgroup |
 
-## Accès (prévu)
+## Access (planned)
 
-| Règle | Statut |
+| Rule | Status |
 |---|---|
-| Les lectures sont publiques | ✅ les `GET` passent sans session |
-| Les écritures d'une ligue sont réservées à ses admins. Une ligue peut avoir plusieurs admins, et un admin plusieurs ligues | ✅ `auth.LeagueAdminWrites` sur chaque route de ligue : 401 sans session, 403 sans droit sur cette ligue |
-| Le superadmin crée et supprime les ligues, et a tous les droits sur chacune | ✅ `auth.SuperadminWrites` |
-| Le compte superadmin est créé au démarrage à partir de `SUPERADMIN_EMAIL`, sans mot de passe. Un lien à usage unique, valable une heure, est envoyé par e-mail (SMTP) pour en choisir un. Sans `SMTP_HOST`, aucun e-mail ne part et le lien n'est écrit nulle part | ✅ `auth.EnsureSuperadmin`. Un nouveau lien est émis à chaque démarrage tant qu'aucun mot de passe n'est défini |
-| Mot de passe oublié : un lien à usage unique, valable une heure, envoyé par e-mail (SMTP). La réponse est la même que l'e-mail existe ou non | ✅ `POST /auth/password-reset` puis `/confirm`. Réinitialiser ferme toutes les sessions du compte |
-| Un utilisateur connecté change son mot de passe en donnant l'actuel | ✅ `PUT /me/password`. Les autres sessions du compte sont fermées |
-| Le superadmin nomme les admins par une invitation : un lien à usage unique, valable 7 jours, envoyé par `mailto:` depuis l'admin web | ✅ table `invitation`, `auth.Invitations`. Seul le condensat du jeton est stocké, le lien n'est renvoyé qu'à la création. Une nouvelle invitation à la même adresse remplace la précédente. Accepter crée le compte, ou rattache la ligue au compte existant. Pas d'inscription ouverte en v1 |
-| Une session dure 30 jours, prolongés à chaque utilisation. Se déconnecter la supprime côté serveur | ✅ table `session`, seul le condensat du jeton est stocké |
-| Un admin de la ligue A n'a aucun droit sur la ligue B | ✅ testé sur le vrai routeur (`internal/server/auth_test.go`) |
+| Reads are public | ✅ `GET` requests go through without a session |
+| A league's writes are reserved to its admins. A league can have several admins, and an admin several leagues | ✅ `auth.LeagueAdminWrites` on every league route: 401 without a session, 403 without rights on that league |
+| The superadmin creates and deletes leagues, and has every right on each of them | ✅ `auth.SuperadminWrites` |
+| The superadmin account is created at startup from `SUPERADMIN_EMAIL`, without a password. A single-use link, valid for one hour, is sent by email (SMTP) to choose one. Without `SMTP_HOST`, no email is sent and the link is written nowhere | ✅ `auth.EnsureSuperadmin`. A new link is issued at each startup as long as no password is set |
+| Forgotten password: a single-use link, valid for one hour, sent by email (SMTP). The response is the same whether the email exists or not | ✅ `POST /auth/password-reset` then `/confirm`. Resetting closes every session of the account |
+| A signed-in user changes their password by giving the current one | ✅ `PUT /me/password`. The account's other sessions are closed |
+| The superadmin appoints admins through an invitation: a single-use link, valid for 7 days, sent by `mailto:` from the web admin | ✅ table `invitation`, `auth.Invitations`. Only the token's hash is stored, the link is returned only on creation. A new invitation to the same address replaces the previous one. Accepting creates the account, or attaches the league to the existing account. No open sign-up in v1 |
+| A session lasts 30 days, extended on each use. Signing out deletes it on the server | ✅ table `session`, only the token's hash is stored |
+| An admin of league A has no rights on league B | ✅ tested on the real router (`internal/server/auth_test.go`) |

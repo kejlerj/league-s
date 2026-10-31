@@ -265,8 +265,8 @@ store to load, then redirects to `/leagues` when no league is chosen. The tabs a
 keyed by `leagueId`, so changing league remounts every tab and refetches.
 
 **Rationale.** The design shows the tab bar on the Team page (with the origin tab
-still active) but **not** on the Match page ("la page match n'en a pas, c'est une
-sous-page qui se referme sur son parent"). Placing `team/[id]` inside each tab's
+still active) but **not** on the Match page ("the match page has none, it's a
+sub-page that closes back onto its parent"). Placing `team/[id]` inside each tab's
 stack keeps the bar and the active tab; placing `match/[id]` at the root removes
 the bar and makes "back" return to whichever list pushed it. `<TeamScreen>` is
 one shared component; the per-tab route files are one line each.
@@ -490,7 +490,7 @@ There is no separate NativeWind "dark mode provider" to configure.
   | `neg` / `negBg` | `#A82C1E` / `#FFE4E0` | `negDark` / `negBgDark` | `#F09080` / `#3A211D` |
   | `warn` / `warnBg` | `#8A5A00` / `#FFEFD6` | `warnDark` / `warnBgDark` | `#E7B45A` / `#2E2413` |
 
-  (Accent purple is one token pair — "l'accent est un réglage, tout en dérive".)
+  (Accent purple is one token pair — "the accent is one setting, everything derives from it".)
 - Components pair each utility with its dark companion inline, e.g.
   `className="bg-canvas dark:bg-canvasDark"`. This pairing is written **once**,
   inside the shared primitives (`Screen`, `HeaderCard`, `Card`, `ThemedText`,

@@ -1,12 +1,12 @@
-# Endpoints league-s
+# league-s endpoints
 
-Tous les chemins commencent par `/api/v1`.
+Every path starts with `/api/v1`.
 
 The request and response shapes are in `docs/openapi.yaml`. A new or changed route updates both files; `internal/server/openapi_test.go` fails when a router route is missing from the OpenAPI file.
 
-**Légende**
-- Statut : ✅ fait, 🔜 prévu
-- Accès (une fois l'authentification en place) : **public** (sans connexion), **admin** (admin de la ligue de l'URL, ou superadmin), **superadmin**
+**Legend**
+- Status: ✅ done, 🔜 planned
+- Access (once authentication is in place): **public** (not signed in), **admin** (admin of the league in the URL, or superadmin), **superadmin**
 
 ## Validation errors
 
@@ -26,115 +26,115 @@ A body that fails validation gets a 422 with one readable French message per fie
 | `oneof` | `doit valoir <a>, <b> ou <c>` |
 | any other rule | `invalide` |
 
-## Santé
+## Health
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `GET` | `/health` (hors `/api/v1`) | public | État de la base : `{"status":"up"}` (200) ou `{"status":"down"}` (503) |
+| ✅ | `GET` | `/health` (outside `/api/v1`) | public | Database state: `{"status":"up"}` (200) or `{"status":"down"}` (503) |
 
-## Ligues
+## Leagues
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `POST` | `/leagues` | superadmin | Créer une ligue |
-| ✅ | `GET` | `/leagues` | public | Lister les ligues, triées par nom |
-| ✅ | `GET` | `/leagues/{leagueID}` | public | Lire une ligue |
-| ✅ | `PATCH` | `/leagues/{leagueID}` | admin | Modifier le nom ou le logo |
-| ✅ | `DELETE` | `/leagues/{leagueID}` | superadmin | Supprimer une ligue (refusé si elle a un historique : 409) |
+| ✅ | `POST` | `/leagues` | superadmin | Create a league |
+| ✅ | `GET` | `/leagues` | public | List the leagues, sorted by name |
+| ✅ | `GET` | `/leagues/{leagueID}` | public | Read a league |
+| ✅ | `PATCH` | `/leagues/{leagueID}` | admin | Change the name or the logo |
+| ✅ | `DELETE` | `/leagues/{leagueID}` | superadmin | Delete a league (refused if it has a history: 409) |
 
-## Admins de ligue
+## League admins
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `GET` | `/leagues/{leagueID}/admins` | admin | Lister les admins de la ligue |
-| ✅ | `POST` | `/leagues/{leagueID}/invitations` | superadmin | Nommer un admin : passe par une invitation (voir Authentification) |
-| ✅ | `DELETE` | `/leagues/{leagueID}/admins/{userID}` | superadmin | Retirer un admin |
+| ✅ | `GET` | `/leagues/{leagueID}/admins` | admin | List the league's admins |
+| ✅ | `POST` | `/leagues/{leagueID}/invitations` | superadmin | Appoint an admin: goes through an invitation (see Authentication) |
+| ✅ | `DELETE` | `/leagues/{leagueID}/admins/{userID}` | superadmin | Remove an admin |
 
-## Équipes
+## Teams
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `POST` | `/leagues/{leagueID}/teams` | admin | Créer une équipe |
-| ✅ | `GET` | `/leagues/{leagueID}/teams` | public | Lister les équipes de la ligue, triées par nom. Ligue inconnue → 404 |
-| ✅ | `GET` | `/leagues/{leagueID}/teams/{teamID}` | public | Lire une équipe |
-| ✅ | `PATCH` | `/leagues/{leagueID}/teams/{teamID}` | admin | Modifier le nom ou le logo |
-| ✅ | `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | Supprimer (refusé si elle a un historique) |
-| ✅ | `GET` | `/leagues/{leagueID}/teams/{teamID}/seasons` | public | Saisons où l'équipe est inscrite, la plus récente d'abord. Équipe inconnue ou d'une autre ligue → 404 |
+| ✅ | `POST` | `/leagues/{leagueID}/teams` | admin | Create a team |
+| ✅ | `GET` | `/leagues/{leagueID}/teams` | public | List the league's teams, sorted by name. Unknown league → 404 |
+| ✅ | `GET` | `/leagues/{leagueID}/teams/{teamID}` | public | Read a team |
+| ✅ | `PATCH` | `/leagues/{leagueID}/teams/{teamID}` | admin | Change the name or the logo |
+| ✅ | `DELETE` | `/leagues/{leagueID}/teams/{teamID}` | admin | Delete (refused if it has a history) |
+| ✅ | `GET` | `/leagues/{leagueID}/teams/{teamID}/seasons` | public | Seasons the team is registered for, most recent first. Unknown team or team of another league → 404 |
 
-## Joueurs
+## Players
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `POST` | `/leagues/{leagueID}/players` | admin | Créer un joueur |
-| ✅ | `GET` | `/leagues/{leagueID}/players` | public | Lister les joueurs de la ligue, triés par nom puis prénom. `q` cherche dans « prénom nom » et « nom prénom », sans tenir compte de la casse. Ligue inconnue → 404 |
-| ✅ | `GET` | `/leagues/{leagueID}/players/{playerID}` | public | Lire un joueur, avec son club actuel (`current_team` : l'équipe de son passage en cours dans la saison la plus récente, sinon `null`) |
-| ✅ | `PATCH` | `/leagues/{leagueID}/players/{playerID}` | admin | Modifier le nom ou l'icône |
-| ✅ | `DELETE` | `/leagues/{leagueID}/players/{playerID}` | admin | Supprimer (refusé s'il a un historique) |
-| ✅ | `GET` | `/leagues/{leagueID}/players/{playerID}/career` | public | Tous ses passages en club (saison, équipe, numéro, dates), le plus récent d'abord. Joueur inconnu ou d'une autre ligue → 404 |
+| ✅ | `POST` | `/leagues/{leagueID}/players` | admin | Create a player |
+| ✅ | `GET` | `/leagues/{leagueID}/players` | public | List the league's players, sorted by last name then first name. `q` searches "first last" and "last first", case-insensitive. Unknown league → 404 |
+| ✅ | `GET` | `/leagues/{leagueID}/players/{playerID}` | public | Read a player, with their current club (`current_team`: the team of their ongoing membership in the most recent season, otherwise `null`) |
+| ✅ | `PATCH` | `/leagues/{leagueID}/players/{playerID}` | admin | Change the name or the icon |
+| ✅ | `DELETE` | `/leagues/{leagueID}/players/{playerID}` | admin | Delete (refused if they have a history) |
+| ✅ | `GET` | `/leagues/{leagueID}/players/{playerID}/career` | public | All their club memberships (season, team, number, dates), most recent first. Unknown player or player of another league → 404 |
 
-## Saisons
+## Seasons
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `POST` | `/leagues/{leagueID}/seasons` | admin | Créer une saison (points 3/1/0 par défaut, `max_squad_size` optionnel). Dates qui chevauchent une autre saison de la ligue → 409 |
-| ✅ | `GET` | `/leagues/{leagueID}/seasons` | public | Lister les saisons de la ligue, la plus récente d'abord. Ligue inconnue → 404 |
-| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}` | public | Lire une saison |
-| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Modifier dates, points ou départages (attention au classement déjà publié). Dates qui chevauchent une autre saison de la ligue → 409 |
-| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Supprimer (refusé si elle a des matchs). Ses inscriptions et effectifs sont supprimés avec elle |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons` | admin | Create a season (points 3/1/0 by default, optional `max_squad_size`). Dates overlapping another season of the league → 409 |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons` | public | List the league's seasons, most recent first. Unknown league → 404 |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}` | public | Read a season |
+| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Change dates, points or tie-breakers (careful with standings already published). Dates overlapping another season of the league → 409 |
+| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Delete (refused if it has matches). Its registrations and squads are deleted with it |
 
-## Équipes inscrites à une saison
+## Teams registered for a season
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/teams` | public | Lister les équipes inscrites |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}` | admin | Inscrire une équipe. Répond 201 |
-| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}` | admin | Désinscrire (refusé si elle a des matchs). Répond 204 |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/teams` | public | List the registered teams |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}` | admin | Register a team. Responds 201 |
+| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}` | admin | Unregister (refused if it has matches). Responds 204 |
 
-## Effectifs (squad)
+## Squads
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad` | public | Effectif actuel (`?all=true` pour inclure les départs) |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad` | admin | Faire entrer un joueur (`player_id`, `number`, `joined_on`) |
-| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}` | admin | Changer le numéro |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}/leave` | admin | Faire partir un joueur (`left_on`) |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/transfers` | admin | Transfert : départ puis arrivée, dans une transaction |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad` | public | Current squad (`?all=true` to include players who left) |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad` | admin | Add a player (`player_id`, `number`, `joined_on`) |
+| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}` | admin | Change the number |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}/leave` | admin | Make a player leave (`left_on`) |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/transfers` | admin | Transfer: leave then join, in one transaction |
 
-## Matchs
+## Matches
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/matches` | public | Calendrier (`?matchday=`, `?from=&to=`, `?team=`, `?status=`). Chaque match porte le nom et le logo des deux équipes |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches` | admin | Programmer un match (`venue` optionnel) |
-| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}` | public | Lire un match |
-| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}` | admin | Modifier la journée ou le coup d'envoi, et renseigner lieu, arbitre, convocation, lien vidéo |
-| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}` | admin | Supprimer un match programmé par erreur |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/start` | admin | Passer en `live` |
-| ✅ | `PUT` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/score` | admin | Mettre à jour le score |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/finish` | admin | Terminer le match |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/postpone` | admin | Reporter (nouvelle date optionnelle) |
-| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/cancel` | admin | Annuler |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/matches` | public | Fixtures (`?matchday=`, `?from=&to=`, `?team=`, `?status=`). Each match carries the name and logo of both teams |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches` | admin | Schedule a match (optional `venue`) |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}` | public | Read a match |
+| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}` | admin | Change the matchday or the kickoff, and fill in venue, referee, call time, video link |
+| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}` | admin | Delete a match scheduled by mistake |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/start` | admin | Move to `live` |
+| ✅ | `PUT` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/score` | admin | Update the score |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/finish` | admin | Finish the match |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/postpone` | admin | Postpone (optional new date) |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/cancel` | admin | Cancel |
 
-## Classement
+## Standings
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/standings` | public | Classement calculé à partir des matchs terminés |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/standings` | public | Standings computed from the finished matches |
 
-## Authentification
+## Authentication
 
-| Statut | Méthode | Chemin | Accès | Description |
+| Status | Method | Path | Access | Description |
 |---|---|---|---|---|
-| ✅ | `POST` | `/auth/login` | public | Connexion |
-| ✅ | `POST` | `/auth/logout` | connecté | Déconnexion |
-| ✅ | `GET` | `/me` | connecté | Utilisateur courant et ligues qu'il administre |
-| ✅ | `PUT` | `/me/password` | connecté | Changer son mot de passe (`current_password`, `new_password`) |
-| ✅ | `POST` | `/auth/password-reset` | public | Demander un lien de réinitialisation (`email`). Répond 204 dans tous les cas |
-| ✅ | `POST` | `/auth/password-reset/confirm` | public | Choisir un nouveau mot de passe (`token`, `password`) |
-| ✅ | `POST` | `/leagues/{leagueID}/invitations` | superadmin | Inviter un admin (`email`). Renvoie `link`, à envoyer par `mailto:` depuis l'admin web. Valable 7 jours, remplace l'invitation précédente de la même adresse |
-| ✅ | `GET` | `/leagues/{leagueID}/invitations` | superadmin | Invitations en attente |
-| ✅ | `DELETE` | `/leagues/{leagueID}/invitations/{invitationID}` | superadmin | Annuler une invitation |
-| ✅ | `POST` | `/invitations/lookup` | public | Lire une invitation (`token`) : adresse, ligue, `account_exists` |
-| ✅ | `POST` | `/invitations/accept` | public | Accepter (`token`, et `name` + `password` si le compte n'existe pas) |
-| ✅ | `GET` | `/leagues/{leagueID}/admins` | admin | Admins de la ligue |
-| ✅ | `DELETE` | `/leagues/{leagueID}/admins/{userID}` | superadmin | Retirer un admin de la ligue (le compte reste) |
+| ✅ | `POST` | `/auth/login` | public | Sign in |
+| ✅ | `POST` | `/auth/logout` | signed in | Sign out |
+| ✅ | `GET` | `/me` | signed in | Current user and the leagues they administer |
+| ✅ | `PUT` | `/me/password` | signed in | Change one's password (`current_password`, `new_password`) |
+| ✅ | `POST` | `/auth/password-reset` | public | Ask for a reset link (`email`). Responds 204 in every case |
+| ✅ | `POST` | `/auth/password-reset/confirm` | public | Choose a new password (`token`, `password`) |
+| ✅ | `POST` | `/leagues/{leagueID}/invitations` | superadmin | Invite an admin (`email`). Returns `link`, to send by `mailto:` from the web admin. Valid for 7 days, replaces the previous invitation to the same address |
+| ✅ | `GET` | `/leagues/{leagueID}/invitations` | superadmin | Pending invitations |
+| ✅ | `DELETE` | `/leagues/{leagueID}/invitations/{invitationID}` | superadmin | Cancel an invitation |
+| ✅ | `POST` | `/invitations/lookup` | public | Read an invitation (`token`): address, league, `account_exists` |
+| ✅ | `POST` | `/invitations/accept` | public | Accept (`token`, plus `name` + `password` if the account doesn't exist) |
+| ✅ | `GET` | `/leagues/{leagueID}/admins` | admin | The league's admins |
+| ✅ | `DELETE` | `/leagues/{leagueID}/admins/{userID}` | superadmin | Remove an admin from the league (the account stays) |
