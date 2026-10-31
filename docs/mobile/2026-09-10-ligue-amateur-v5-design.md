@@ -232,16 +232,16 @@ app/
                                     - boutique       placeholder
   (tabs)/
     _layout.tsx                   <Tabs> with custom tabBar (src/components/TabBar)
-    suivi/
+    following/
       _layout.tsx                 <Stack headerShown:false>: index, team/[id]
-      index.tsx                   -> <SuiviScreen/>
-      team/[id].tsx               -> <TeamScreen origin="suivi"/>
-    classement/
+      index.tsx                   -> <FollowingScreen/>
+      team/[id].tsx               -> <TeamScreen origin="following"/>
+    standings/
       _layout.tsx                 <Stack headerShown:false>: index, team/[id]
-      index.tsx                   -> <ClassementScreen/>
-      team/[id].tsx               -> <TeamScreen origin="classement"/>
-    pronos/index.tsx              -> <PlaceholderScreen title="Pronos"/>
-    moi/index.tsx                 -> <MoiScreen/>
+      index.tsx                   -> <StandingsScreen/>
+      team/[id].tsx               -> <TeamScreen origin="standings"/>
+    predictions/index.tsx         -> <PlaceholderScreen title="Pronos"/>
+    profile/index.tsx             -> <ProfileScreen/>
   match/[id].tsx                  -> <MatchScreen/>
   boutique/index.tsx             -> <PlaceholderScreen title="Boutique"/>
 ```
@@ -255,10 +255,10 @@ one shared component; the per-tab route files are one line each.
 
 **Row-tap targets**
 - Suivi fixture row: `played` / `live` → `/match/{id}`; `upcoming` →
-  `/suivi/team/{followedTeamId}`.
+  `/following/team/{followedTeamId}`.
 - Suivi shop-suggestion row "Voir" → `/boutique`.
-- Suivi header "Gérer" → `/moi`.
-- Classement standings row → `/classement/team/{teamId}`.
+- Suivi header "Gérer" → `/profile`.
+- Classement standings row → `/standings/team/{teamId}`.
 - Team "Partager" → RN `Share.share()`.
 - Match video card → `Linking.openURL(videoUrl)`.
 
@@ -269,11 +269,11 @@ one shared component; the per-tab route files are one line each.
 
 ## 7. Screens
 
-### 7.1 Suivi (`src/screens/SuiviScreen.tsx`)
+### 7.1 Suivi (`src/screens/FollowingScreen.tsx`)
 
 **Header** (`HeaderCard`): overline = followed team names uppercased, joined
 `" · "` (`FC VALLONNAIS · AS RIVERAIN`); title `Suivi`; trailing text button
-`Gérer` → `/moi`.
+`Gérer` → `/profile`.
 
 **Body** (scroll): `SectionLabel` `CALENDRIER DE MES ÉQUIPES`; one `Card`
 containing rows; footer note (muted, small):
@@ -316,7 +316,7 @@ i.e. after positions 5, 10, 15 of the fixtures.
 
 **States:** `Skeleton` (5 grey rows) while loading; `ErrorState` with retry.
 
-### 7.2 Classement (`src/screens/ClassementScreen.tsx`)
+### 7.2 Classement (`src/screens/StandingsScreen.tsx`)
 
 **Header** (`HeaderCard`): overline `DISTRICT LOIRE · D2 · SAISON 26/27`; title
 `Classements`; `SegmentedTabs` `['Général', 'Buteurs', 'Passeurs', 'MVP']`
@@ -340,7 +340,7 @@ rank 2 → `playoff`, rank ≥ 9 (of 10) → `relegation`, else `none`.
 
 **States:** skeleton / error per tab load.
 
-### 7.3 Team (`src/screens/TeamScreen.tsx`, prop `origin: 'suivi' | 'classement'`)
+### 7.3 Team (`src/screens/TeamScreen.tsx`, prop `origin: 'following' | 'standings'`)
 
 **Header** (`HeaderCard`, taller): `BackLink` `‹ District Loire · D2`; crest +
 name + `2ᵉ · 7 pts · Stade des Marnes`; row of **Follow toggle button**
@@ -391,7 +391,7 @@ spectateurs`.
 
 **States:** skeleton / error. Invalid `id` → `ErrorState` "Match introuvable".
 
-### 7.5 Moi (`src/screens/MoiScreen.tsx`) — minimal
+### 7.5 Moi (`src/screens/ProfileScreen.tsx`) — minimal
 
 **Header** (`HeaderCard`): avatar; `Julien Mercier`; `Supporter FC Vallonnais ·
 depuis 2024`; trailing `Modifier` (inert).

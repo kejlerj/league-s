@@ -49,7 +49,6 @@ Local API: `docker compose up -d`, `make migrate-up`, then `make run` (port 8080
 - **Everything in English, except what users read.**
   - English: identifiers (variables, functions, types, packages, files, routes, i18n keys), test names, commits, PR and issue texts, log messages, SQL names, docs and specs.
   - French: only text shown to users. UI copy, API error messages displayed in the admin, mobile strings (the values in `mobile/src/i18n/fr.ts`).
-  - Existing French names (`SuiviScreen`, `ClassementScreen`, `MoiScreen`, the `/suivi` and `/classement` routes, `fr.ts` keys such as `journee`) are renamed in PR-28. Until then, don't rename them in unrelated PRs, and use English for anything new.
 - **No code comments**, unless the user approves them.
 - Style, idioms and design principles: `docs/agents/code-style.md`.
 - Leagues never mix: every query filters on the `leagueID` of the URL. A resource of another league is a 404.
