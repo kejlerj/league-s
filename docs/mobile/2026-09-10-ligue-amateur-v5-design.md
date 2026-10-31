@@ -562,7 +562,7 @@ survives a reload.
 ## 14. Project setup
 
 1. Scaffold an Expo Router + TS app **into the current working directory**
-   (`/Users/jeje/Documents/dev/league-s`, which holds only `.DS_Store` and this
+   (the repository root at the time, which held only `.DS_Store` and this
    `docs/` tree). Use `create-expo-app` in a temp directory with the default
    (Expo Router + TS) template, then move its contents in and keep `docs/`; see
    §15 for the non-empty-dir handling.

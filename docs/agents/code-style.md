@@ -1,6 +1,6 @@
 # Code style
 
-The first rule is to **look like the code around you**. Before adding a pattern, find how the closest package or screen already does it, and do the same. A second way of doing one thing is a cost for every later reader. If the existing way is wrong, fix it everywhere in its own PR, don't fork it.
+The first rule is to **look like the code around you**. Before adding a pattern, find how the closest package or screen already does it, and do the same. A second way of doing one thing is a cost for every later reader. If the existing way is wrong, don't fork it: open a `tech-debt` issue (`docs/agents/pr-workflow.md` › Follow-up issues) to fix it everywhere in its own PR.
 
 ## Principles
 
