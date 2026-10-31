@@ -104,9 +104,7 @@
   - créer et supprimer une ligue : réservé au superadmin
 - [x] **Des tests** 401 (non connecté), 403 (admin d'une autre ligue) et 201 (bon admin, superadmin)
 - [x] **Le premier superadmin** : créé au démarrage depuis `SUPERADMIN_EMAIL`, sans mot de passe, avec un lien de configuration envoyé par e-mail (SMTP, Mailpit en local sur http://localhost:8025)
-- [x] **Mot de passe oublié et changement de mot de passe** : liens à usage unique dans les logs (`auth.LogNotifier`)
-  - remplacer `LogNotifier` par un envoi d'e-mail le jour où un service d'envoi est configuré
-  - attention : tant que les liens passent par les logs, ne pas envoyer ces logs vers un service tiers (Sentry)
+- [x] **Mot de passe oublié et changement de mot de passe** : lien de réinitialisation à usage unique envoyé par e-mail (`auth.EmailNotifier`, SMTP). Sans `SMTP_HOST`, aucun e-mail ne part et le lien n'est écrit nulle part
 - [ ] **Les invitations** : le superadmin invite un admin sur une ligue par un lien à usage unique, valable 7 jours
   - table `invitation` (ligue, e-mail, condensat du jeton, expiration, date d'acceptation)
   - accepter le lien crée le compte, ou rattache la ligue à un compte existant

@@ -5,19 +5,27 @@ import (
 	"net/http"
 	"time"
 
+	"league-s/internal/app/auth"
+	"league-s/internal/config"
 	"league-s/internal/database"
 )
 
 type Server struct {
-	port int
+	port         int
+	corsOrigins  []string
+	secureCookie bool
+	notifier     auth.Notifier
 
 	db database.Service
 }
 
-func NewServer(port int, db database.Service) *http.Server {
+func NewServer(cfg config.Config, db database.Service, notifier auth.Notifier) *http.Server {
 	NewServer := &Server{
-		port: port,
-		db:   db,
+		port:         cfg.Port,
+		corsOrigins:  cfg.CORSOrigins,
+		secureCookie: cfg.SecureCookie,
+		notifier:     notifier,
+		db:           db,
 	}
 
 	server := &http.Server{
