@@ -20,6 +20,7 @@ Start it with `/loop` and no interval (self-paced), so it keeps going on its own
 ## 1. Bootstrap (only when needed)
 
 - Every item of §5 of the plan has an issue (template `.github/ISSUE_TEMPLATE/plan-item.md`, title `<plan ID>: <summary>`, `Depends on:` with issue numbers). Create the missing ones. Phase 6 items get an issue for their design spec only.
+- Milestones exist, one per phase of the plan (`Phase 0` … `Phase 6`), and every plan issue is in its phase's milestone. Follow-up issues (`tech-debt`, `bug`) go into the milestone of the phase in progress. Create milestones with `gh api repos/kejlerj/league-s/milestones -f title="Phase N: <name>"`.
 - Labels exist: `plan`, `back`, `admin`, `mobile`, `simulator`, `needs-decision`, `needs-human`, `tech-debt`, `bug`. Create the missing ones with `gh label create`.
 
 ## 2. Read the state
@@ -63,6 +64,31 @@ When a session reports back:
 - **Failed** (crash, can't finish): read its last report. Restart it once with what you learnt. If it fails again, label the issue `needs-human`, notify the user, and go on.
 - **Usage limit hit**: nothing to do. Schedule the next wake-up after the reset.
 
+## 4b. Dependabot PRs
+
+Dependabot opens dependency PRs on its own (`.github/dependabot.yml`: grouped minor and patch updates, weekly). They get no Claude review: the CI decides. Handle them in every iteration.
+
+```bash
+gh pr list --repo kejlerj/league-s --author app/dependabot --state open --json number,title,labels,statusCheckRollup,mergeStateStatus
+```
+
+For each one:
+
+1. **CI still running**: skip it until the next iteration.
+2. **CI green, minor or patch update** (or a minor/patch group): approve and turn on auto-merge.
+   ```bash
+   gh pr review <PR> --repo kejlerj/league-s --approve --body "CI green, minor/patch update."
+   gh pr merge <PR> --repo kejlerj/league-s --auto --squash
+   ```
+3. **Major update** (the first number changes), even with CI green: it may change behaviour that the tests don't cover. Create a plan issue `chore: Upgrade <package> to v<N>` (labels `plan`, `chore`, the part), and link the Dependabot PR. The author session reads the changelog, adapts the code, runs every check, and opens its own PR. When that PR is merged, close the Dependabot PR with a comment.
+4. **CI red**: find out whose fault it is.
+   - Check the same jobs on `main`: `gh run list --repo kejlerj/league-s --branch main --limit 5 --json conclusion,headSha,displayTitle`, then `gh run view <id> --log-failed` on the failing job.
+   - **`main` fails too**: the PR is not at fault. Make sure a `bug` issue exists for the failure on `main` (top priority) and leave the PR. Once `main` is green again, comment `@dependabot rebase` on the PR.
+   - **Only the PR fails**: the update breaks something. Treat it like a major update (step 3), with the failing job in the issue.
+5. **Mobile packages managed by Expo** (`expo`, `expo-*`, `react`, `react-native`, `react-native-*`…) are ignored in the config, because they must match the Expo SDK version. If such a PR shows up anyway (a security update), don't merge it: create an issue to apply it with `npx expo install --fix` or an SDK upgrade.
+
+Never approve a Dependabot PR while CI is red or running. Auto-merge only waits for the *required* checks of branch protection, so those must list every CI job.
+
 ## 5. Report to the user
 
 After each iteration that changed something, in a few lines:
@@ -85,4 +111,7 @@ Then post a final report (what was built, what waits on decisions), notify the u
 
 ## Never
 
-Merge, close an issue by hand, change branch protection or repository settings, answer a `needs-decision` question yourself, or start Phase 6 code before its spec PR is merged.
+- Merge or approve anything except Dependabot PRs as described in 4b.
+- Close an issue by hand, change branch protection or repository settings.
+- Answer a `needs-decision` question yourself.
+- Start Phase 6 code before its spec PR is merged.
