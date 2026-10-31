@@ -26,6 +26,8 @@ type Config struct {
 	SuperadminEmail string
 	AdminURL        string
 	SMTP            mailer.SMTPConfig
+	Environment     string
+	SentryDSN       string
 }
 
 func Load() (Config, error) {
@@ -151,5 +153,7 @@ func Load() (Config, error) {
 		SuperadminEmail: superadminEmail,
 		AdminURL:        adminURL,
 		SMTP:            smtp,
+		Environment:     os.Getenv("APP_ENV"),
+		SentryDSN:       os.Getenv("SENTRY_DSN"),
 	}, nil
 }
