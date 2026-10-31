@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/testcontainers/testcontainers-go"
@@ -59,53 +60,83 @@ func run(m *testing.M) int {
 }
 
 type received struct {
-	Messages []struct {
-		Subject string
-		Snippet string
-		From    struct{ Address string }
-		To      []struct{ Address string }
-	} `json:"messages"`
+	Subject string
+	Text    string
+	From    struct{ Address string }
+	To      []struct{ Address string }
 }
 
-func TestSMTP_Send(t *testing.T) {
-	sender, err := NewSMTP(SMTPConfig{Host: smtpHost, Port: smtpPort, From: "League S <no-reply@example.com>"})
-	if err != nil {
-		t.Fatalf("NewSMTP() error = %v", err)
-	}
-
-	err = sender.Send(t.Context(), Message{To: "me@example.com", Subject: "Choose your password", Text: "Use the link below"})
-	if err != nil {
-		t.Fatalf("Send() error = %v", err)
-	}
-
-	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, apiURL+"/api/v1/messages", nil)
+func mailpit(t *testing.T, method, path string, out any) {
+	t.Helper()
+	req, err := http.NewRequestWithContext(t.Context(), method, apiURL+path, nil)
 	if err != nil {
 		t.Fatalf("build request: %v", err)
 	}
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		t.Fatalf("list received emails: %v", err)
+		t.Fatalf("%s %s: %v", method, path, err)
 	}
 	defer func() { _ = res.Body.Close() }()
 
-	var got received
-	if err := json.NewDecoder(res.Body).Decode(&got); err != nil {
-		t.Fatalf("decode received emails: %v", err)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("%s %s: status = %d", method, path, res.StatusCode)
 	}
-	if len(got.Messages) != 1 {
-		t.Fatalf("got %d emails, want 1", len(got.Messages))
+	if out != nil {
+		if err := json.NewDecoder(res.Body).Decode(out); err != nil {
+			t.Fatalf("decode %s: %v", path, err)
+		}
+	}
+}
+
+func sendAndReceive(t *testing.T, msg Message) received {
+	t.Helper()
+	mailpit(t, http.MethodDelete, "/api/v1/messages", nil)
+
+	sender, err := NewSMTP(SMTPConfig{Host: smtpHost, Port: smtpPort, From: "League S <no-reply@example.com>"})
+	if err != nil {
+		t.Fatalf("NewSMTP() error = %v", err)
+	}
+	if err := sender.Send(t.Context(), msg); err != nil {
+		t.Fatalf("Send() error = %v", err)
 	}
 
-	msg := got.Messages[0]
+	var list struct {
+		Messages []struct{ ID string } `json:"messages"`
+	}
+	mailpit(t, http.MethodGet, "/api/v1/messages", &list)
+	if len(list.Messages) != 1 {
+		t.Fatalf("got %d emails, want 1", len(list.Messages))
+	}
+
+	var got received
+	mailpit(t, http.MethodGet, "/api/v1/message/"+list.Messages[0].ID, &got)
+	return got
+}
+
+func TestSMTP_Send(t *testing.T) {
+	got := sendAndReceive(t, Message{To: "me@example.com", Subject: "Choose your password", Text: "Use the link below"})
+
 	switch {
-	case msg.Subject != "Choose your password":
-		t.Errorf("Subject = %q, want Choose your password", msg.Subject)
-	case msg.From.Address != "no-reply@example.com":
-		t.Errorf("From = %q, want no-reply@example.com", msg.From.Address)
-	case len(msg.To) != 1 || msg.To[0].Address != "me@example.com":
-		t.Errorf("To = %v, want me@example.com", msg.To)
-	case msg.Snippet != "Use the link below":
-		t.Errorf("Snippet = %q, want the text of the email", msg.Snippet)
+	case got.Subject != "Choose your password":
+		t.Errorf("Subject = %q, want Choose your password", got.Subject)
+	case got.From.Address != "no-reply@example.com":
+		t.Errorf("From = %q, want no-reply@example.com", got.From.Address)
+	case len(got.To) != 1 || got.To[0].Address != "me@example.com":
+		t.Errorf("To = %v, want me@example.com", got.To)
+	case strings.TrimSpace(got.Text) != "Use the link below":
+		t.Errorf("Text = %q, want the text of the email", got.Text)
+	}
+}
+
+func TestSMTP_Send_KeepsAccentsAndLongLines(t *testing.T) {
+	text := "Bonjour Zoé,\n\nLe lien est valable 60 minutes et ne fonctionne qu'une fois : https://admin.example.com/reset-password?token=" + strings.Repeat("a", 90) + "\nÀ bientôt.\n"
+	got := sendAndReceive(t, Message{To: "me@example.com", Subject: "Choisissez votre mot de passe, Zoé", Text: text})
+
+	if got.Subject != "Choisissez votre mot de passe, Zoé" {
+		t.Errorf("Subject = %q, want the accented subject", got.Subject)
+	}
+	if strings.ReplaceAll(got.Text, "\r\n", "\n") != text {
+		t.Errorf("Text = %q, want %q", got.Text, text)
 	}
 }
 
@@ -117,6 +148,17 @@ func TestSMTP_Send_Errors(t *testing.T) {
 
 	if err := sender.Send(t.Context(), Message{To: "not an address", Subject: "Hello", Text: "Hello"}); err == nil {
 		t.Error("Send() error = nil, want an error for an invalid recipient")
+	}
+}
+
+func TestSMTP_Send_RefusesCredentialsWithoutTLS(t *testing.T) {
+	sender, err := NewSMTP(SMTPConfig{Host: smtpHost, Port: smtpPort, Username: "user", Password: "secret", From: "no-reply@example.com"})
+	if err != nil {
+		t.Fatalf("NewSMTP() error = %v", err)
+	}
+
+	if err := sender.Send(t.Context(), Message{To: "me@example.com", Subject: "Hello", Text: "Hello"}); !errors.Is(err, ErrNoTLS) {
+		t.Errorf("Send() error = %v, want %v", err, ErrNoTLS)
 	}
 }
 
