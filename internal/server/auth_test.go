@@ -89,7 +89,7 @@ func TestWritesAreReservedToTheAdminsOfTheLeague(t *testing.T) {
 		{"create a team", http.MethodPost, base + "/teams", func(who string) string { return fmt.Sprintf(`{"name": "Team of %s"}`, who) }, http.StatusCreated},
 		{"create a player", http.MethodPost, base + "/players", func(string) string { return `{"firstname": "Jean", "lastname": "Dupont"}` }, http.StatusCreated},
 		{"create a season", http.MethodPost, base + "/seasons", func(who string) string {
-			return fmt.Sprintf(`{"name": "Season of %s", "start_on": "2027-08-01T00:00:00Z", "end_on": "2028-05-31T00:00:00Z", "tie_breakers": ["goal_difference"]}`, who)
+			return fmt.Sprintf(`{"name": "Season of %s", "start_on": "2027-08-01", "end_on": "2028-05-31", "tie_breakers": ["goal_difference"]}`, who)
 		}, http.StatusCreated},
 		{"schedule a match", http.MethodPost, seasonBase + "/matches", func(who string) string {
 			if who == "superadmin" {

@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -40,8 +39,8 @@ func seasonTeamPath(s db.Season, t db.Team) string {
 
 const validSeasonBody = `{
 	"name": "2025-2026",
-	"start_on": "2025-08-01T00:00:00Z",
-	"end_on": "2026-05-31T00:00:00Z",
+	"start_on": "2025-08-01",
+	"end_on": "2026-05-31",
 	"match_win_pts": 3,
 	"match_draw_pts": 1,
 	"match_loss_pts": 0,
@@ -76,15 +75,13 @@ func TestCreateThenGetSeason(t *testing.T) {
 		t.Fatalf("decode get response: %v", err)
 	}
 
-	wantStart := time.Date(2025, time.August, 1, 0, 0, 0, 0, time.UTC)
-	wantEnd := time.Date(2026, time.May, 31, 0, 0, 0, 0, time.UTC)
 	switch {
 	case got.Name != "2025-2026":
 		t.Errorf("name = %q, want %q", got.Name, "2025-2026")
-	case !got.StartOn.Equal(wantStart):
-		t.Errorf("start_on = %v, want %v", got.StartOn, wantStart)
-	case !got.EndOn.Equal(wantEnd):
-		t.Errorf("end_on = %v, want %v", got.EndOn, wantEnd)
+	case got.StartOn != "2025-08-01":
+		t.Errorf("start_on = %q, want %q", got.StartOn, "2025-08-01")
+	case got.EndOn != "2026-05-31":
+		t.Errorf("end_on = %q, want %q", got.EndOn, "2026-05-31")
 	case got.MatchWinPts != 3 || got.MatchDrawPts != 1 || got.MatchLossPts != 0:
 		t.Errorf("points = %d/%d/%d, want 3/1/0", got.MatchWinPts, got.MatchDrawPts, got.MatchLossPts)
 	case !slices.Equal(got.TieBreakers, []string{"goal_difference", "head_to_head"}):
@@ -99,7 +96,7 @@ func TestCreateThenGetSeason(t *testing.T) {
 func TestCreateSeason_Defaults(t *testing.T) {
 	league := testdb.New(t, testPool).CreateLeague(testdb.LeagueParams{})
 
-	body := `{"name": "2025-2026", "start_on": "2025-08-01T00:00:00Z", "end_on": "2026-05-31T00:00:00Z"}`
+	body := `{"name": "2025-2026", "start_on": "2025-08-01", "end_on": "2026-05-31"}`
 	rec := testhttp.Do(t, newTestRouter(), http.MethodPost, seasonsPath(league), body)
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusCreated, rec.Body)
@@ -123,7 +120,7 @@ func TestCreateSeason_Defaults(t *testing.T) {
 func TestCreateSeason_ExplicitZeroPointsAreKept(t *testing.T) {
 	league := testdb.New(t, testPool).CreateLeague(testdb.LeagueParams{})
 
-	body := `{"name": "2025-2026", "start_on": "2025-08-01T00:00:00Z", "end_on": "2026-05-31T00:00:00Z",
+	body := `{"name": "2025-2026", "start_on": "2025-08-01", "end_on": "2026-05-31",
 		"match_win_pts": 2, "match_draw_pts": 0, "match_loss_pts": 0, "tie_breakers": ["goal_difference"]}`
 	rec := testhttp.Do(t, newTestRouter(), http.MethodPost, seasonsPath(league), body)
 	if rec.Code != http.StatusCreated {
@@ -174,7 +171,11 @@ func TestCreateSeason_Errors(t *testing.T) {
 		{"invalid JSON", seasonsPath, `{"name":`, http.StatusBadRequest},
 		{"missing name", seasonsPath, withField("name", ""), http.StatusUnprocessableEntity},
 		{"name too long", seasonsPath, withField("name", `"`+strings.Repeat("a", 51)+`"`), http.StatusUnprocessableEntity},
-		{"end before start", seasonsPath, withField("end_on", `"2025-01-01T00:00:00Z"`), http.StatusUnprocessableEntity},
+		{"end before start", seasonsPath, withField("end_on", `"2025-01-01"`), http.StatusUnprocessableEntity},
+		{"end on the start day", seasonsPath, withField("end_on", `"2025-08-01"`), http.StatusUnprocessableEntity},
+		{"start as a date-time", seasonsPath, withField("start_on", `"2025-08-01T00:00:00Z"`), http.StatusUnprocessableEntity},
+		{"end as a date-time", seasonsPath, withField("end_on", `"2026-05-31T00:00:00Z"`), http.StatusUnprocessableEntity},
+		{"impossible date", seasonsPath, withField("end_on", `"2026-02-30"`), http.StatusUnprocessableEntity},
 		{"negative points", seasonsPath, withField("match_win_pts", `-1`), http.StatusUnprocessableEntity},
 		{"zero max squad size", seasonsPath, withField("max_squad_size", `0`), http.StatusUnprocessableEntity},
 		{"negative max squad size", seasonsPath, withField("max_squad_size", `-1`), http.StatusUnprocessableEntity},
@@ -195,6 +196,26 @@ func TestCreateSeason_Errors(t *testing.T) {
 				t.Errorf("status = %d, want %d, body = %s", rec.Code, tt.wantStatus, rec.Body)
 			}
 		})
+	}
+}
+
+func TestCreateSeason_EndBeforeStartNamesTheField(t *testing.T) {
+	league := testdb.New(t, testPool).CreateLeague(testdb.LeagueParams{})
+
+	body := `{"name": "2025-2026", "start_on": "2025-08-01", "end_on": "2025-07-31"}`
+	rec := testhttp.Do(t, newTestRouter(), http.MethodPost, seasonsPath(league), body)
+	if rec.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusUnprocessableEntity, rec.Body)
+	}
+
+	var got struct {
+		Errors map[string]string `json:"errors"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if want := "doit être après start_on"; got.Errors["end_on"] != want {
+		t.Errorf("errors = %v, want end_on: %q", got.Errors, want)
 	}
 }
 

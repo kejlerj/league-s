@@ -4,7 +4,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -33,21 +32,21 @@ func (h *Handler) Routes() chi.Router {
 }
 
 type createSeasonRequest struct {
-	Name         string    `json:"name" validate:"required,max=50"`
-	StartOn      time.Time `json:"start_on" validate:"required"`
-	EndOn        time.Time `json:"end_on" validate:"required,gtfield=StartOn"`
-	MatchWinPts  *int32    `json:"match_win_pts" validate:"omitnil,min=0"`
-	MatchDrawPts *int32    `json:"match_draw_pts" validate:"omitnil,min=0"`
-	MatchLossPts *int32    `json:"match_loss_pts" validate:"omitnil,min=0"`
-	TieBreakers  []string  `json:"tie_breakers" validate:"omitempty,dive,oneof=goal_difference goals_scored head_to_head fair_play random"`
-	MaxSquadSize *int32    `json:"max_squad_size" validate:"omitnil,min=1"`
+	Name         string   `json:"name" validate:"required,max=50"`
+	StartOn      string   `json:"start_on" validate:"required,datetime=2006-01-02"`
+	EndOn        string   `json:"end_on" validate:"required,datetime=2006-01-02"`
+	MatchWinPts  *int32   `json:"match_win_pts" validate:"omitnil,min=0"`
+	MatchDrawPts *int32   `json:"match_draw_pts" validate:"omitnil,min=0"`
+	MatchLossPts *int32   `json:"match_loss_pts" validate:"omitnil,min=0"`
+	TieBreakers  []string `json:"tie_breakers" validate:"omitempty,dive,oneof=goal_difference goals_scored head_to_head fair_play random"`
+	MaxSquadSize *int32   `json:"max_squad_size" validate:"omitnil,min=1"`
 }
 
 type seasonResponse struct {
 	ID           uuid.UUID `json:"id"`
 	Name         string    `json:"name"`
-	StartOn      time.Time `json:"start_on"`
-	EndOn        time.Time `json:"end_on"`
+	StartOn      string    `json:"start_on"`
+	EndOn        string    `json:"end_on"`
 	MatchWinPts  int32     `json:"match_win_pts"`
 	MatchDrawPts int32     `json:"match_draw_pts"`
 	MatchLossPts int32     `json:"match_loss_pts"`
@@ -60,8 +59,8 @@ func toResponse(s *Season) seasonResponse {
 	return seasonResponse{
 		ID:           s.ID,
 		Name:         s.Name,
-		StartOn:      s.StartOn,
-		EndOn:        s.EndOn,
+		StartOn:      httpx.FormatDate(s.StartOn),
+		EndOn:        httpx.FormatDate(s.EndOn),
 		MatchWinPts:  s.MatchWinPts,
 		MatchDrawPts: s.MatchDrawPts,
 		MatchLossPts: s.MatchLossPts,
@@ -119,8 +118,8 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 
 	season := &Season{
 		Name:         req.Name,
-		StartOn:      req.StartOn,
-		EndOn:        req.EndOn,
+		StartOn:      httpx.MustDate(req.StartOn),
+		EndOn:        httpx.MustDate(req.EndOn),
 		MatchWinPts:  valueOr(req.MatchWinPts, DefaultMatchWinPts),
 		MatchDrawPts: valueOr(req.MatchDrawPts, DefaultMatchDrawPts),
 		MatchLossPts: valueOr(req.MatchLossPts, DefaultMatchLossPts),
@@ -130,6 +129,10 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	}
 	if season.TieBreakers == nil {
 		season.TieBreakers = DefaultTieBreakers()
+	}
+	if err := season.CheckDates(); err != nil {
+		httpx.FieldErrors(w, map[string]string{"end_on": "doit être après start_on"})
+		return
 	}
 
 	res, err := h.store.Create(r.Context(), season)
