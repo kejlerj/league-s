@@ -160,7 +160,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		case ErrCreateLeagueNotFound:
 			httpx.Error(w, http.StatusNotFound, createErr.Error())
 			return
-		case ErrCreateNameTaken:
+		case ErrCreateNameTaken, ErrCreateOverlap:
 			httpx.Error(w, http.StatusConflict, createErr.Error())
 			return
 		}
@@ -358,7 +358,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		case ErrUpdateNotFound:
 			httpx.Error(w, http.StatusNotFound, updateErr.Error())
 			return
-		case ErrUpdateNameTaken:
+		case ErrUpdateNameTaken, ErrUpdateOverlap:
 			httpx.Error(w, http.StatusConflict, updateErr.Error())
 			return
 		case ErrUpdateInvalidDates:

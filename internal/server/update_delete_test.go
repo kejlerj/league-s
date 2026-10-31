@@ -118,6 +118,7 @@ func TestUpdateAndDelete(t *testing.T) {
 		{"season: tie breakers", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"tie_breakers": ["head_to_head"]}`, adminCookie, http.StatusOK, `"tie_breakers":["head_to_head"]`},
 		{"season: start after end", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"start_on": "2028-06-01"}`, adminCookie, http.StatusUnprocessableEntity, `{"errors":{"end_on":"doit être après start_on"}}`},
 		{"season: date with a time", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"start_on": "2027-08-01T00:00:00Z"}`, adminCookie, http.StatusUnprocessableEntity, `"start_on":"doit être une date au format AAAA-MM-JJ"`},
+		{"season: dates overlap another season", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"start_on": "2027-05-31"}`, adminCookie, http.StatusConflict, `"error":"season overlaps another season of the league"`},
 		{"season: move the dates", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"start_on": "2027-07-15", "end_on": "2028-06-15"}`, adminCookie, http.StatusOK, `"start_on":"2027-07-15","end_on":"2028-06-15"`},
 		{"season: empty tie breakers", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"tie_breakers": []}`, adminCookie, http.StatusUnprocessableEntity, ""},
 		{"season: refused patch changed nothing", http.MethodGet, base + "/seasons/" + empty.ID.String(), "", nil, http.StatusOK, `"tie_breakers":["head_to_head"]`},

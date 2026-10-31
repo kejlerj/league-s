@@ -25,9 +25,9 @@
 
 ## 🧹 Dette technique
 
-- [ ] **Une seule saison à la fois par ligue** (voir `spec.md`) : contrainte de non-chevauchement sur `season`
+- [x] **Une seule saison à la fois par ligue** (voir `spec.md`) : contrainte de non-chevauchement sur `season`
   - `EXCLUDE USING gist (league_id WITH =, daterange(start_on, end_on, '[]') WITH &&)`, avec `btree_gist` (décision 008)
-  - la traduire en 409 dans `season.CreateError`
+  - la traduire en 409 dans `season.CreateError` et `season.UpdateError`
 - [x] **Les points par défaut d'une saison** : si le client omet `match_win_pts`…, la saison est créée avec 0/0/0 au lieu de 3/1/0
   - pointeurs dans le DTO, ou valeurs par défaut appliquées dans le handler
 - [x] **Des messages de validation lisibles** : `httpx.Decode` renvoie encore le tag brut (`"required"`, `"url"`)

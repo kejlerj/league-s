@@ -225,6 +225,44 @@ func TestCreateSeason_EndBeforeStartNamesTheField(t *testing.T) {
 	}
 }
 
+func TestCreateSeason_Overlap(t *testing.T) {
+	tests := []struct {
+		name       string
+		other      bool
+		startOn    string
+		endOn      string
+		wantStatus int
+	}{
+		{"inside the existing season", false, "2025-10-01", "2025-12-31", http.StatusConflict},
+		{"covers the existing season", false, "2025-01-01", "2026-12-31", http.StatusConflict},
+		{"ends on its first day", false, "2024-08-01", "2025-08-01", http.StatusConflict},
+		{"starts on its last day", false, "2026-05-31", "2027-05-31", http.StatusConflict},
+		{"ends the day before", false, "2024-08-01", "2025-07-31", http.StatusCreated},
+		{"starts the day after", false, "2026-06-01", "2027-05-31", http.StatusCreated},
+		{"same dates in another league", true, "2025-08-01", "2026-05-31", http.StatusCreated},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := testdb.New(t, testPool)
+			league := s.CreateLeague(testdb.LeagueParams{})
+			s.CreateSeason(testdb.SeasonParams{League: &league, Name: "2025-2026", StartOn: "2025-08-01", EndOn: "2026-05-31"})
+			if tt.other {
+				league = s.CreateLeague(testdb.LeagueParams{})
+			}
+
+			body := fmt.Sprintf(`{"name": "New", "start_on": %q, "end_on": %q}`, tt.startOn, tt.endOn)
+			rec := testhttp.Do(t, newTestRouter(), http.MethodPost, seasonsPath(league), body)
+			if rec.Code != tt.wantStatus {
+				t.Errorf("status = %d, want %d, body = %s", rec.Code, tt.wantStatus, rec.Body)
+			}
+			if tt.wantStatus == http.StatusConflict && !strings.Contains(rec.Body.String(), "season overlaps another season of the league") {
+				t.Errorf("body = %s, want the overlap error", rec.Body)
+			}
+		})
+	}
+}
+
 func TestGetSeason_Errors(t *testing.T) {
 	type fixture struct {
 		season db.Season
