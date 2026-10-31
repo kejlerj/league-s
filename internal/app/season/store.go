@@ -40,6 +40,8 @@ func (s *PostgresStore) Create(ctx context.Context, season *Season) (*Season, er
 		switch pgErr.ConstraintName {
 		case "season_league_name_key":
 			return nil, ErrCreateNameTaken
+		case "season_league_no_overlap":
+			return nil, ErrCreateOverlap
 		case "season_league_id_fkey":
 			return nil, ErrCreateLeagueNotFound
 		}
@@ -188,6 +190,8 @@ func (s *PostgresStore) Update(ctx context.Context, leagueID, id uuid.UUID, u Up
 			return nil, ErrUpdateNameTaken
 		case "season_check":
 			return nil, ErrUpdateInvalidDates
+		case "season_league_no_overlap":
+			return nil, ErrUpdateOverlap
 		}
 	}
 	if errors.Is(err, pgx.ErrNoRows) {

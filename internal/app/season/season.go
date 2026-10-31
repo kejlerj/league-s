@@ -46,6 +46,7 @@ func (e CreateError) Error() string { return string(e) }
 const (
 	ErrCreateLeagueNotFound CreateError = "league not found"
 	ErrCreateNameTaken      CreateError = "season name is already taken"
+	ErrCreateOverlap        CreateError = "season overlaps another season of the league"
 )
 
 type GetError string
@@ -97,6 +98,7 @@ const (
 	ErrUpdateNotFound     UpdateError = "season not found"
 	ErrUpdateNameTaken    UpdateError = "season name is already taken"
 	ErrUpdateInvalidDates UpdateError = "season must end after it starts"
+	ErrUpdateOverlap      UpdateError = "season overlaps another season of the league"
 )
 
 type DeleteError string
