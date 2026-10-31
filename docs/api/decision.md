@@ -452,7 +452,9 @@ scheduled ──Start──► live ──Finish──► finished
 ## 008 · Squad: preventing overlapping memberships
 
 **Date:** 2026-09-27
-**Status:** open, to decide
+**Status:** decided (#15, #120): option **A**, with inclusive bounds (`'[]'`), scoped by season
+
+**Decision.** The owner decided in #15 that `left_on` is the player's **last day** in the team, and that a player is in only one team at a time in a league, history included. Migration `00012` adds `squad_membership_no_overlap` = `EXCLUDE USING gist (player_id WITH =, season_id WITH =, daterange(joined_on, left_on, '[]') WITH &&)`, translated to `ErrJoinOverlap` (409). Inclusive bounds follow from "last day": a transfer on day D joins the new team on D + 1 (`Transfer.JoinedOn`). `season_id` stays in the constraint: memberships stay inside their season and seasons don't overlap (`season_league_no_overlap`), so this is "one team at a time in the league", and an open membership of a past season (`left_on` null) doesn't block the next season. `squad_membership_active_player` is kept: it still gives the clearer `ErrJoinPlayerAlreadyActive`. Shirt numbers keep their partial index only.
 
 ### Context
 

@@ -257,11 +257,19 @@ func TestMatch_ForbiddenTransitions(t *testing.T) {
 		{"start a match twice", func(f fixture, id uuid.UUID) {
 			f.do(t, http.MethodPost, f.matchPath(id, "/start"), "", http.StatusOK)
 		}, http.MethodPost, "/start", ""},
-		{"cancel a live match", func(f fixture, id uuid.UUID) {
+		{"cancel a finished match", func(f fixture, id uuid.UUID) {
 			f.do(t, http.MethodPost, f.matchPath(id, "/start"), "", http.StatusOK)
+			f.do(t, http.MethodPost, f.matchPath(id, "/finish"), "", http.StatusOK)
 		}, http.MethodPost, "/cancel", ""},
-		{"postpone a live match", func(f fixture, id uuid.UUID) {
+		{"postpone a finished match", func(f fixture, id uuid.UUID) {
 			f.do(t, http.MethodPost, f.matchPath(id, "/start"), "", http.StatusOK)
+			f.do(t, http.MethodPost, f.matchPath(id, "/finish"), "", http.StatusOK)
+		}, http.MethodPost, "/postpone", `{}`},
+		{"cancel a cancelled match", func(f fixture, id uuid.UUID) {
+			f.do(t, http.MethodPost, f.matchPath(id, "/cancel"), "", http.StatusOK)
+		}, http.MethodPost, "/cancel", ""},
+		{"postpone a postponed match", func(f fixture, id uuid.UUID) {
+			f.do(t, http.MethodPost, f.matchPath(id, "/postpone"), `{}`, http.StatusOK)
 		}, http.MethodPost, "/postpone", `{}`},
 		{"start a cancelled match", func(f fixture, id uuid.UUID) {
 			f.do(t, http.MethodPost, f.matchPath(id, "/cancel"), "", http.StatusOK)
@@ -313,6 +321,86 @@ func TestPostponeMatch(t *testing.T) {
 	if rescheduled.Status != StatusScheduled || rescheduled.KickoffAt == nil {
 		t.Errorf("after a new kickoff: match = %+v, want it scheduled again", rescheduled)
 	}
+}
+
+func (f fixture) startWithScore(t *testing.T, id uuid.UUID) {
+	t.Helper()
+	f.do(t, http.MethodPost, f.matchPath(id, "/start"), "", http.StatusOK)
+	f.do(t, http.MethodPut, f.matchPath(id, "/score"), `{"home": 2, "away": 1}`, http.StatusOK)
+}
+
+func TestPostponeMatch_ALiveMatch(t *testing.T) {
+	f := newFixture(t)
+	m := f.schedule(t, f.home, f.away, 1)
+	f.startWithScore(t, m.ID)
+
+	postponed := f.do(t, http.MethodPost, f.matchPath(m.ID, "/postpone"), `{}`, http.StatusOK)
+	if postponed.Status != StatusPostponed || postponed.HomeScore == nil || *postponed.HomeScore != 2 || *postponed.AwayScore != 1 {
+		t.Errorf("after postpone: match = %+v, want postponed with the 2-1 kept", postponed)
+	}
+
+	rescheduled := f.do(t, http.MethodPatch, f.matchPath(m.ID, ""), `{"kickoff_at": "2025-11-08T18:00:00Z"}`, http.StatusOK)
+	if rescheduled.Status != StatusScheduled || rescheduled.HomeScore != nil || rescheduled.AwayScore != nil {
+		t.Errorf("after a new kickoff: match = %+v, want scheduled without a score", rescheduled)
+	}
+
+	restarted := f.do(t, http.MethodPost, f.matchPath(m.ID, "/start"), "", http.StatusOK)
+	if restarted.Status != StatusLive || *restarted.HomeScore != 0 || *restarted.AwayScore != 0 {
+		t.Errorf("after restart: match = %+v, want live at 0-0", restarted)
+	}
+}
+
+func TestPostponeMatch_ALiveMatchWithANewDate(t *testing.T) {
+	f := newFixture(t)
+	m := f.schedule(t, f.home, f.away, 1)
+	f.startWithScore(t, m.ID)
+
+	got := f.do(t, http.MethodPost, f.matchPath(m.ID, "/postpone"), `{"kickoff_at": "2025-11-08T18:00:00Z"}`, http.StatusOK)
+	if got.Status != StatusScheduled || got.KickoffAt == nil || got.KickoffAt.Day() != 8 || got.HomeScore != nil {
+		t.Errorf("match = %+v, want it scheduled at the new kickoff, without a score", got)
+	}
+}
+
+func TestCancelMatch(t *testing.T) {
+	tests := []struct {
+		name     string
+		prepare  func(f fixture, id uuid.UUID)
+		wantHome *int32
+	}{
+		{"a scheduled match", func(fixture, uuid.UUID) {}, nil},
+		{"a postponed match", func(f fixture, id uuid.UUID) {
+			f.do(t, http.MethodPost, f.matchPath(id, "/postpone"), `{}`, http.StatusOK)
+		}, nil},
+		{"a live match keeps its score", func(f fixture, id uuid.UUID) { f.startWithScore(t, id) }, new(int32(2))},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := newFixture(t)
+			m := f.schedule(t, f.home, f.away, 1)
+			tt.prepare(f, m.ID)
+
+			got := f.do(t, http.MethodPost, f.matchPath(m.ID, "/cancel"), "", http.StatusOK)
+			if got.Status != StatusCancelled {
+				t.Errorf("status = %s, want %s", got.Status, StatusCancelled)
+			}
+			if fmt.Sprint(deref(got.HomeScore)) != fmt.Sprint(deref(tt.wantHome)) {
+				t.Errorf("home score = %v, want %v", deref(got.HomeScore), deref(tt.wantHome))
+			}
+
+			stored := f.do(t, http.MethodGet, f.matchPath(m.ID, ""), "", http.StatusOK)
+			if stored.Status != StatusCancelled {
+				t.Errorf("stored status = %s, want %s", stored.Status, StatusCancelled)
+			}
+		})
+	}
+}
+
+func deref(v *int32) any {
+	if v == nil {
+		return nil
+	}
+	return *v
 }
 
 func TestPostponeMatch_WithANewDate(t *testing.T) {

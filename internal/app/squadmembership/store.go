@@ -78,6 +78,8 @@ func (s *PostgresStore) Join(ctx context.Context, m *Membership) (*Membership, e
 			return nil, ErrJoinPlayerAlreadyActive
 		case "squad_membership_active_number":
 			return nil, ErrJoinNumberTaken
+		case "squad_membership_no_overlap":
+			return nil, ErrJoinOverlap
 		}
 	}
 	if err != nil {

@@ -76,6 +76,10 @@ type Transfer struct {
 	On         time.Time
 }
 
+func (t Transfer) JoinedOn() time.Time {
+	return t.On.AddDate(0, 0, 1)
+}
+
 type JoinError string
 
 func (e JoinError) Error() string { return string(e) }
@@ -87,6 +91,7 @@ const (
 	ErrJoinNumberTaken         JoinError = "number is already taken in this squad"
 	ErrJoinOutsideSeason       JoinError = "joining date is outside the season"
 	ErrJoinSquadFull           JoinError = "squad is full"
+	ErrJoinOverlap             JoinError = "player is already in a squad on these dates"
 )
 
 type LeaveError string

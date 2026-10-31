@@ -103,8 +103,18 @@ func TestCompute_OnlyFinishedMatchesCount(t *testing.T) {
 	if err := cancelled.Cancel(); err != nil {
 		t.Fatalf("Cancel() error = %v", err)
 	}
+	interrupted := scheduled(t, teams["B"], teams["A"])
+	if err := interrupted.Start(); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	if err := interrupted.SetScore(3, 0); err != nil {
+		t.Fatalf("SetScore() error = %v", err)
+	}
+	if err := interrupted.Cancel(); err != nil {
+		t.Fatalf("Cancel() of a live match error = %v", err)
+	}
 
-	rows := Compute(list(teams), []*match.Match{live, cancelled, scheduled(t, teams["B"], teams["A"])}, defaultRules)
+	rows := Compute(list(teams), []*match.Match{live, cancelled, interrupted, scheduled(t, teams["B"], teams["A"])}, defaultRules)
 
 	for _, r := range rows {
 		if r.Played != 0 || r.Points != 0 || r.GoalsFor != 0 {

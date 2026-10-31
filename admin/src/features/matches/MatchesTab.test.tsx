@@ -178,6 +178,26 @@ test('Postpone without a new date sends an empty body', async () => {
   await vi.waitFor(() => expect(sent.body).toEqual({}))
 })
 
+test('a live match can be postponed: the form says its score is kept until it is rescheduled', async () => {
+  const sent: Sent = { calls: 0 }
+  const { user } = setup([], http.post(`${M}/M2/postpone`, capture(sent)))
+  await user.click(within(await rowOf('En cours')).getByRole('button', { name: 'Reporter' }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByText(/Le match est interrompu/)).toBeInTheDocument()
+  await user.click(within(dialog).getByRole('button', { name: 'Reporter' }))
+  await vi.waitFor(() => expect(sent.body).toEqual({}))
+})
+
+test('a live match can be cancelled: the confirmation says its score does not count', async () => {
+  const sent: Sent = { calls: 0 }
+  const { user } = setup([], http.post(`${M}/M2/cancel`, capture(sent)))
+  await user.click(within(await rowOf('En cours')).getByRole('button', { name: 'Annuler' }))
+  const dialog = screen.getByRole('dialog')
+  expect(within(dialog).getByText(/ne compte pas au classement/)).toBeInTheDocument()
+  await user.click(within(dialog).getByRole('button', { name: 'Annuler le match' }))
+  await vi.waitFor(() => expect(sent.calls).toBe(1))
+})
+
 test('Finish asks for confirmation, then calls finish', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.post(`${M}/M2/finish`, capture(sent)))

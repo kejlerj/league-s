@@ -73,13 +73,14 @@ An app for amateur football leagues (five-a-side, urban football), not for profe
 | A player can leave a team and come back: each membership is a row | ✅ data model |
 | Leaving deletes nothing: it sets `left_on`, and the history stays readable | ✅ `CloseSquadMembership`, `ListSquadMemberships` with history |
 | Leaving is on the same day as joining or later | ✅ `CHECK squad_membership_left_after_joined`, `ErrLeaveBeforeJoining` |
-| Two memberships of the same player don't overlap, even in the past | ⚠️ only active memberships are protected (decision 008) |
+| Two memberships of the same player don't overlap, even in the past (first and last days included) | ✅ constraint `squad_membership_no_overlap` (`EXCLUDE USING gist (player_id WITH =, season_id WITH =, daterange(joined_on, left_on, '[]') WITH &&)`), `ErrJoinOverlap`, 409 (decision 008). Scoped by season: memberships stay inside their season and seasons don't overlap, so it is one team at a time in the league, and an open membership of a past season doesn't block the next one |
 | Shirt number: optional, between 1 and 99 | ✅ `CHECK` in the database and DTO validation (422) |
 | A number is unique within the active squad. It becomes free when the player leaves | ✅ partial index `squad_membership_active_number`, 409 |
 | Joining and leaving happen during the season (first and last day included) | ✅ `SquadRules.CheckJoin` and `CheckLeave`, called by the service: `ErrJoinOutsideSeason`, `ErrLeaveOutsideSeason` |
 | The squad doesn't exceed the season's maximum size | ✅ `Service.Join`: `LockSquad` (lock on `season_team`), `CountActive`, then `SquadRules.CheckJoin` → `ErrJoinSquadFull`. Also applies to the receiving team of a transfer |
 | A transfer (leaving then joining) is all or nothing | ✅ `Service.Transfer`, inside `store.InTx` |
-| ❓ `left_on`: last day in the team, or first day the player is no longer in it? | ❓ to settle with decision 008. The second option allows a same-day transfer |
+| A transfer on day D: the player's last day in the former team is D, they join the new team on D + 1. A transfer on the season's last day is refused | ✅ `Transfer.JoinedOn`, `ErrJoinOutsideSeason` (422) |
+| `left_on` is the player's last day in the team (included) | ✅ decided in #15. The overlap constraint uses inclusive bounds (`'[]'`), so joining another team on that same day is refused |
 
 ## Match (planned)
 
@@ -90,7 +91,8 @@ An app for amateur football leagues (five-a-side, urban football), not for profe
 | The score is complete (both teams) or absent, never negative | ✅ `CHECK` in the database |
 | A finished match has a score | ✅ `CHECK (status <> 'finished' OR home_score IS NOT NULL)` |
 | Lifecycle: scheduled, in progress, finished, postponed, cancelled, with forbidden transitions | ✅ rich entity `match.Match` (decision 007), 409 on a forbidden transition. The service locks the match (`FOR UPDATE`) during the transition |
-| ❓ Exact transitions: can a postponed match be cancelled? Can a match in progress be interrupted? | ❓ to confirm. Current choice in the code: a postponed match can be cancelled, a match in progress can be neither cancelled nor postponed |
+| Transitions: a scheduled match can start, be postponed or cancelled. A match in progress can finish, or be interrupted: postponed or cancelled. A postponed match can be rescheduled or cancelled. A finished or cancelled match no longer changes status (decision #15) | ✅ `Match.Start`, `Match.Finish`, `Match.Postpone`, `Match.Cancel`, 409 |
+| An interrupted match keeps its score for the record, but doesn't count in the standings. When a postponed match gets a new kickoff, it is scheduled again without a score, and restarts at 0-0 | ✅ `Match.Postpone`, `Match.Cancel`, `Match.Reschedule`, `Match.Winner` |
 | The score starts at 0-0 at kickoff and only changes during the match | ✅ `Match.Start`, `Match.SetScore` |
 | Postponing without a new date sets the match to `postponed`. Giving it a kickoff reschedules it | ✅ `Match.Postpone`, `Match.Reschedule` |
 | A team has no home ground: the venue (the booked pitch) belongs to each match, is optional, and is given when scheduling or later | ✅ `match.venue`, accepted by `POST` and `PATCH` |

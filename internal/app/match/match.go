@@ -143,8 +143,8 @@ func (m *Match) Finish() error {
 }
 
 func (m *Match) Postpone() error {
-	if m.status != StatusScheduled {
-		return ErrPostponeNotScheduled
+	if m.status != StatusScheduled && m.status != StatusLive {
+		return ErrPostponeNotAllowed
 	}
 	m.status = StatusPostponed
 	m.kickoffAt = nil
@@ -162,13 +162,14 @@ func (m *Match) Reschedule(matchday int32, kickoffAt *time.Time) error {
 	m.kickoffAt = kickoffAt
 	if kickoffAt != nil {
 		m.status = StatusScheduled
+		m.score = nil
 	}
 	return nil
 }
 
 func (m *Match) Cancel() error {
-	if m.status != StatusScheduled && m.status != StatusPostponed {
-		return ErrCancelNotPending
+	if m.status == StatusFinished || m.status == StatusCancelled {
+		return ErrCancelNotAllowed
 	}
 	m.status = StatusCancelled
 	return nil
@@ -245,7 +246,7 @@ type PostponeError string
 
 func (e PostponeError) Error() string { return string(e) }
 
-const ErrPostponeNotScheduled PostponeError = "only a scheduled match can be postponed"
+const ErrPostponeNotAllowed PostponeError = "only a scheduled or live match can be postponed"
 
 type RescheduleError string
 
@@ -260,7 +261,7 @@ type CancelError string
 
 func (e CancelError) Error() string { return string(e) }
 
-const ErrCancelNotPending CancelError = "only a scheduled or postponed match can be cancelled"
+const ErrCancelNotAllowed CancelError = "a finished or cancelled match cannot be cancelled"
 
 type DeleteError string
 

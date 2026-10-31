@@ -65,7 +65,7 @@ func (s *Service) Transfer(ctx context.Context, t Transfer) (*Membership, error)
 			TeamID:   t.ToTeamID,
 			PlayerID: t.PlayerID,
 			Number:   t.Number,
-			JoinedOn: t.On,
+			JoinedOn: t.JoinedOn(),
 		})
 		return err
 	})
