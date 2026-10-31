@@ -245,12 +245,14 @@ app/
       team/[id].tsx               -> <TeamScreen origin="following"/>
       squad/[teamId].tsx          -> <SquadScreen origin="following"/>
       player/[id].tsx             -> <PlayerScreen/>
+      season/[seasonId].tsx       -> <SeasonStandingsScreen origin="following"/>  (?team=teamId)
     standings/
       _layout.tsx                 <Stack headerShown:false>: index, team/[id]
       index.tsx                   -> <StandingsScreen/>
       team/[id].tsx               -> <TeamScreen origin="standings"/>
       squad/[teamId].tsx          -> <SquadScreen origin="standings"/>
       player/[id].tsx             -> <PlayerScreen/>
+      season/[seasonId].tsx       -> <SeasonStandingsScreen origin="standings"/>  (?team=teamId)
     predictions/index.tsx         -> <PlaceholderScreen title="Pronos"/>
     profile/index.tsx             -> <ProfileScreen/>
   index.tsx                       -> /following, or /leagues when no league is chosen
@@ -378,7 +380,11 @@ follow hint line (`Vous suivez cette équipe — compos, buts, résultats` /
 3. `EFFECTIF · {squadCount} JOUEURS` label + `MJ · BUTS · PD` legend; `Card` of
    squad rows (number mono, avatar, name + position, `MP · goals · assists`
    line); final row `Voir l'effectif complet ›` opens the full squad
-   (`/{origin}/squad/{teamId}`, same tab).
+. `SAISONS` — `Card` of the seasons the team played
+   (`GET /leagues/{id}/teams/{teamId}/seasons`, most recent first), one row per
+   season name with `›`; a row opens that season's standings
+   (`/{origin}/season/{seasonId}?team={teamId}`, same tab). `Aucune saison pour le
+   moment.` when empty.
 
 **Follow button** calls `toggleFollow(teamId)`; the change is observable
 immediately in Suivi (list membership) and Classement (row tint) and Moi (count).
@@ -402,6 +408,14 @@ opens the player (`/{origin}/player/{playerId}`, same tab).
 first: crest, `{team} · N° {number}`, `Depuis le 29 août 2026` or
 `30 août 2025 → 31 mai 2026`, season name on the right.
 **States:** skeleton / error with `Réessayer` / `Aucun passage en club.`
+
+### 7.3d Season standings (`src/screens/SeasonStandingsScreen.tsx`, props `seasonId`, `teamId`, `origin`)
+
+**Header**: `‹ Retour`, `Classement {season name}` (`GET …/seasons/{seasonId}`).
+**Body**: the season's standings (`GET …/seasons/{seasonId}/standings`) in the same
+table as Classement (`src/components/StandingsTable.tsx`), the team's row tinted.
+A row opens that team (`/{origin}/team/{id}`, same tab).
+**States:** skeleton / error with `Réessayer` / `Aucun classement pour cette saison.`
 
 ### 7.4 Match (`src/screens/MatchScreen.tsx`) — no tab bar
 
