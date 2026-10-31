@@ -49,7 +49,7 @@ Une application pour des ligues de foot amateur (five, foot urbain), pas pour le
 |---|---|
 | Les règles de la compétition (points, départages) sont portées par la saison, pas par la ligue : les changer ne réécrit pas les classements passés | ✅ colonnes de `season` |
 | Le nom est unique dans la ligue | ✅ `UNIQUE (league_id, name)`, 409 |
-| La fin est après le début | ✅ `CHECK (end_on > start_on)` et validation `gtfield` |
+| La fin est après le début | ✅ `CHECK (end_on > start_on)` et `Season.CheckDates` (422 sur `end_on`). Les dates de saison sont au format `AAAA-MM-JJ` dans l'API (`datetime=2006-01-02`) |
 | **Une seule saison à la fois par ligue** | ⚠️ voir Ligue |
 | Points par défaut : 3 (victoire), 1 (nul), 0 (défaite) | ✅ champs optionnels dans le DTO : un champ omis prend la valeur par défaut (`season.DefaultMatchWinPts`…), un `0` explicite est gardé |
 | Départages possibles : différence de buts, buts marqués, confrontation directe, fair-play, tirage au sort, appliqués dans l'ordre choisi. Par défaut : différence de buts, puis buts marqués | ✅ `tie_breakers` omis à la création → `season.DefaultTieBreakers()` (`goal_difference`, `goals_scored`), comme la valeur par défaut de la colonne. Un seul nom, `goals_scored`, en base et dans le validator. `standing.Compute` applique `goal_difference`, `goals_scored` et `head_to_head`. ⚠️ `fair_play` et `random` sont acceptés mais ignorés : pas de données de cartons, et un tirage au sort recalculé à chaque requête changerait le classement. À égalité complète, l'ordre alphabétique décide |

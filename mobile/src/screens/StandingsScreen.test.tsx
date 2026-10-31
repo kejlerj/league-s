@@ -11,8 +11,8 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('../services/league');
 
-const RECENT = { id: 'recent', league_id: 'l', name: '2026-2027', start_on: '2026-08-29T00:00:00Z', end_on: '2027-05-30T00:00:00Z' };
-const PREVIOUS = { id: 'previous', league_id: 'l', name: '2025-2026', start_on: '2025-08-30T00:00:00Z', end_on: '2026-05-31T00:00:00Z' };
+const RECENT = { id: 'recent', league_id: 'l', name: '2026-2027', start_on: '2026-08-29', end_on: '2027-05-30' };
+const PREVIOUS = { id: 'previous', league_id: 'l', name: '2025-2026', start_on: '2025-08-30', end_on: '2026-05-31' };
 
 function row(team_id: string, team_name: string, rank: number): StandingRow {
   return { rank, team_id, team_name, played: 5, won: 3, drawn: 1, lost: 1, goals_for: 9, goals_against: 5, goal_difference: 4, points: 10 };

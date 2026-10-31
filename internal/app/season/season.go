@@ -1,6 +1,7 @@
 package season
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,6 +25,15 @@ const (
 	DefaultMatchDrawPts int32 = 1
 	DefaultMatchLossPts int32 = 0
 )
+
+var ErrEndNotAfterStart = errors.New("season must end after it starts")
+
+func (s *Season) CheckDates() error {
+	if !s.EndOn.After(s.StartOn) {
+		return ErrEndNotAfterStart
+	}
+	return nil
+}
 
 func DefaultTieBreakers() []string {
 	return []string{"goal_difference", "goals_scored"}

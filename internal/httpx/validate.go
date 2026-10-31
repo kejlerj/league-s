@@ -46,10 +46,14 @@ func Decode(w http.ResponseWriter, r *http.Request, dst any) bool {
 		for _, fe := range verrs {
 			errs[fe.Field()] = message(fe, dstType)
 		}
-		JSON(w, http.StatusUnprocessableEntity, map[string]any{"errors": errs})
+		FieldErrors(w, errs)
 		return false
 	}
 	return true
+}
+
+func FieldErrors(w http.ResponseWriter, errs map[string]string) {
+	JSON(w, http.StatusUnprocessableEntity, map[string]any{"errors": errs})
 }
 
 func message(fe validator.FieldError, dstType reflect.Type) string {

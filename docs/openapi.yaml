@@ -1608,10 +1608,10 @@ components:
           type: string
         start_on:
           type: string
-          format: date-time
+          format: date
         end_on:
           type: string
-          format: date-time
+          format: date
         match_win_pts:
           type: integer
           format: int32
@@ -1640,10 +1640,10 @@ components:
           maxLength: 50
         start_on:
           type: string
-          format: date-time
+          format: date
         end_on:
           type: string
-          format: date-time
+          format: date
           description: After `start_on`.
         match_win_pts:
           type: [integer, "null"]
