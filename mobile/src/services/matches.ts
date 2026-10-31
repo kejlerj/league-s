@@ -1,5 +1,4 @@
 import { apiGet, pathSegment } from '@/src/api/client';
-import { LEAGUE_ID } from '@/src/config';
 import { parseApiDate } from '@/src/logic/dateTime';
 import type { ApiMatch, ApiMatchStatus } from '@/src/types';
 
@@ -14,22 +13,22 @@ export interface FollowedMatch {
   teamId: string;
 }
 
-export function listMatches(seasonId: string, query: MatchQuery = {}): Promise<ApiMatch[]> {
-  return apiGet<ApiMatch[]>(`/leagues/${pathSegment(LEAGUE_ID)}/seasons/${pathSegment(seasonId)}/matches`, query);
+export function listMatches(leagueId: string, seasonId: string, query: MatchQuery = {}): Promise<ApiMatch[]> {
+  return apiGet<ApiMatch[]>(`/leagues/${pathSegment(leagueId)}/seasons/${pathSegment(seasonId)}/matches`, query);
 }
 
-export function getMatch(seasonId: string, matchId: string): Promise<ApiMatch> {
-  return apiGet<ApiMatch>(`/leagues/${pathSegment(LEAGUE_ID)}/seasons/${pathSegment(seasonId)}/matches/${pathSegment(matchId)}`);
+export function getMatch(leagueId: string, seasonId: string, matchId: string): Promise<ApiMatch> {
+  return apiGet<ApiMatch>(`/leagues/${pathSegment(leagueId)}/seasons/${pathSegment(seasonId)}/matches/${pathSegment(matchId)}`);
 }
 
 function kickoffTime(match: ApiMatch): number {
   return match.kickoff_at ? parseApiDate(match.kickoff_at).getTime() : Number.NEGATIVE_INFINITY;
 }
 
-export async function getFollowedFixtures(seasonId: string, teamIds: string[]): Promise<FollowedMatch[]> {
+export async function getFollowedFixtures(leagueId: string, seasonId: string, teamIds: string[]): Promise<FollowedMatch[]> {
   const perTeam = await Promise.all(
     teamIds.map(async (teamId) =>
-      (await listMatches(seasonId, { team: teamId })).map((match) => ({ match, teamId }))
+      (await listMatches(leagueId, seasonId, { team: teamId })).map((match) => ({ match, teamId }))
     )
   );
   const seen = new Set<string>();

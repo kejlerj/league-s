@@ -4,6 +4,12 @@ export type ApiMatchStatus = 'scheduled' | 'live' | 'finished' | 'postponed' | '
 
 export type MatchStatus = 'upcoming' | 'live' | 'played' | 'cancelled';
 
+export interface League {
+  id: string;
+  name: string;
+  logo: string | null;
+}
+
 export interface Season {
   id: string;
   league_id: string;

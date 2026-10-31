@@ -11,6 +11,7 @@ import { Skeleton } from '../components/Skeleton';
 import { ErrorState } from '../components/ErrorState';
 import { useAsync } from '../hooks/useAsync';
 import { useCurrentSeason } from '../hooks/useCurrentSeason';
+import { useLeagueId } from '../hooks/useLeagueId';
 import { useAppStore } from '../store/useAppStore';
 import { getFollowedFixtures } from '../services/matches';
 import { toFixtureRow } from '../logic/fixtureRow';
@@ -19,10 +20,11 @@ import { fr } from '../i18n/fr';
 export function FollowingScreen() {
   const router = useRouter();
   const followedTeamIds = useAppStore((s) => s.followedTeamIds());
+  const leagueId = useLeagueId();
   const season = useCurrentSeason();
   const fixtures = useAsync(
-    () => (season.season ? getFollowedFixtures(season.season.id, followedTeamIds) : Promise.resolve([])),
-    [season.season?.id, followedTeamIds.join(',')]
+    () => (season.season ? getFollowedFixtures(leagueId, season.season.id, followedTeamIds) : Promise.resolve([])),
+    [leagueId, season.season?.id, followedTeamIds.join(',')]
   );
 
   const rows = (fixtures.data ?? []).map(({ match, teamId }) => toFixtureRow(match, teamId));

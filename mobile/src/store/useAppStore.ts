@@ -9,52 +9,66 @@ interface FollowEntry {
   notifyLevel: NotifyLevel;
 }
 
-interface AppState {
+type Follows = Record<string, FollowEntry>;
+
+interface PersistedState {
   themeMode: ThemeMode;
-  follows: Record<string, FollowEntry>;
+  leagueId: string | null;
+  followsByLeague: Record<string, Follows>;
+}
+
+interface AppState extends PersistedState {
   setThemeMode: (mode: ThemeMode) => void;
+  setLeague: (leagueId: string) => void;
   toggleFollow: (teamId: string) => void;
   isFollowing: (teamId: string) => boolean;
   followedTeamIds: () => string[];
 }
 
-const STORE_VERSION = 2;
+const STORE_VERSION = 3;
+const NO_FOLLOWS: Follows = {};
 
-export function migrateAppState<T extends { follows: Record<string, FollowEntry> }>(
-  persisted: unknown,
-  version: number
-): T {
-  const state = persisted as T;
-  return version < STORE_VERSION ? { ...state, follows: {} } : state;
+export function migrateAppState(persisted: unknown, version: number): PersistedState {
+  const state = persisted as PersistedState;
+  if (version >= STORE_VERSION) return state;
+  return { themeMode: state.themeMode, leagueId: null, followsByLeague: {} };
+}
+
+function currentFollows(state: PersistedState): Follows {
+  return state.leagueId ? state.followsByLeague[state.leagueId] ?? NO_FOLLOWS : NO_FOLLOWS;
 }
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => {
-      let cachedFollows: Record<string, FollowEntry> | null = null;
+      let cachedFollows: Follows | null = null;
       let cachedIds: string[] = [];
 
       return {
         themeMode: 'system',
-        follows: {},
+        leagueId: null,
+        followsByLeague: {},
 
         setThemeMode: (mode) => set({ themeMode: mode }),
 
+        setLeague: (leagueId) => set({ leagueId }),
+
         toggleFollow: (teamId) =>
           set((state) => {
-            const next = { ...state.follows };
+            if (!state.leagueId) return {};
+            const next = { ...currentFollows(state) };
             if (next[teamId]) {
               delete next[teamId];
             } else {
               next[teamId] = { notifyLevel: 'full' };
             }
-            return { follows: next };
+            return { followsByLeague: { ...state.followsByLeague, [state.leagueId]: next } };
           }),
 
-        isFollowing: (teamId) => Boolean(get().follows[teamId]),
+        isFollowing: (teamId) => Boolean(currentFollows(get())[teamId]),
 
         followedTeamIds: () => {
-          const follows = get().follows;
+          const follows = currentFollows(get());
           if (follows !== cachedFollows) {
             cachedFollows = follows;
             cachedIds = Object.keys(follows);
@@ -70,7 +84,8 @@ export const useAppStore = create<AppState>()(
       migrate: (persisted, version) => migrateAppState(persisted, version),
       partialize: (state) => ({
         themeMode: state.themeMode,
-        follows: state.follows,
+        leagueId: state.leagueId,
+        followsByLeague: state.followsByLeague,
       }),
     }
   )

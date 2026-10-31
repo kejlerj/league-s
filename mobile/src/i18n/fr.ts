@@ -75,10 +75,20 @@ export const fr = {
   },
   profile: {
     title: 'Moi',
+    league: 'Ligue',
+    changeLeague: 'Changer',
+    leagueError: 'Impossible de charger la ligue.',
     followedStat: 'Équipes suivies',
-    followsHint: 'Vos équipes sont enregistrées sur cet appareil.',
+    followsHint: 'Vos équipes de cette ligue sont enregistrées sur cet appareil.',
     theme: 'Thème',
     themeOptions: ['Système', 'Clair', 'Sombre'],
+  },
+  leagues: {
+    title: 'Choisissez votre ligue',
+    hint: 'Vous pourrez en changer depuis Moi.',
+    back: 'Retour',
+    empty: 'Aucune ligue disponible.',
+    error: 'Impossible de charger les ligues.',
   },
   dates: {
     months: ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'],

@@ -38,7 +38,7 @@ function apiMatch(id: string, status: ApiMatch['status'], home: string, away: st
 beforeEach(() => {
   mockPush.mockClear();
   jest.mocked(leagueService.listSeasons).mockResolvedValue([SEASON]);
-  useAppStore.setState({ themeMode: 'system', follows: { [TEAM]: { notifyLevel: 'full' } } });
+  useAppStore.setState({ themeMode: 'system', leagueId: 'l', followsByLeague: { l: { [TEAM]: { notifyLevel: 'full' } } } });
 });
 
 test('lists the followed fixtures for the current season', async () => {
@@ -49,7 +49,7 @@ test('lists the followed fixtures for the current season', async () => {
   render(<FollowingScreen />);
 
   await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
-  expect(matchesService.getFollowedFixtures).toHaveBeenCalledWith(SEASON.id, [TEAM]);
+  expect(matchesService.getFollowedFixtures).toHaveBeenCalledWith('l', SEASON.id, [TEAM]);
   expect(screen.getByText('3–1')).toBeTruthy();
 });
 
@@ -66,7 +66,7 @@ test('tapping a finished fixture opens its match page', async () => {
 });
 
 test('shows the empty state when no team is followed', async () => {
-  useAppStore.setState({ follows: {} });
+  useAppStore.setState({ followsByLeague: {} });
   jest.mocked(matchesService.getFollowedFixtures).mockResolvedValue([]);
 
   render(<FollowingScreen />);

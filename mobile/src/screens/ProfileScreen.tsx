@@ -1,17 +1,24 @@
 import React from 'react';
 import { View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { HeaderCard } from '../components/HeaderCard';
 import { Card, CardRow } from '../components/Card';
 import { SectionLabel } from '../components/SectionLabel';
 import { SegmentedTabs } from '../components/SegmentedTabs';
 import { ThemedText } from '../components/ThemedText';
+import { useAsync } from '../hooks/useAsync';
+import { useLeagueId } from '../hooks/useLeagueId';
 import { useAppStore, type ThemeMode } from '../store/useAppStore';
+import { getLeague } from '../services/league';
 import { fr } from '../i18n/fr';
 
 const THEME_MODES: ThemeMode[] = ['system', 'light', 'dark'];
 
 export function ProfileScreen() {
+  const router = useRouter();
+  const leagueId = useLeagueId();
+  const league = useAsync(() => getLeague(leagueId), [leagueId]);
   const themeMode = useAppStore((s) => s.themeMode);
   const setThemeMode = useAppStore((s) => s.setThemeMode);
   const followedCount = useAppStore((s) => s.followedTeamIds().length);
@@ -23,6 +30,25 @@ export function ProfileScreen() {
       </HeaderCard>
 
       <View className="px-5 pt-4 gap-4 pb-6">
+        <View className="gap-2.5">
+          <SectionLabel>{fr.profile.league}</SectionLabel>
+          <Card>
+            <CardRow isFirst>
+              <ThemedText
+                tone={league.error ? 'muted' : 'primary'}
+                weight="medium"
+                size={14.5}
+                className="flex-1"
+              >
+                {league.error ? fr.profile.leagueError : league.data?.name ?? ''}
+              </ThemedText>
+              <ThemedText tone="accent" weight="medium" size={12.5} onPress={() => router.push('/leagues')}>
+                {fr.profile.changeLeague}
+              </ThemedText>
+            </CardRow>
+          </Card>
+        </View>
+
         <Card>
           <View className="p-3.5">
             <ThemedText mono weight="semibold" size={20}>{followedCount}</ThemedText>
