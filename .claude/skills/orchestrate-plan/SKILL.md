@@ -75,6 +75,7 @@ For each issue, start a new session (desktop app `start_session`):
 When a session reports back:
 - **Merged**: check that the issue is closed and the CI of `main` is green. If `main` is red, open a `bug` issue for it with top priority. Go back to step 2.
 - **Stacked child waiting**: when its parent merges, tell the child's session to restack (`SendMessage`).
+- **Draft waiting for CI** (the report ends on a draft PR, or on "draft: … needs a nudge"): Auto-fix never wakes an author on green CI, so nudge it in the next iteration. Read its checks (`gh pr checks <PR> --repo kejlerj/league-s`). Green: tell the author to rerun the missing local check if the report names one, then mark the PR ready and turn on auto-merge (`SendMessage`). Still running: check again next iteration. Red: tell the author to fix it.
 - **`needs-decision`** or **`needs-human`**: send the user a notification (`PushNotification`) with the question and the link. Then go back to step 2 for the rest.
 - **Failed** (crash, can't finish): read its last report. Restart it once with what you learnt. If it fails again, label the issue `needs-human`, notify the user, and go on.
 - **Usage limit hit**: nothing to do. Schedule the next wake-up after the reset.
