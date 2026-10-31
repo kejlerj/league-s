@@ -11,6 +11,7 @@
 - [x] **Lint** : golangci-lint v2 (`.golangci.yml`, `make lint`, `make fmt`, job de CI), imports groupés avec `gci` et `goimports`
 - [x] **CI** : `.github/workflows/ci.yml` (vérifié avec actionlint, pas encore poussé)
 - [x] **README** : schéma, notes de conception, endpoints
+- [x] **Stack locale et données de démo** : `make dev-up` (Postgres, migrations, API) et `make seed` (`cmd/seed`, package `internal/demo`) : une ligue de démo, 10 équipes de 8 joueurs, deux saisons aller-retour, IDs fixes pour les tests E2E
 
 ## 🔜 Avant le prochain commit
 
@@ -27,7 +28,7 @@
 - [ ] **Une seule saison à la fois par ligue** (voir `spec.md`) : contrainte de non-chevauchement sur `season`
   - `EXCLUDE USING gist (league_id WITH =, daterange(start_on, end_on, '[]') WITH &&)`, avec `btree_gist` (décision 008)
   - la traduire en 409 dans `season.CreateError`
-- [ ] **Les points par défaut d'une saison** : si le client omet `match_win_pts`…, la saison est créée avec 0/0/0 au lieu de 3/1/0
+- [x] **Les points par défaut d'une saison** : si le client omet `match_win_pts`…, la saison est créée avec 0/0/0 au lieu de 3/1/0
   - pointeurs dans le DTO, ou valeurs par défaut appliquées dans le handler
 - [ ] **Des messages de validation lisibles** : `httpx.Decode` renvoie encore le tag brut (`"required"`, `"url"`)
 - [ ] **Des dates au format `2025-08-01`** dans les DTO de saison, au lieu de `time.Time` complet

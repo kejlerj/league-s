@@ -51,9 +51,9 @@ Une application pour des ligues de foot amateur (five, foot urbain), pas pour le
 | Le nom est unique dans la ligue | ✅ `UNIQUE (league_id, name)`, 409 |
 | La fin est après le début | ✅ `CHECK (end_on > start_on)` et validation `gtfield` |
 | **Une seule saison à la fois par ligue** | ⚠️ voir Ligue |
-| Points par défaut : 3 (victoire), 1 (nul), 0 (défaite) | ⚠️ **incohérent** : la base a ces valeurs par défaut, mais le handler envoie toujours les champs du DTO. Si le client les omet, la saison est créée avec 0/0/0 |
+| Points par défaut : 3 (victoire), 1 (nul), 0 (défaite) | ✅ champs optionnels dans le DTO : un champ omis prend la valeur par défaut (`season.DefaultMatchWinPts`…), un `0` explicite est gardé |
 | Départages possibles : différence de buts, buts marqués, confrontation directe, fair-play, tirage au sort, appliqués dans l'ordre choisi | ✅ un seul nom, `goals_scored`, en base et dans le validator. `standing.Compute` applique `goal_difference`, `goals_scored` et `head_to_head`. ⚠️ `fair_play` et `random` sont acceptés mais ignorés : pas de données de cartons, et un tirage au sort recalculé à chaque requête changerait le classement. À égalité complète, l'ordre alphabétique décide |
-| Taille maximale d'un effectif, optionnelle | ⚠️ colonne `max_squad_size` ajoutée (`NULL` = pas de limite, `CHECK > 0`), mais pas encore exposée par l'API des saisons |
+| Taille maximale d'un effectif, optionnelle | ✅ `max_squad_size` (`NULL` = pas de limite, `CHECK > 0`), accepté à la création (`min=1`, 422 sinon) et renvoyé par l'API des saisons |
 
 ## Effectif (squad)
 

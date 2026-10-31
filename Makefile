@@ -27,6 +27,15 @@ build:
 # Run the application
 run:
 	@go run cmd/api/main.go
+
+dev-up:
+	@docker compose up -d --wait
+	@$(MAKE) migrate-up
+	@$(MAKE) run
+
+seed:
+	@go run ./cmd/seed
+
 # Create DB container
 docker-run:
 	@if docker compose up --build 2>/dev/null; then \
@@ -82,4 +91,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test itest lint fmt vuln clean watch docker-run docker-down migrate-up migrate-down migrate-status migrate-reset
+.PHONY: all build run dev-up seed test itest lint fmt vuln clean watch docker-run docker-down migrate-up migrate-down migrate-status migrate-reset

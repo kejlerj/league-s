@@ -36,10 +36,11 @@ type createSeasonRequest struct {
 	Name         string    `json:"name" validate:"required,max=50"`
 	StartOn      time.Time `json:"start_on" validate:"required"`
 	EndOn        time.Time `json:"end_on" validate:"required,gtfield=StartOn"`
-	MatchWinPts  int32     `json:"match_win_pts" validate:"min=0"`
-	MatchDrawPts int32     `json:"match_draw_pts" validate:"min=0"`
-	MatchLossPts int32     `json:"match_loss_pts" validate:"min=0"`
+	MatchWinPts  *int32    `json:"match_win_pts" validate:"omitnil,min=0"`
+	MatchDrawPts *int32    `json:"match_draw_pts" validate:"omitnil,min=0"`
+	MatchLossPts *int32    `json:"match_loss_pts" validate:"omitnil,min=0"`
 	TieBreakers  []string  `json:"tie_breakers" validate:"omitempty,dive,oneof=goal_difference goals_scored head_to_head fair_play random"`
+	MaxSquadSize *int32    `json:"max_squad_size" validate:"omitnil,min=1"`
 }
 
 type seasonResponse struct {
@@ -51,6 +52,7 @@ type seasonResponse struct {
 	MatchDrawPts int32     `json:"match_draw_pts"`
 	MatchLossPts int32     `json:"match_loss_pts"`
 	TieBreakers  []string  `json:"tie_breakers"`
+	MaxSquadSize *int32    `json:"max_squad_size"`
 	LeagueID     uuid.UUID `json:"league_id"`
 }
 
@@ -64,6 +66,7 @@ func toResponse(s *Season) seasonResponse {
 		MatchDrawPts: s.MatchDrawPts,
 		MatchLossPts: s.MatchLossPts,
 		TieBreakers:  s.TieBreakers,
+		MaxSquadSize: s.MaxSquadSize,
 		LeagueID:     s.LeagueID,
 	}
 }
@@ -80,6 +83,13 @@ func toSeasonTeamResponse(t *team.Team) seasonTeamResponse {
 		Name: t.Name,
 		Logo: t.Logo,
 	}
+}
+
+func valueOr[T any](p *T, def T) T {
+	if p == nil {
+		return def
+	}
+	return *p
 }
 
 func pathIDs(w http.ResponseWriter, r *http.Request, names ...string) ([]uuid.UUID, bool) {
@@ -111,10 +121,11 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		Name:         req.Name,
 		StartOn:      req.StartOn,
 		EndOn:        req.EndOn,
-		MatchWinPts:  req.MatchWinPts,
-		MatchDrawPts: req.MatchDrawPts,
-		MatchLossPts: req.MatchLossPts,
+		MatchWinPts:  valueOr(req.MatchWinPts, DefaultMatchWinPts),
+		MatchDrawPts: valueOr(req.MatchDrawPts, DefaultMatchDrawPts),
+		MatchLossPts: valueOr(req.MatchLossPts, DefaultMatchLossPts),
 		TieBreakers:  req.TieBreakers,
+		MaxSquadSize: req.MaxSquadSize,
 		LeagueID:     leagueID,
 	}
 
