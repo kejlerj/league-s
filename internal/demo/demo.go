@@ -9,9 +9,13 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"league-s/internal/app/auth"
 )
 
 const (
+	AdminEmail     = "demo-admin@league-s.test"
+	AdminPassword  = "demo-admin-password"
 	LeagueName     = "District Five Demo"
 	playersPerTeam = 8
 	liveFor        = 25 * time.Minute
@@ -23,10 +27,12 @@ const (
 	kindPlayer
 	kindMembership
 	kindMatch
+	kindUser
 )
 
 var (
 	LeagueID         = uuid.MustParse("01a10d58-8ae3-7c66-ac38-c7cac896cc65")
+	AdminID          = id(kindUser, 1)
 	PreviousSeasonID = id(kindSeason, 1)
 	CurrentSeasonID  = id(kindSeason, 2)
 )
@@ -121,11 +127,14 @@ func (w *writer) deleteLeague(ctx context.Context) error {
 			return err
 		}
 	}
-	return nil
+	return w.exec(ctx, "delete demo admin", `DELETE FROM app_user WHERE id = $1 OR email = $2`, AdminID, AdminEmail)
 }
 
 func (w *writer) seed(ctx context.Context) error {
 	if err := w.exec(ctx, "create league", `INSERT INTO league (id, name) VALUES ($1, $2)`, LeagueID, LeagueName); err != nil {
+		return err
+	}
+	if err := w.admin(ctx); err != nil {
 		return err
 	}
 
@@ -155,6 +164,19 @@ func (w *writer) seed(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (w *writer) admin(ctx context.Context) error {
+	hash, err := auth.HashPassword(AdminPassword)
+	if err != nil {
+		return fmt.Errorf("hash demo admin password: %w", err)
+	}
+	if err := w.exec(ctx, "create demo admin",
+		`INSERT INTO app_user (id, email, name, password_hash) VALUES ($1, $2, 'Demo Admin', $3)`, AdminID, AdminEmail, hash); err != nil {
+		return err
+	}
+	return w.exec(ctx, "make demo admin an admin of the demo league",
+		`INSERT INTO league_admin (user_id, league_id) VALUES ($1, $2)`, AdminID, LeagueID)
 }
 
 func (w *writer) season(ctx context.Context, s season) error {

@@ -36,6 +36,16 @@ dev-up:
 seed:
 	@go run ./cmd/seed
 
+e2e:
+	@docker compose up -d --wait
+	@$(MAKE) e2e-run
+
+e2e-run:
+	@$(MAKE) migrate-up
+	@npm --prefix admin run build
+	@go run ./cmd/seed
+	@PORT=$(PORT) npm --prefix admin run e2e
+
 # Create DB container
 docker-run:
 	@if docker compose up --build 2>/dev/null; then \
@@ -91,4 +101,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run dev-up seed test itest lint fmt vuln clean watch docker-run docker-down migrate-up migrate-down migrate-status migrate-reset
+.PHONY: all build run dev-up seed e2e e2e-run test itest lint fmt vuln clean watch docker-run docker-down migrate-up migrate-down migrate-status migrate-reset

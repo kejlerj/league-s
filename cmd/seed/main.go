@@ -35,6 +35,7 @@ func run() error {
 	}
 
 	fmt.Printf("league   %s  %s\n", demo.LeagueID, demo.LeagueName)
+	fmt.Printf("admin    %s  %s / %s\n", demo.AdminID, demo.AdminEmail, demo.AdminPassword)
 	fmt.Printf("season   %s  2025-2026\n", demo.PreviousSeasonID)
 	fmt.Printf("season   %s  2026-2027 (current)\n", demo.CurrentSeasonID)
 	for _, t := range demo.Teams() {

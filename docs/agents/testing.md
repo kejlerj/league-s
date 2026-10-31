@@ -33,7 +33,7 @@ Rules:
 | Domain rule (match lifecycle, standings, squad) | Unit test of the entity or service, no build tag | none | none |
 | Route, validation, status code, error | Integration test of the handler (`//go:build integration`), real Postgres through `testdb`, IDs from the seeder | none | none |
 | Auth or permission | Test on the real router (`internal/server/*_test.go`): 401, 403 (admin of another league), success | Guard tests | none |
-| Cross-domain flow (season → matches → standings) | `internal/scenario` (after PR-09) | Playwright in `admin/e2e/` (after PR-07) | Maestro in `mobile/e2e/` (after PR-07) |
+| Cross-domain flow (season → matches → standings) | `internal/scenario` (after PR-09) | Playwright in `admin/e2e/` (`make e2e`) | Maestro in `mobile/e2e/` (after PR-07) |
 | Page or screen | none | Page test with MSW: the normal path and one error | Screen test with a mocked `fetch`: loading, error, data |
 | Pure logic | none | Unit test | Unit test in `src/logic` |
 | API contract | `docs/openapi.yaml` updated, `TestOpenAPIDescribesEveryRoute` passes | Generated types updated (after #66) | Generated types updated (after #66) |
