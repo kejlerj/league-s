@@ -1,0 +1,1638 @@
+openapi: 3.1.0
+info:
+  title: league-s API
+  version: 1.0.0
+  description: |
+    JSON API for amateur football leagues. Every league is separate: a resource of
+    another league is a 404.
+
+    - IDs are UUID v7. Date-times are UTC (RFC 3339). Dates are `YYYY-MM-DD`.
+    - Errors are `{"error": "..."}`. Field validation errors are
+      `{"errors": {"<field>": "<rule>"}}` with a 422.
+    - Reads are public. Writes need a session (cookie `session`, or
+      `Authorization: Bearer <token>`) of an admin of the league in the URL, or of a
+      superadmin. The access rule of each operation is in its description.
+
+    `internal/server/openapi_test.go` fails when a route of the router is missing
+    from this file, or when an operation here is not in the router.
+servers:
+  - url: /
+security:
+  - sessionCookie: []
+  - bearerToken: []
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Database health
+      description: "Access: public."
+      security: []
+      responses:
+        "200":
+          description: The database answers.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "503":
+          description: The database does not answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      summary: Log in
+      description: |
+        Access: public. Sets the `session` cookie. Rate limited to 10 requests per
+        minute per IP, with the other `/auth` routes.
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Logged in.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Log out
+      description: "Access: public. Ends the current session, if any, and clears the cookie."
+      tags: [auth]
+      security: []
+      responses:
+        "204":
+          description: Logged out.
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /api/v1/auth/password-reset:
+    post:
+      operationId: requestPasswordReset
+      summary: Ask for a password reset link
+      description: "Access: public. Answers 204 whether the account exists or not."
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetRequest"
+      responses:
+        "204":
+          description: Request accepted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /api/v1/auth/password-reset/confirm:
+    post:
+      operationId: resetPassword
+      summary: Choose a new password with a reset link
+      description: "Access: public."
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordRequest"
+      responses:
+        "204":
+          description: Password changed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /api/v1/me:
+    get:
+      operationId: getMe
+      summary: Current user and the leagues they administer
+      description: "Access: logged in."
+      tags: [auth]
+      responses:
+        "200":
+          description: The current user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/me/password:
+    put:
+      operationId: changePassword
+      summary: Change one's password
+      description: "Access: logged in. Ends the user's other sessions."
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: Password changed.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues:
+    get:
+      operationId: listLeagues
+      summary: List leagues, sorted by name
+      description: "Access: public."
+      tags: [leagues]
+      security: []
+      responses:
+        "200":
+          description: Every league.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/League"
+    post:
+      operationId: createLeague
+      summary: Create a league
+      description: "Access: superadmin."
+      tags: [leagues]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLeagueRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/League"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+    get:
+      operationId: getLeague
+      summary: Read a league
+      description: "Access: public."
+      tags: [leagues]
+      security: []
+      responses:
+        "200":
+          description: The league.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/League"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteLeague
+      summary: Delete a league
+      description: "Access: superadmin. Refused (409) while the league has teams, players or seasons."
+      tags: [leagues]
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/leagues/{leagueID}/teams:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+    get:
+      operationId: listTeams
+      summary: List the league's teams, sorted by name
+      description: "Access: public. An unknown league gives an empty list."
+      tags: [teams]
+      security: []
+      responses:
+        "200":
+          description: The league's teams.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      operationId: createTeam
+      summary: Create a team
+      description: "Access: league admin. The name is unique in the league (409)."
+      tags: [teams]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/teams/{teamID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/TeamID"
+    get:
+      operationId: getTeam
+      summary: Read a team
+      description: "Access: public."
+      tags: [teams]
+      security: []
+      responses:
+        "200":
+          description: The team.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Team"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/leagues/{leagueID}/players:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+    post:
+      operationId: createPlayer
+      summary: Create a player
+      description: "Access: league admin."
+      tags: [players]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlayerRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/players/{playerID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/PlayerID"
+    get:
+      operationId: getPlayer
+      summary: Read a player
+      description: "Access: public."
+      tags: [players]
+      security: []
+      responses:
+        "200":
+          description: The player.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Player"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/leagues/{leagueID}/seasons:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+    get:
+      operationId: listSeasons
+      summary: List the league's seasons, most recent first
+      description: "Access: public."
+      tags: [seasons]
+      security: []
+      responses:
+        "200":
+          description: The league's seasons.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Season"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      operationId: createSeason
+      summary: Create a season
+      description: "Access: league admin. The name is unique in the league (409)."
+      tags: [seasons]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSeasonRequest"
+      responses:
+        "201":
+          description: Created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+    get:
+      operationId: getSeason
+      summary: Read a season
+      description: "Access: public."
+      tags: [seasons]
+      security: []
+      responses:
+        "200":
+          description: The season.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Season"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/teams:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+    get:
+      operationId: listSeasonTeams
+      summary: List the teams registered in the season
+      description: "Access: public."
+      tags: [seasons]
+      security: []
+      responses:
+        "200":
+          description: The registered teams.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamRef"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/TeamID"
+    post:
+      operationId: registerSeasonTeam
+      summary: Register a team in the season
+      description: "Access: league admin."
+      tags: [seasons]
+      responses:
+        "200":
+          description: Registered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: unregisterSeasonTeam
+      summary: Unregister a team from the season
+      description: "Access: league admin. Refused (409) while the team has matches in the season."
+      tags: [seasons]
+      responses:
+        "200":
+          description: Unregistered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/TeamID"
+    get:
+      operationId: listSquad
+      summary: List the team's squad in the season
+      description: "Access: public. Current members only, unless `all=true`."
+      tags: [squad]
+      security: []
+      parameters:
+        - name: all
+          in: query
+          description: "`true` also lists the players who left."
+          schema:
+            type: string
+            enum: ["true"]
+      responses:
+        "200":
+          description: The squad.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SquadMember"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      operationId: joinSquad
+      summary: Add a player to the squad
+      description: "Access: league admin."
+      tags: [squad]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinSquadRequest"
+      responses:
+        "201":
+          description: Joined.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/TeamID"
+      - $ref: "#/components/parameters/MembershipID"
+    patch:
+      operationId: changeSquadNumber
+      summary: Change a current member's number
+      description: "Access: league admin. `number: null` removes the number."
+      tags: [squad]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangeNumberRequest"
+      responses:
+        "200":
+          description: Changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/teams/{teamID}/squad/{membershipID}/leave:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/TeamID"
+      - $ref: "#/components/parameters/MembershipID"
+    post:
+      operationId: leaveSquad
+      summary: A player leaves the squad
+      description: "Access: league admin."
+      tags: [squad]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeaveSquadRequest"
+      responses:
+        "200":
+          description: Left.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/transfers:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+    post:
+      operationId: transferPlayer
+      summary: Move a player from one squad to another
+      description: "Access: league admin. Leaves then joins, in one transaction. Returns the new membership."
+      tags: [squad]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferRequest"
+      responses:
+        "201":
+          description: Transferred.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+    get:
+      operationId: listMatches
+      summary: The season's fixtures
+      description: "Access: public."
+      tags: [matches]
+      security: []
+      parameters:
+        - name: matchday
+          in: query
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+        - name: from
+          in: query
+          description: First day, included.
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          description: Last day, included.
+          schema:
+            type: string
+            format: date
+        - name: team
+          in: query
+          description: Matches where this team plays home or away.
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/MatchStatus"
+      responses:
+        "200":
+          description: The matches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+    post:
+      operationId: scheduleMatch
+      summary: Schedule a match
+      description: "Access: league admin."
+      tags: [matches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleMatchRequest"
+      responses:
+        "201":
+          description: Scheduled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/MatchID"
+    get:
+      operationId: getMatch
+      summary: Read a match
+      description: "Access: public."
+      tags: [matches]
+      security: []
+      responses:
+        "200":
+          description: The match.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateMatch
+      summary: Change the matchday or kickoff, or fill in the details
+      description: |
+        Access: league admin. At least one field is required (422 otherwise).
+        Matchday and kickoff change only while the match is scheduled or postponed (409).
+      tags: [matches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMatchRequest"
+      responses:
+        "200":
+          description: Updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Match"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      operationId: deleteMatch
+      summary: Delete a match scheduled by mistake
+      description: "Access: league admin. Only a scheduled match (409 otherwise)."
+      tags: [matches]
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/start:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/MatchID"
+    post:
+      operationId: startMatch
+      summary: Start a scheduled match
+      description: "Access: league admin. The match becomes `live`, 0-0."
+      tags: [matches]
+      responses:
+        "200":
+          $ref: "#/components/responses/MatchOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/score:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/MatchID"
+    put:
+      operationId: setMatchScore
+      summary: Set the score of a live match
+      description: "Access: league admin."
+      tags: [matches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/MatchOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/finish:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/MatchID"
+    post:
+      operationId: finishMatch
+      summary: Finish a live match
+      description: "Access: league admin."
+      tags: [matches]
+      responses:
+        "200":
+          $ref: "#/components/responses/MatchOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/postpone:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/MatchID"
+    post:
+      operationId: postponeMatch
+      summary: Postpone a scheduled match
+      description: |
+        Access: league admin. Without `kickoff_at`, the match becomes `postponed`.
+        With it, the match is rescheduled at that time.
+      tags: [matches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostponeRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/MatchOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/MatchID"
+    post:
+      operationId: cancelMatch
+      summary: Cancel a scheduled or postponed match
+      description: "Access: league admin."
+      tags: [matches]
+      responses:
+        "200":
+          $ref: "#/components/responses/MatchOK"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/standings:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+    get:
+      operationId: getStandings
+      summary: Standings computed from the finished matches
+      description: "Access: public."
+      tags: [standings]
+      security: []
+      responses:
+        "200":
+          description: One row per registered team, best first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StandingRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: session
+    bearerToken:
+      type: http
+      scheme: bearer
+
+  parameters:
+    LeagueID:
+      name: leagueID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TeamID:
+      name: teamID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PlayerID:
+      name: playerID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SeasonID:
+      name: seasonID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MembershipID:
+      name: membershipID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    MatchID:
+      name: matchID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    MatchOK:
+      description: The match after the change.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Match"
+    BadRequest:
+      description: Invalid ID in the path, invalid query parameter, or invalid JSON body.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Not logged in, or wrong credentials.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Logged in without the right access.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: The resource does not exist in this league.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Refused by a business rule or the current state.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnprocessableEntity:
+      description: Field validation failed (`errors`), or a business rule refused the values (`error`).
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/ValidationErrors"
+              - $ref: "#/components/schemas/Error"
+    TooManyRequests:
+      description: Too many requests to `/auth` from this IP.
+      content:
+        text/plain:
+          schema:
+            type: string
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    ValidationErrors:
+      type: object
+      required: [errors]
+      properties:
+        errors:
+          type: object
+          description: Field name to the failed validation rule (`required`, `max`, `uuid`…).
+          additionalProperties:
+            type: string
+    Message:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [up, down]
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    PasswordResetRequest:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+    ResetPasswordRequest:
+      type: object
+      required: [token, password]
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+        password:
+          type: string
+          description: 10 characters to 72 bytes (422 otherwise).
+    ChangePasswordRequest:
+      type: object
+      required: [current_password, new_password]
+      additionalProperties: false
+      properties:
+        current_password:
+          type: string
+        new_password:
+          type: string
+          description: 10 characters to 72 bytes (422 otherwise).
+    User:
+      type: object
+      required: [id, email, name, is_superadmin]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        is_superadmin:
+          type: boolean
+    Me:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          required: [leagues]
+          properties:
+            leagues:
+              type: array
+              items:
+                $ref: "#/components/schemas/LeagueRef"
+
+    LeagueRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    League:
+      type: object
+      required: [id, name, logo]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        logo:
+          type: [string, "null"]
+          format: uri
+    CreateLeagueRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        logo:
+          type: [string, "null"]
+          format: uri
+
+    TeamRef:
+      type: object
+      required: [id, name, logo]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        logo:
+          type: [string, "null"]
+          format: uri
+    Team:
+      type: object
+      required: [id, league_id, name, logo]
+      properties:
+        id:
+          type: string
+          format: uuid
+        league_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        logo:
+          type: [string, "null"]
+          format: uri
+    CreateTeamRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        logo:
+          type: [string, "null"]
+          format: uri
+
+    Player:
+      type: object
+      required: [id, league_id, firstname, lastname, icon]
+      properties:
+        id:
+          type: string
+          format: uuid
+        league_id:
+          type: string
+          format: uuid
+        firstname:
+          type: string
+        lastname:
+          type: string
+        icon:
+          type: [string, "null"]
+          format: uri
+    CreatePlayerRequest:
+      type: object
+      required: [firstname, lastname]
+      additionalProperties: false
+      properties:
+        firstname:
+          type: string
+          maxLength: 50
+        lastname:
+          type: string
+          maxLength: 50
+        icon:
+          type: [string, "null"]
+          format: uri
+
+    TieBreaker:
+      type: string
+      enum: [goal_difference, goals_scored, head_to_head, fair_play, random]
+    Season:
+      type: object
+      required: [id, league_id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers]
+      properties:
+        id:
+          type: string
+          format: uuid
+        league_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        start_on:
+          type: string
+          format: date-time
+        end_on:
+          type: string
+          format: date-time
+        match_win_pts:
+          type: integer
+          format: int32
+        match_draw_pts:
+          type: integer
+          format: int32
+        match_loss_pts:
+          type: integer
+          format: int32
+        tie_breakers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TieBreaker"
+    CreateSeasonRequest:
+      type: object
+      required: [name, start_on, end_on]
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          maxLength: 50
+        start_on:
+          type: string
+          format: date-time
+        end_on:
+          type: string
+          format: date-time
+          description: After `start_on`.
+        match_win_pts:
+          type: integer
+          format: int32
+          minimum: 0
+        match_draw_pts:
+          type: integer
+          format: int32
+          minimum: 0
+        match_loss_pts:
+          type: integer
+          format: int32
+          minimum: 0
+        tie_breakers:
+          type: array
+          items:
+            $ref: "#/components/schemas/TieBreaker"
+
+    ShirtNumber:
+      type: [integer, "null"]
+      format: int32
+      minimum: 1
+      maximum: 99
+    Membership:
+      type: object
+      required: [id, league_id, season_id, team_id, player_id, number, joined_on, left_on]
+      properties:
+        id:
+          type: string
+          format: uuid
+        league_id:
+          type: string
+          format: uuid
+        season_id:
+          type: string
+          format: uuid
+        team_id:
+          type: string
+          format: uuid
+        player_id:
+          type: string
+          format: uuid
+        number:
+          $ref: "#/components/schemas/ShirtNumber"
+        joined_on:
+          type: string
+          format: date
+        left_on:
+          type: [string, "null"]
+          format: date
+    SquadMember:
+      type: object
+      required: [membership_id, player_id, firstname, lastname, icon, number, joined_on, left_on]
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        player_id:
+          type: string
+          format: uuid
+        firstname:
+          type: string
+        lastname:
+          type: string
+        icon:
+          type: [string, "null"]
+          format: uri
+        number:
+          $ref: "#/components/schemas/ShirtNumber"
+        joined_on:
+          type: string
+          format: date
+        left_on:
+          type: [string, "null"]
+          format: date
+    JoinSquadRequest:
+      type: object
+      required: [player_id, joined_on]
+      additionalProperties: false
+      properties:
+        player_id:
+          type: string
+          format: uuid
+        number:
+          $ref: "#/components/schemas/ShirtNumber"
+        joined_on:
+          type: string
+          format: date
+    ChangeNumberRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        number:
+          $ref: "#/components/schemas/ShirtNumber"
+    LeaveSquadRequest:
+      type: object
+      required: [left_on]
+      additionalProperties: false
+      properties:
+        left_on:
+          type: string
+          format: date
+    TransferRequest:
+      type: object
+      required: [player_id, from_team_id, to_team_id, "on"]
+      additionalProperties: false
+      properties:
+        player_id:
+          type: string
+          format: uuid
+        from_team_id:
+          type: string
+          format: uuid
+        to_team_id:
+          type: string
+          format: uuid
+          description: Different from `from_team_id`.
+        number:
+          $ref: "#/components/schemas/ShirtNumber"
+        "on":
+          type: string
+          format: date
+
+    MatchStatus:
+      type: string
+      enum: [scheduled, live, finished, postponed, cancelled]
+    Match:
+      type: object
+      required: [id, season_id, home_team, away_team, matchday, kickoff_at, status, home_score, away_score, venue, referee, convocation_at, video_url]
+      properties:
+        id:
+          type: string
+          format: uuid
+        season_id:
+          type: string
+          format: uuid
+        home_team:
+          $ref: "#/components/schemas/TeamRef"
+        away_team:
+          $ref: "#/components/schemas/TeamRef"
+        matchday:
+          type: integer
+          format: int32
+          minimum: 1
+        kickoff_at:
+          type: [string, "null"]
+          format: date-time
+        status:
+          $ref: "#/components/schemas/MatchStatus"
+        home_score:
+          type: [integer, "null"]
+          format: int32
+          minimum: 0
+        away_score:
+          type: [integer, "null"]
+          format: int32
+          minimum: 0
+        venue:
+          type: [string, "null"]
+        referee:
+          type: [string, "null"]
+        convocation_at:
+          type: [string, "null"]
+          format: date-time
+        video_url:
+          type: [string, "null"]
+          format: uri
+    ScheduleMatchRequest:
+      type: object
+      required: [home_team_id, away_team_id, matchday]
+      additionalProperties: false
+      properties:
+        home_team_id:
+          type: string
+          format: uuid
+        away_team_id:
+          type: string
+          format: uuid
+          description: Different from `home_team_id`.
+        matchday:
+          type: integer
+          format: int32
+          minimum: 1
+        kickoff_at:
+          type: [string, "null"]
+          format: date-time
+        venue:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 100
+    UpdateMatchRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        matchday:
+          type: [integer, "null"]
+          format: int32
+          minimum: 1
+        kickoff_at:
+          type: [string, "null"]
+          format: date-time
+        venue:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 100
+        referee:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 100
+        convocation_at:
+          type: [string, "null"]
+          format: date-time
+        video_url:
+          type: [string, "null"]
+          format: uri
+    ScoreRequest:
+      type: object
+      required: [home, away]
+      additionalProperties: false
+      properties:
+        home:
+          type: integer
+          format: int32
+          minimum: 0
+        away:
+          type: integer
+          format: int32
+          minimum: 0
+    PostponeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        kickoff_at:
+          type: [string, "null"]
+          format: date-time
+
+    StandingRow:
+      type: object
+      required: [rank, team_id, team_name, played, won, drawn, lost, goals_for, goals_against, goal_difference, points]
+      properties:
+        rank:
+          type: integer
+        team_id:
+          type: string
+          format: uuid
+        team_name:
+          type: string
+        played:
+          type: integer
+          format: int32
+        won:
+          type: integer
+          format: int32
+        drawn:
+          type: integer
+          format: int32
+        lost:
+          type: integer
+          format: int32
+        goals_for:
+          type: integer
+          format: int32
+        goals_against:
+          type: integer
+          format: int32
+        goal_difference:
+          type: integer
+          format: int32
+        points:
+          type: integer
+          format: int32
