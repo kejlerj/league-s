@@ -114,6 +114,9 @@ A body that fails validation gets a 422 with one readable French message per fie
 | ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/finish` | admin | Finish the match |
 | ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/postpone` | admin | Postpone (optional new date) |
 | ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/cancel` | admin | Cancel |
+| ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events` | public | The match's events, by minute. `note` only for an admin of the league |
+| ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events` | admin | Record a goal, card, substitution or injury. A goal on a live match also changes the score |
+| ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events/{eventID}` | admin | Delete an event. Responds 204 |
 
 ## Standings
 

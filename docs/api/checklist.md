@@ -77,6 +77,9 @@
   - tested: a match can't be found from another league's URL
 - [x] **Errors**: `match_home_team_fkey` or `match_away_team_fkey` → team not registered (422)
 - [x] **Fixture rules in the service**: a single match per team and per matchday, kickoff during the season
+- [x] **Match events** (#176): table `match_event` (migration 00014), rules on `match.Match`, routes under `…/matches/{matchID}/events`
+  - a goal on a live match follows the score, `PUT …/score` can't go below the goal events
+  - the injury note only for the league's admins
 
 ## 📊 Standings
 

@@ -893,6 +893,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+                matchID: components["parameters"]["MatchID"];
+            };
+            cookie?: never;
+        };
+        /**
+         * The events of a match, by minute
+         * @description Access: public. Events are sorted by minute, then by entry order.
+         *     `note` is returned only to an admin of the league. It is `null` for anyone else.
+         */
+        get: operations["listMatchEvents"];
+        put?: never;
+        /**
+         * Record a goal, a card, a substitution or an injury
+         * @description Access: league admin. Only on a live or finished match (409 otherwise).
+         *     Every player named is in the right team's squad on the match day: the UTC date of the kickoff, or today without a kickoff (422).
+         *     A goal on a live match adds 1 to its team's score. On a finished match, a goal is accepted only while the team has fewer goal events than goals (409), and the score doesn't change.
+         *     A player sent off (a red card, or a second yellow card) gets no further card (409).
+         *     `PUT …/score` refuses a score lower than a team's number of goal events (409).
+         */
+        post: operations["recordMatchEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events/{eventID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+                matchID: components["parameters"]["MatchID"];
+                eventID: components["parameters"]["EventID"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a match event
+         * @description Access: league admin. An event can't be edited: a wrong one is deleted and entered again.
+         *     Deleting a goal of a live match takes 1 off its team's score. On a finished match, the score doesn't change.
+         */
+        delete: operations["deleteMatchEvent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/leagues/{leagueID}/seasons/{seasonID}/standings": {
         parameters: {
             query?: never;
@@ -1303,6 +1362,77 @@ export interface components {
             /** Format: date-time */
             kickoff_at?: string | null;
         };
+        /** @enum {string} */
+        MatchEventType: "goal" | "yellow_card" | "red_card" | "substitution" | "injury";
+        MatchEventPlayer: {
+            /** Format: uuid */
+            id: string;
+            firstname: string;
+            lastname: string;
+        };
+        MatchEvent: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            match_id: string;
+            /**
+             * Format: uuid
+             * @description The team the event counts for. An own goal counts for this team, and its scorer is in the other team.
+             */
+            team_id: string;
+            type: components["schemas"]["MatchEventType"];
+            /** Format: int32 */
+            minute: number;
+            /** @description The scorer, the player booked or injured, or the player leaving. `null` for a goal without a known scorer. */
+            player: components["schemas"]["MatchEventPlayer"] | null;
+            assist_player: components["schemas"]["MatchEventPlayer"] | null;
+            /** @description The player coming in, on a substitution. */
+            player_in: components["schemas"]["MatchEventPlayer"] | null;
+            own_goal: boolean;
+            penalty: boolean;
+            /** @description The injury's note, returned only to an admin of the league. */
+            note: string | null;
+            /** @description `true` on a red card, and on a player's second yellow card. */
+            sent_off: boolean;
+            /**
+             * Format: int32
+             * @description The running score after this goal, from the goal events in minute order. `null` on other events.
+             */
+            home_score: number | null;
+            /** Format: int32 */
+            away_score: number | null;
+        };
+        RecordMatchEventRequest: {
+            type: components["schemas"]["MatchEventType"];
+            /**
+             * Format: uuid
+             * @description The home or the away team of the match.
+             */
+            team_id: string;
+            /** Format: int32 */
+            minute: number;
+            /**
+             * Format: uuid
+             * @description Optional on a goal. Required on a card, a substitution (the player leaving) and an injury.
+             */
+            player_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Goals only, not on a penalty or an own goal. In the scorer's team, and not the scorer.
+             */
+            assist_player_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Substitutions only, and required there. Different from `player_id`.
+             */
+            player_in_id?: string | null;
+            /** @default false */
+            own_goal: boolean;
+            /** @default false */
+            penalty: boolean;
+            /** @description Injuries only. Trimmed, then 1 to 200 characters. */
+            note?: string | null;
+        };
         StandingRow: {
             rank: number;
             /** Format: uuid */
@@ -1409,6 +1539,7 @@ export interface components {
         SeasonID: string;
         MembershipID: string;
         MatchID: string;
+        EventID: string;
         InvitationID: string;
         UserID: string;
     };
@@ -2900,6 +3031,94 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["MatchOK"];
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listMatchEvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+                matchID: components["parameters"]["MatchID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The match's events. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchEvent"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    recordMatchEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+                matchID: components["parameters"]["MatchID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordMatchEventRequest"];
+            };
+        };
+        responses: {
+            /** @description The recorded event. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchEvent"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["UnprocessableEntity"];
+        };
+    };
+    deleteMatchEvent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+                matchID: components["parameters"]["MatchID"];
+                eventID: components["parameters"]["EventID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
