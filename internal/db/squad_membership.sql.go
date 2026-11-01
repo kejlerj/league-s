@@ -194,6 +194,7 @@ JOIN season ON season.id = season_team.season_id
 WHERE season_team.season_id = $1
   AND season_team.team_id = $2
   AND season_team.league_id = $3
+FOR SHARE OF season
 `
 
 type GetSquadRulesParams struct {

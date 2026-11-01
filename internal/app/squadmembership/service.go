@@ -37,18 +37,23 @@ func (s *Service) Join(ctx context.Context, m *Membership) (*Membership, error) 
 }
 
 func (s *Service) Leave(ctx context.Context, leagueID, seasonID, teamID, membershipID uuid.UUID, on time.Time) (*Membership, error) {
-	m, err := s.store.Get(ctx, leagueID, seasonID, teamID, membershipID)
-	if errors.Is(err, ErrGetNotFound) {
-		return nil, ErrLeaveNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	if m.LeftOn != nil {
-		return nil, ErrLeaveNotActive
-	}
+	var res *Membership
+	err := s.store.InTx(ctx, func(store Store) error {
+		m, err := store.Get(ctx, leagueID, seasonID, teamID, membershipID)
+		if errors.Is(err, ErrGetNotFound) {
+			return ErrLeaveNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if m.LeftOn != nil {
+			return ErrLeaveNotActive
+		}
 
-	return leave(ctx, s.store, leagueID, seasonID, teamID, m.PlayerID, on)
+		res, err = leave(ctx, store, leagueID, seasonID, teamID, m.PlayerID, on)
+		return err
+	})
+	return res, err
 }
 
 func (s *Service) Transfer(ctx context.Context, t Transfer) (*Membership, error) {

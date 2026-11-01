@@ -55,7 +55,8 @@ JOIN season ON season.id = season_team.season_id
   AND season.league_id = season_team.league_id
 WHERE season_team.season_id = sqlc.arg(season_id)
   AND season_team.team_id = sqlc.arg(team_id)
-  AND season_team.league_id = sqlc.arg(league_id);
+  AND season_team.league_id = sqlc.arg(league_id)
+FOR SHARE OF season;
 
 -- name: LockSquad :one
 SELECT season.start_on, season.end_on, season.max_squad_size

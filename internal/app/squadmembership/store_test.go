@@ -461,6 +461,26 @@ func TestLockSquad_BlocksASeasonDateChange(t *testing.T) {
 	}
 }
 
+func TestRules_BlocksASeasonDateChange(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+
+	leave, err := testPool.Begin(ctx)
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer func() { _ = leave.Rollback(ctx) }()
+	if _, err := f.store.WithTx(leave).Rules(ctx, f.season.LeagueID, f.season.ID, f.home.ID); err != nil {
+		t.Fatalf("Rules() error = %v", err)
+	}
+
+	waitCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	if _, err := testPool.Exec(waitCtx, `SELECT 1 FROM season WHERE id = $1 FOR UPDATE`, f.season.ID); err == nil {
+		t.Fatal("locking the season returned while a leave holds the squad rules, want it to wait")
+	}
+}
+
 func TestCountActive(t *testing.T) {
 	f := newFixture(t)
 	f.join(t, f.home, f.player, nil, "2025-08-01")
