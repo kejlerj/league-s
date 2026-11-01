@@ -49,3 +49,12 @@ test('the scrubber cleans the request and the breadcrumbs of an event', () => {
   expect(event.request?.url).toBe('https://api.test/invitations/lookup?token=[Filtered]');
   expect(event.breadcrumbs?.[0].data?.status_code).toBe(200);
 });
+
+test('a token followed by a quote inside a string is scrubbed without breaking the event', () => {
+  const event = scrubEvent({
+    message: '{"url":"x?token=abc"}',
+    breadcrumbs: [{ category: 'console', message: 'payload {"next":"/reset?token=abc"} sent' }],
+  });
+  expect(event.message).toBe('{"url":"x?token=[Filtered]"}');
+  expect(event.breadcrumbs[0].message).toBe('payload {"next":"/reset?token=[Filtered]"} sent');
+});

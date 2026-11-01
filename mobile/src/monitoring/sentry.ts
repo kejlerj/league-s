@@ -8,8 +8,17 @@ export function scrubTokens(text: string): string {
   return text.replace(TOKEN_VALUE, '$1[Filtered]');
 }
 
+function scrubValue(value: unknown): unknown {
+  if (typeof value === 'string') return scrubTokens(value);
+  if (Array.isArray(value)) return value.map(scrubValue);
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, scrubValue(item)]));
+  }
+  return value;
+}
+
 export function scrubEvent<T extends object>(event: T): T {
-  return JSON.parse(scrubTokens(JSON.stringify(event)));
+  return scrubValue(event) as T;
 }
 
 export const navigationIntegration = Sentry.reactNavigationIntegration({

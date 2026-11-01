@@ -658,7 +658,7 @@ survives a reload.
 - `src/monitoring/sentry.ts` starts Sentry from `app/_layout.tsx` before the first render, and the root layout is wrapped in `Sentry.wrap`. No `EXPO_PUBLIC_SENTRY_DSN` means no `init`, so dev runs and jest send nothing.
 - `environment` is the build's `APP_ENV`, passed to the app as `extra.appEnv` by `app.config.ts`.
 - Errors and tracing, with the React Navigation integration registered on Expo Router's container, so transactions carry screen names. Traces are sampled at 100%, or 20% in production. No session replay, logs or profiling.
-- Privacy: `sendDefaultPii: false`, no user set, and `beforeSend` / `beforeSendTransaction` replace every `token=` value (URLs, breadcrumbs, messages) with `[Filtered]`.
+- Privacy: `sendDefaultPii: false`, no user set, and `beforeSend` / `beforeSendTransaction` walk the event and replace every `token=` value in its strings (URLs, breadcrumbs, messages) with `[Filtered]`.
 - Source maps and dSYM uploads aren't set up yet (#172). Until then, native builds need `SENTRY_DISABLE_AUTO_UPLOAD=true` (in `mobile/.env.example`), otherwise the Xcode build phase stops for a missing `SENTRY_AUTH_TOKEN`.
 
 ---
