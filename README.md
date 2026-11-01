@@ -96,7 +96,7 @@ After `make e2e`, the league stays in the database, so the mobile app can be che
 
 ## Deployment
 
-Production runs the Docker image (`Dockerfile`) with docker compose on one VPS. See [`deploy/README.md`](deploy/README.md).
+Production runs the Docker image (`Dockerfile`) with docker compose on one VPS. Every push to `main` deploys once CI is green (`.github/workflows/deploy.yml`). See [`deploy/README.md`](deploy/README.md).
 
 ## Database schema
 
