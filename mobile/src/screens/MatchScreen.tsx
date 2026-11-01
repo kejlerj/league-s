@@ -62,7 +62,7 @@ export function MatchScreen({ id }: { id: string }) {
             <>
               <View className="flex-row items-center gap-2">
                 <View className="flex-1 items-center gap-2">
-                  <Crest size={46} uri={data.home_team.logo} />
+                  <Crest size={46} uri={data.home_team.logo} name={data.home_team.name} />
                   <ThemedText weight="medium" size={13.5} className="text-center">{data.home_team.name}</ThemedText>
                 </View>
                 <View className="flex-row items-center gap-2.5">
@@ -77,7 +77,7 @@ export function MatchScreen({ id }: { id: string }) {
                   )}
                 </View>
                 <View className="flex-1 items-center gap-2">
-                  <Crest size={46} uri={data.away_team.logo} />
+                  <Crest size={46} uri={data.away_team.logo} name={data.away_team.name} />
                   <ThemedText weight="medium" size={13.5} tone="muted" className="text-center">{data.away_team.name}</ThemedText>
                 </View>
               </View>

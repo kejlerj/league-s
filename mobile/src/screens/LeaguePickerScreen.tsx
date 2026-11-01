@@ -52,7 +52,7 @@ export function LeaguePickerScreen() {
                 accessibilityRole="button"
               >
                 <CardRow isFirst={index === 0}>
-                  <Crest size={26} uri={league.logo} />
+                  <Crest size={26} uri={league.logo} name={league.name} />
                   <ThemedText weight="medium" size={14.5} className="flex-1">{league.name}</ThemedText>
                   {league.id === currentLeagueId && (
                     <ThemedText testID={`league-current-${league.id}`} tone="accent" weight="semibold" size={14}>

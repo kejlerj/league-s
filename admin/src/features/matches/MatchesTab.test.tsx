@@ -83,6 +83,20 @@ test('the most recent match is listed first', async () => {
   expect(statuses).toEqual(['Programmé', 'En cours'])
 })
 
+test('each team shows its logo, or its initial without one', async () => {
+  mockSeason()
+  server.use(
+    http.get(`${S}/teams`, () => HttpResponse.json([])),
+    http.get(M, () => HttpResponse.json([{ ...matchLive, home_team: { ...matchLive.home_team, logo: 'https://img.test/bravo.png' } }])),
+  )
+  renderRoute('/leagues/L1/seasons/S1?tab=matches', { me: adminOne })
+  const live = await rowOf('En cours')
+  expect(within(live).getByRole('cell', { name: 'FC Bravo' }).querySelector('img')).toHaveAttribute('src', 'https://img.test/bravo.png')
+  const away = within(live).getByRole('cell', { name: 'AS Alpha' })
+  expect(away.querySelector('img')).toBeNull()
+  expect(away).toHaveTextContent('AAS Alpha')
+})
+
 test('entering the score', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.put(`${M}/M2/score`, capture(sent)))

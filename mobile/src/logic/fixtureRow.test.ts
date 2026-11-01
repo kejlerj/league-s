@@ -52,3 +52,9 @@ test('a cancelled match is shown as cancelled', () => {
   expect(row.status).toBe('cancelled');
   expect(row.slot).toEqual({ text: 'annulé', tone: 'muted' });
 });
+
+test('the row carries both teams with their logos', () => {
+  const row = toFixtureRow(match({ home_team: { id: 'home', name: 'Domicile FC', logo: 'https://img.test/home.png' } }), 'home');
+  expect(row.home).toEqual({ id: 'home', name: 'Domicile FC', logo: 'https://img.test/home.png' });
+  expect(row.away).toEqual({ id: 'away', name: 'Extérieur FC', logo: null });
+});

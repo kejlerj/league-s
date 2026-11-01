@@ -6,6 +6,7 @@ import { byShirtNumber } from './squad';
 export interface NextMatch {
   matchId: string;
   opponentName: string;
+  opponentLogo: string | null;
   isHome: boolean;
   kickoffAt: Date | null;
   venue: string | null;
@@ -15,6 +16,7 @@ export interface NextMatch {
 export interface ResultLine {
   matchId: string;
   opponentName: string;
+  opponentLogo: string | null;
   isHome: boolean;
   result: ResultTag;
   score: string;
@@ -64,6 +66,7 @@ export function buildTeamDetail({ teamId, standings, finished, scheduled, squad 
     .map((match) => ({
       matchId: match.id,
       opponentName: opponentOf(match, teamId).name,
+      opponentLogo: opponentOf(match, teamId).logo,
       isHome: isHomeFor(match, teamId),
       result: resultFor(match, teamId) as ResultTag,
       score: formatScore(match, teamId),
@@ -74,6 +77,7 @@ export function buildTeamDetail({ teamId, standings, finished, scheduled, squad 
     ? {
         matchId: next.id,
         opponentName: opponentOf(next, teamId).name,
+        opponentLogo: opponentOf(next, teamId).logo,
         isHome: isHomeFor(next, teamId),
         kickoffAt: next.kickoff_at ? parseApiDate(next.kickoff_at) : null,
         venue: next.venue,

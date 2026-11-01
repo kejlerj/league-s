@@ -61,7 +61,7 @@ export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
           {team.data && (
             <>
               <View className="flex-row items-center gap-3.5">
-                <Crest size={56} uri={team.data.logo} />
+                <Crest size={56} uri={team.data.logo} name={team.data.name} />
                 <View className="flex-1">
                   <ThemedText weight="semibold" size={24}>{team.data.name}</ThemedText>
                   {detail.data?.standing && (
@@ -122,12 +122,15 @@ export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
                     <ThemedText tone="accent" mono weight="semibold" size={12.5}>
                       {detail.data.nextMatch.kickoffAt ? formatDateTime(detail.data.nextMatch.kickoffAt) : fr.team.scheduleTbd}
                     </ThemedText>
-                    <ThemedText weight="semibold" size={17}>
-                      {detail.data.nextMatch.opponentName}{' '}
-                      <ThemedText tone="muted" size={17}>
-                        {detail.data.nextMatch.isHome ? fr.team.home : fr.team.away}
+                    <View className="flex-row items-center gap-2">
+                      <Crest size={24} uri={detail.data.nextMatch.opponentLogo} name={detail.data.nextMatch.opponentName} />
+                      <ThemedText weight="semibold" size={17} className="flex-1">
+                        {detail.data.nextMatch.opponentName}{' '}
+                        <ThemedText tone="muted" size={17}>
+                          {detail.data.nextMatch.isHome ? fr.team.home : fr.team.away}
+                        </ThemedText>
                       </ThemedText>
-                    </ThemedText>
+                    </View>
                     {detail.data.nextMatch.venue && (
                       <ThemedText tone="muted" size={12.5}>{detail.data.nextMatch.venue}</ThemedText>
                     )}
@@ -152,6 +155,7 @@ export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
                   detail.data.lastResults.map((line, index) => (
                     <CardRow key={line.matchId} isFirst={index === 0}>
                       <ThemedText weight="semibold" size={11} className="w-5">{line.result}</ThemedText>
+                      <Crest size={22} uri={line.opponentLogo} name={line.opponentName} />
                       <ThemedText weight="medium" size={14.5} className="flex-1">
                         {line.opponentName}{' '}
                         <ThemedText tone="muted" size={14.5}>{line.isHome ? fr.team.home : fr.team.away}</ThemedText>

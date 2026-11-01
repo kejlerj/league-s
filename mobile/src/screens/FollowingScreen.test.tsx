@@ -49,7 +49,8 @@ test('lists the followed fixtures for the current season', async () => {
 
   render(<FollowingScreen />);
 
-  await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Bastille')).toBeTruthy());
+  expect(screen.getByText('Belleville')).toBeTruthy();
   expect(matchesService.getFollowedFixtures).toHaveBeenCalledWith('l', SEASON.id, [TEAM]);
   expect(screen.getByText('3–1')).toBeTruthy();
 });
@@ -60,8 +61,8 @@ test('tapping a finished fixture opens its match page', async () => {
   ]);
 
   render(<FollowingScreen />);
-  await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
-  fireEvent.press(screen.getByText('Bastille — Belleville'));
+  await waitFor(() => expect(screen.getByText('Bastille')).toBeTruthy());
+  fireEvent.press(screen.getByText('Bastille'));
 
   expect(mockPush).toHaveBeenCalledWith('/match/m1');
 });
@@ -86,5 +87,18 @@ test('shows an error and retries on tap', async () => {
 
   fireEvent.press(screen.getByText(fr.common.retry));
 
-  await waitFor(() => expect(screen.getByText('Bastille — Belleville')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Bastille')).toBeTruthy());
+});
+
+test('each team of a fixture shows its logo, or its initial without one', async () => {
+  const match = apiMatch('m1', 'finished', 'Bastille', 'Belleville');
+  jest.mocked(matchesService.getFollowedFixtures).mockResolvedValue([
+    { match: { ...match, home_team: { ...match.home_team, logo: 'https://img.test/bastille.png' } }, teamId: 'home' },
+  ]);
+
+  render(<FollowingScreen />);
+
+  await waitFor(() => expect(screen.getByText('Bastille')).toBeTruthy());
+  expect(screen.getByTestId('crest-image').props.source).toEqual({ uri: 'https://img.test/bastille.png' });
+  expect(screen.getByTestId('crest-initial', { includeHiddenElements: true })).toHaveTextContent('B');
 });
