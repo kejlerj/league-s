@@ -19,11 +19,13 @@ export function resolveAppEnv(vars: Variables): AppEnv {
 }
 
 export function withEnvironment(config: ExpoConfig, vars: Variables): ExpoConfig {
-  if (resolveAppEnv(vars) !== 'development') return config;
+  const appEnv = resolveAppEnv(vars);
+  const withAppEnv = { ...config, extra: { ...config.extra, appEnv } };
+  if (appEnv !== 'development') return withAppEnv;
   return {
-    ...config,
+    ...withAppEnv,
     ios: {
-      ...config.ios,
+      ...withAppEnv.ios,
       infoPlist: {
         ...config.ios?.infoPlist,
         NSAppTransportSecurity: { NSAllowsLocalNetworking: true },
