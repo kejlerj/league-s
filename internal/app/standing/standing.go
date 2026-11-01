@@ -25,12 +25,14 @@ type Rules struct {
 type Team struct {
 	ID   uuid.UUID
 	Name string
+	Logo *string
 }
 
 type Row struct {
 	Rank           int
 	TeamID         uuid.UUID
 	TeamName       string
+	TeamLogo       *string
 	Played         int32
 	Won            int32
 	Drawn          int32
@@ -51,7 +53,7 @@ func Compute(teams []Team, matches []*match.Match, rules Rules) []Row {
 
 	rows := make([]*Row, len(teams))
 	for i, t := range teams {
-		rows[i] = &Row{TeamID: t.ID, TeamName: t.Name}
+		rows[i] = &Row{TeamID: t.ID, TeamName: t.Name, TeamLogo: t.Logo}
 	}
 	tally(rows, results, rules)
 

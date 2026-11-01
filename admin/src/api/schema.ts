@@ -1308,6 +1308,8 @@ export interface components {
             /** Format: uuid */
             team_id: string;
             team_name: string;
+            /** Format: uri */
+            team_logo: string | null;
             /** Format: int32 */
             played: number;
             /** Format: int32 */

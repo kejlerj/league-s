@@ -2260,7 +2260,7 @@ components:
 
     StandingRow:
       type: object
-      required: [rank, team_id, team_name, played, won, drawn, lost, goals_for, goals_against, goal_difference, points]
+      required: [rank, team_id, team_name, team_logo, played, won, drawn, lost, goals_for, goals_against, goal_difference, points]
       properties:
         rank:
           type: integer
@@ -2269,6 +2269,9 @@ components:
           format: uuid
         team_name:
           type: string
+        team_logo:
+          type: [string, "null"]
+          format: uri
         played:
           type: integer
           format: int32
