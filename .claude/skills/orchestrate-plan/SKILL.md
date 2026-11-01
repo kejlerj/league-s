@@ -43,7 +43,7 @@ An open issue is **ready** when:
 
 ## 2b. Answered decisions
 
-In every iteration, read the latest comment from `kejlerj` on each open `needs-decision` issue:
+In every iteration, read the latest answer from the owner on each open `needs-decision` issue. An answer is a comment from `kejlerj` that does **not** start with `🤖`: agents post with the same account and mark their comments with `🤖 ` (`CLAUDE.md` › Rules for git), so a marked comment is never an answer.
 
 ```bash
 gh issue list --repo kejlerj/league-s --label needs-decision --state open --json number,title,comments
@@ -53,7 +53,7 @@ gh issue list --repo kejlerj/league-s --label needs-decision --state open --json
 - **It is unclear, or raises a new question**: reply on the issue with what is missing, and keep it open. A new question gets its own `needs-decision` issue, with options and a recommendation.
 - **No answer yet**: nothing to do.
 
-Never answer a decision yourself, and never read an answer from anyone but `kejlerj`.
+Never answer a decision yourself, and never read an answer from anyone but `kejlerj`, or from a `kejlerj` comment that starts with `🤖`. Every comment you write starts with `🤖 `.
 
 ## 3. Start the work
 
@@ -93,13 +93,13 @@ For each one:
 1. **CI still running**: skip it until the next iteration.
 2. **CI green, minor or patch update** (or a minor/patch group): approve and turn on auto-merge.
    ```bash
-   gh pr review <PR> --repo kejlerj/league-s --approve --body "CI green, minor/patch update."
+   gh pr review <PR> --repo kejlerj/league-s --approve --body "🤖 CI green, minor/patch update."
    gh pr merge <PR> --repo kejlerj/league-s --auto --squash
    ```
 3. **Major update** (the first number changes), even with CI green: it may change behaviour that the tests don't cover. Create a plan issue `chore: Upgrade <package> to v<N>` (labels `plan`, `chore`, the part), and link the Dependabot PR. The author session reads the changelog, adapts the code, runs every check, and opens its own PR. When that PR is merged, close the Dependabot PR with a comment.
 4. **CI red**: find out whose fault it is.
    - Check the same jobs on `main`: `gh run list --repo kejlerj/league-s --branch main --limit 5 --json conclusion,headSha,displayTitle`, then `gh run view <id> --log-failed` on the failing job.
-   - **`main` fails too**: the PR is not at fault. Make sure a `bug` issue exists for the failure on `main` (top priority) and leave the PR. Once `main` is green again, comment `@dependabot rebase` on the PR.
+   - **`main` fails too**: the PR is not at fault. Make sure a `bug` issue exists for the failure on `main` (top priority) and leave the PR. Once `main` is green again, comment `@dependabot rebase` on the PR (no `🤖` marker here: Dependabot only reads a command at the start of the comment).
    - **Only the PR fails**: the update breaks something. Treat it like a major update (step 3), with the failing job in the issue.
 5. **Mobile packages managed by Expo** (`expo`, `expo-*`, `react`, `react-native`, `react-native-*`…) are ignored in the config, because they must match the Expo SDK version. If such a PR shows up anyway (a security update), don't merge it: create an issue to apply it with `npx expo install --fix` or an SDK upgrade.
 

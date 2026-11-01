@@ -68,6 +68,7 @@ Local API: `docker compose up -d`, `make migrate-up`, then `make run` (port 8080
 - Open PRs as **drafts**. Mark one ready (`gh pr ready`) only when every local check passes. The reviewer runs only on ready PRs.
 - Never force-push a branch that is under review. Push new commits, so the reviewer can see what changed. One exception: restacking a stacked PR after its parent is merged (`docs/agents/pr-workflow.md` › Stacked PRs), with `git push --force-with-lease` only.
 - Never merge by hand and never bypass branch protection. Turn on auto-merge (`gh pr merge --auto --squash`) on a PR whose base is `main`. GitHub then merges it once it is approved and green. Never turn it on for a PR stacked on another branch.
+- **Mark what you write on GitHub.** Agents post with the owner's account, so every comment, thread reply, review body and issue body an agent writes starts with `🤖 ` (e.g. `gh issue comment <N> --body "🤖 Starting this."`). An unmarked comment from `kejlerj` is the owner speaking. One exception: a bot command such as `@dependabot rebase` must stay the first thing in the comment, so it gets no marker.
 - Don't run destructive commands on the local database (`migrate-reset`, `docker compose down -v`) without asking.
 
 ## Decisions that need the user
