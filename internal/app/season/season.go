@@ -36,7 +36,7 @@ func (s *Season) CheckDates() error {
 }
 
 func DefaultTieBreakers() []string {
-	return []string{"goal_difference", "goals_scored"}
+	return []string{"goal_difference", "head_to_head"}
 }
 
 type CreateError string

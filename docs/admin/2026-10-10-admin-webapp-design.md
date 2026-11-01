@@ -60,7 +60,7 @@ Two shapes: `{"error": "message"}`, and for field validation (422) `{"errors": {
 - **League**: `{id, name, logo}`. Create: `{name, logo?}`.
 - **Team**: `{id, league_id, name, logo}`. Create: `{name, logo?}`.
 - **Player**: `{id, league_id, firstname, lastname, icon}`. Create: `{firstname, lastname, icon?}`.
-- **Season**: `{id, league_id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers}`. `tie_breakers` among `goal_difference`, `goals_scored`, `head_to_head`, `fair_play`, `random`.
+- **Season**: `{id, league_id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers}`. `tie_breakers` among `goal_difference`, `goals_scored`, `head_to_head`, `fair_play`. Default: `goal_difference`, then `head_to_head`.
 - **A season's teams**: `GET .../seasons/{seasonID}/teams`, `POST` and `DELETE .../teams/{teamID}`.
 - **Squad**: member `{membership_id, player_id, firstname, lastname, icon, number, joined_on, left_on}`. Join `{player_id, number?, joined_on}`, number `{number}`, leave `{left_on}`, transfer `{player_id, from_team_id, to_team_id, number?, on}`. Dates in `YYYY-MM-DD` format.
 - **Match**: `{id, season_id, home_team, away_team, matchday, kickoff_at, status, home_score, away_score, venue, referee, convocation_at, video_url}`. Schedule `{home_team_id, away_team_id, matchday, kickoff_at?, venue?}`. Actions: `start`, `score` (`{home, away}`), `finish`, `postpone` (`{kickoff_at?}`), `cancel`.

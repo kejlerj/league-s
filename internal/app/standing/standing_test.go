@@ -212,8 +212,21 @@ func TestCompute_TieBreakers(t *testing.T) {
 			want: []string{"B", "A", "C", "D"},
 		},
 		{
+			name:        "head to head when the goal difference is equal",
+			tieBreakers: []string{TieBreakerGoalDifference, TieBreakerHeadToHead},
+			matches: func(teams map[string]Team) []*match.Match {
+				return []*match.Match{
+					played(t, teams["A"], teams["B"], 0, 2),
+					played(t, teams["A"], teams["D"], 4, 0),
+					played(t, teams["A"], teams["C"], 0, 0),
+					played(t, teams["B"], teams["D"], 0, 0),
+				}
+			},
+			want: []string{"B", "A", "C", "D"},
+		},
+		{
 			name:        "unknown rules are skipped and the name decides last",
-			tieBreakers: []string{"fair_play", "random"},
+			tieBreakers: []string{"fair_play"},
 			matches: func(teams map[string]Team) []*match.Match {
 				return []*match.Match{played(t, teams["B"], teams["A"], 1, 1)}
 			},

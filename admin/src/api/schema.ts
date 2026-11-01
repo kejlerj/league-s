@@ -1097,7 +1097,7 @@ export interface components {
             icon?: string | null;
         };
         /** @enum {string} */
-        TieBreaker: "goal_difference" | "goals_scored" | "head_to_head" | "fair_play" | "random";
+        TieBreaker: "goal_difference" | "goals_scored" | "head_to_head" | "fair_play";
         Season: {
             /** Format: uuid */
             id: string;
@@ -1145,7 +1145,7 @@ export interface components {
              * @description Defaults to 0.
              */
             match_loss_pts?: number | null;
-            /** @description Applied in order. Omitted: `[goal_difference, goals_scored]`. */
+            /** @description Applied in order. Omitted: `[goal_difference, head_to_head]`. */
             tie_breakers?: components["schemas"]["TieBreaker"][];
             /**
              * Format: int32

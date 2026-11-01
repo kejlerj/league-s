@@ -47,7 +47,7 @@ type createSeasonRequest struct {
 	MatchWinPts  *int32   `json:"match_win_pts" validate:"omitnil,min=0"`
 	MatchDrawPts *int32   `json:"match_draw_pts" validate:"omitnil,min=0"`
 	MatchLossPts *int32   `json:"match_loss_pts" validate:"omitnil,min=0"`
-	TieBreakers  []string `json:"tie_breakers" validate:"omitempty,dive,oneof=goal_difference goals_scored head_to_head fair_play random"`
+	TieBreakers  []string `json:"tie_breakers" validate:"omitempty,dive,oneof=goal_difference goals_scored head_to_head fair_play"`
 	MaxSquadSize *int32   `json:"max_squad_size" validate:"omitnil,min=1"`
 }
 
@@ -58,7 +58,7 @@ type updateSeasonRequest struct {
 	MatchWinPts  *int32   `json:"match_win_pts" validate:"omitnil,min=0"`
 	MatchDrawPts *int32   `json:"match_draw_pts" validate:"omitnil,min=0"`
 	MatchLossPts *int32   `json:"match_loss_pts" validate:"omitnil,min=0"`
-	TieBreakers  []string `json:"tie_breakers" validate:"omitnil,min=1,dive,oneof=goal_difference goals_scored head_to_head fair_play random"`
+	TieBreakers  []string `json:"tie_breakers" validate:"omitnil,min=1,dive,oneof=goal_difference goals_scored head_to_head fair_play"`
 }
 
 type seasonResponse struct {

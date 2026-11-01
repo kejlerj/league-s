@@ -84,7 +84,8 @@
 - [x] **Table-driven unit tests**
 - [x] **Tie-breakers in the order set by the season**: goal difference, goals scored, head-to-head
   - head-to-head is the trickiest case, with several tied teams
-  - `fair_play` and `random` are still to be decided: they are ignored for now
+  - `random` is removed (decision #122): the default is goal difference, then head-to-head
+  - `fair_play` is still ignored: there is no card data
 - [x] **The endpoint** `GET /leagues/{leagueID}/seasons/{seasonID}/standings`, which counts only `finished` matches
 
 ## 🧪 Scenario tests

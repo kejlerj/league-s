@@ -135,7 +135,7 @@ erDiagram
         INT match_win_pts "default 3"
         INT match_draw_pts "default 1"
         INT match_loss_pts "default 0"
-        TEXT tie_breakers "TEXT array, ordered: goal_difference then goals_scored"
+        TEXT tie_breakers "TEXT array, ordered: goal_difference then head_to_head"
         TIMESTAMPTZ created_at
         TIMESTAMPTZ updated_at
     }

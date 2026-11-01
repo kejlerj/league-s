@@ -43,9 +43,15 @@ test('create sends the dates as YYYY-MM-DD and the default values, without max_s
       match_win_pts: 3,
       match_draw_pts: 1,
       match_loss_pts: 0,
-      tie_breakers: ['goal_difference', 'goals_scored'],
+      tie_breakers: ['goal_difference', 'head_to_head'],
     }),
   )
+})
+
+test('drawing lots is not offered as a tie breaker', async () => {
+  const { user } = setup()
+  const dialog = await openNew(user)
+  expect(within(dialog).queryByLabelText('Tirage au sort')).not.toBeInTheDocument()
 })
 
 test('tie breakers are sent in the order they were selected', async () => {
@@ -62,9 +68,9 @@ test('tie breakers are sent in the order they were selected', async () => {
   await user.type(within(dialog).getByLabelText('Début'), '2027-09-01')
   await user.type(within(dialog).getByLabelText('Fin'), '2028-06-30')
   await user.click(within(dialog).getByLabelText('Différence de buts'))
-  await user.click(within(dialog).getByLabelText('Confrontations directes'))
+  await user.click(within(dialog).getByLabelText('Buts marqués'))
   await user.click(within(dialog).getByRole('button', { name: 'Enregistrer' }))
-  await vi.waitFor(() => expect(body.tie_breakers).toEqual(['goals_scored', 'head_to_head']))
+  await vi.waitFor(() => expect(body.tie_breakers).toEqual(['head_to_head', 'goals_scored']))
 })
 
 test('an end before the start blocks submitting', async () => {

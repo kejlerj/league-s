@@ -12,7 +12,6 @@ export const TIE_BREAKER_LABELS: Record<TieBreaker, string> = {
   goals_scored: 'Buts marqués',
   head_to_head: 'Confrontations directes',
   fair_play: 'Fair-play',
-  random: 'Tirage au sort',
 }
 
 const TIE_BREAKERS = Object.keys(TIE_BREAKER_LABELS) as TieBreaker[]
@@ -60,7 +59,7 @@ export function SeasonForm({ leagueId, initial, onDone, onCancel }: Props) {
   const [win, setWin] = useState(initial?.match_win_pts ?? 3)
   const [draw, setDraw] = useState(initial?.match_draw_pts ?? 1)
   const [loss, setLoss] = useState(initial?.match_loss_pts ?? 0)
-  const [tieBreakers, setTieBreakers] = useState<TieBreaker[]>(initial?.tie_breakers ?? ['goal_difference', 'goals_scored'])
+  const [tieBreakers, setTieBreakers] = useState<TieBreaker[]>(initial?.tie_breakers ?? ['goal_difference', 'head_to_head'])
   const [maxSquadSize, setMaxSquadSize] = useState(initial?.max_squad_size?.toString() ?? '')
   const [endBeforeStart, setEndBeforeStart] = useState(false)
   const { submit, pending, error, field } = useSubmit(() => {
