@@ -188,6 +188,10 @@ All under `/admin`.
 - 5xx and network failure: generic banner with a « réessayer » button.
 - During a write, the button is disabled to avoid a double submit.
 
+### Error reporting
+
+Unexpected errors (uncaught, caught by React, failed renders) and page and navigation traces go to Sentry (project `league-s-admin`), only when the build has `VITE_SENTRY_DSN`. No user info is sent, and `token=` values are filtered out of every URL, so reset and invitation links never reach Sentry. The admin CSP allows `connect-src https://*.ingest.de.sentry.io` for this.
+
 ## Tests
 
 - Vitest + Testing Library, API mocked with MSW.

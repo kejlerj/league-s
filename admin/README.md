@@ -26,7 +26,17 @@ npm run build
 
 Password reset links (`/reset-password?token=`) and invitation links (`/invitation?token=`) are built from this value.
 
-The API serves `/admin` with its own Content Security Policy (`internal/server/routes.go`): scripts, styles and API calls from the same origin only, and images from the same origin or any `https:` host, for league and team logos.
+The API serves `/admin` with its own Content Security Policy (`internal/server/routes.go`): scripts, styles and API calls from the same origin only, images from the same origin or any `https:` host, for league and team logos, and error reports to Sentry's EU ingest hosts (`https://*.ingest.de.sentry.io`).
+
+## Sentry
+
+Errors and traces go to the Sentry project `league-s-admin` when the build has a DSN. Vite reads these variables at build time (`admin/.env.local`, or `--build-arg` for the `Dockerfile`):
+
+- `VITE_SENTRY_DSN`: no value means Sentry is off. Dev, Vitest and Playwright run without it.
+- `VITE_SENTRY_ENVIRONMENT`: defaults to the Vite mode (`development`, `production`).
+- `VITE_SENTRY_RELEASE`: optional, e.g. the git commit.
+
+`src/lib/sentry.ts` sends no user info and replaces `token=` values in URLs, requests, breadcrumbs and spans with `[Filtered]`, so reset and invitation links never reach Sentry.
 
 ## Layout
 
