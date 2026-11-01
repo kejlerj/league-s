@@ -30,7 +30,7 @@ func (f *fakeExpiredStore) count() int {
 	return len(f.calls)
 }
 
-func TestCleaner_RunsAtStartThenOnEveryTick(t *testing.T) {
+func TestCleaner_RunsAtStartAndStopsOnCancel(t *testing.T) {
 	store := &fakeExpiredStore{}
 	cleaner := NewCleaner(store)
 	ctx, cancel := context.WithCancel(t.Context())
@@ -47,6 +47,17 @@ func TestCleaner_RunsAtStartThenOnEveryTick(t *testing.T) {
 	if got := store.count(); got != 1 {
 		t.Errorf("calls = %d, want one at start and none before the first tick", got)
 	}
+}
+
+func TestCleaner_RunsAgainOnEveryTick(t *testing.T) {
+	store := &fakeExpiredStore{}
+	cleaner := NewCleaner(store)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+
+	go cleaner.Run(ctx, time.Millisecond)
+
+	waitFor(t, func() bool { return store.count() >= 3 })
 }
 
 func TestCleaner_KeepsRunningAfterAnError(t *testing.T) {
