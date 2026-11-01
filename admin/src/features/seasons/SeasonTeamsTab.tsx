@@ -10,6 +10,8 @@ import { DataTable, type Column } from '@/ui/DataTable'
 import { FormError, SelectField } from '@/ui/Field'
 import { PageState } from '@/ui/PageState'
 import { useSubmit } from '@/ui/useSubmit'
+import { CircleMinus } from 'lucide-react'
+import { IconButton } from '@/ui/IconButton'
 
 export function SeasonTeamsTab({ leagueId, seasonId }: { leagueId: string; seasonId: string }) {
   const queryClient = useQueryClient()
@@ -50,9 +52,7 @@ export function SeasonTeamsTab({ leagueId, seasonId }: { leagueId: string; seaso
       header: '',
       align: 'right',
       cell: (team) => (
-        <Button variant="link" onClick={() => setRemoving(team)}>
-          Désinscrire
-        </Button>
+        <IconButton label="Désinscrire" icon={CircleMinus} onClick={() => setRemoving(team)} />
       ),
     },
   ]

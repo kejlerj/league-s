@@ -15,7 +15,7 @@ Two roles:
 
 | Topic | Decision |
 |---|---|
-| Stack | Vite, React 19, TypeScript, Tailwind, React Router, TanStack Query |
+| Stack | Vite, React 19, TypeScript, Tailwind, React Router, TanStack Query, lucide-react (icons, #152) |
 | Delivery | Static build embedded in the Go binary with `go:embed`, served under `/admin/` |
 | Origin | Same origin as the API. No CORS in production |
 | Session | `httpOnly` `session` cookie set by the API. The webapp stores no token |
@@ -112,7 +112,7 @@ admin/
     api/         fetch client, types, one file per resource
     auth/        current session, route guards
     features/    one folder per resource: pages and forms
-    ui/          table, field, modal, button, error banner
+    ui/          table, field, modal, button, icon button, error banner
     routes.tsx
     main.tsx
 ```
@@ -123,6 +123,7 @@ Each unit has one role:
 - `api/<resource>.ts`: typed functions, stateless.
 - `auth/`: loads `GET /me`, exposes the user and `canWrite(leagueId)`, `isSuperadmin`.
 - `features/`: pages that combine TanStack Query requests and `ui/` components.
+- Row actions in tables are `ui/IconButton`: an icon named by its French label (`aria-label`), with a tooltip shown at once on hover and keyboard focus. Delete and cancel are red. The ball (start) and scoreboard (score) icons are custom SVGs in `ui/icons.tsx`, since lucide has none.
 - `ui/`: presentation components with no network call.
 
 ## Routes

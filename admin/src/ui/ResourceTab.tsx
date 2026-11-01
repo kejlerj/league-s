@@ -5,6 +5,8 @@ import { ConfirmDialog } from './ConfirmDialog'
 import { DataTable, type Column } from './DataTable'
 import { Modal } from './Modal'
 import { PageState } from './PageState'
+import { Pencil, Trash2 } from 'lucide-react'
+import { IconButton } from '@/ui/IconButton'
 
 type FormProps<T> = { initial?: T; onDone: () => void; onCancel: () => void }
 
@@ -40,13 +42,9 @@ export function ResourceTab<T>(props: Props<T>) {
       header: '',
       align: 'right',
       cell: (row) => (
-        <span className="whitespace-nowrap">
-          <Button variant="link" onClick={() => setEditing(row)}>
-            Modifier
-          </Button>
-          <Button variant="link" onClick={() => setRemoving(row)}>
-            Supprimer
-          </Button>
+        <span className="inline-flex justify-end">
+          <IconButton label="Modifier" icon={Pencil} onClick={() => setEditing(row)} />
+          <IconButton label="Supprimer" icon={Trash2} danger onClick={() => setRemoving(row)} />
         </span>
       ),
     },

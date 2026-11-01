@@ -1,4 +1,6 @@
+import { Ban, CalendarClock, Flag, Pencil, Trash2 } from 'lucide-react'
 import type { MatchStatus } from '@/api/types'
+import { Ball, Scoreboard } from '@/ui/icons'
 
 export type MatchAction = 'start' | 'score' | 'finish' | 'postpone' | 'cancel' | 'edit' | 'delete'
 
@@ -19,6 +21,16 @@ export const ACTION_LABELS: Record<MatchAction, string> = {
   edit: 'Modifier',
   delete: 'Supprimer',
 }
+
+export const ACTION_ICONS = {
+  start: Ball,
+  score: Scoreboard,
+  finish: Flag,
+  postpone: CalendarClock,
+  cancel: Ban,
+  edit: Pencil,
+  delete: Trash2,
+} satisfies Record<MatchAction, unknown>
 
 export const STATUS_LABELS: Record<MatchStatus, string> = {
   scheduled: 'Programmé',

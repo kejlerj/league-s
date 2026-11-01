@@ -10,6 +10,8 @@ import { DataTable, type Column } from '@/ui/DataTable'
 import { Modal } from '@/ui/Modal'
 import { PageState } from '@/ui/PageState'
 import { LeagueForm } from './LeagueForm'
+import { Trash2 } from 'lucide-react'
+import { IconButton } from '@/ui/IconButton'
 
 export function LeaguesPage() {
   const { me, isSuperadmin, refresh } = useSession()
@@ -41,9 +43,7 @@ export function LeaguesPage() {
       header: '',
       align: 'right',
       cell: (league) => (
-        <Button variant="link" onClick={() => setDeleting(league)}>
-          Supprimer
-        </Button>
+        <IconButton label="Supprimer" icon={Trash2} danger onClick={() => setDeleting(league)} />
       ),
     })
   }
