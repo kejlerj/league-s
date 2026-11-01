@@ -1,0 +1,17 @@
+.git
+.github
+.claude
+.env
+.env.*
+!.env.example
+docs
+mobile
+plan
+tmp
+main
+admin/node_modules
+admin/dist
+admin/e2e
+admin/test-results
+admin/playwright-report
+**/*_test.go
