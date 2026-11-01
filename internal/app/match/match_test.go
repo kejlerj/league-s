@@ -62,8 +62,8 @@ func TestTransitions(t *testing.T) {
 		{
 			name:    "SetScore",
 			apply:   func(m *Match) error { return m.SetScore(2, 1) },
-			allowed: map[Status]Status{StatusLive: StatusLive},
-			wantErr: ErrSetScoreNotLive,
+			allowed: map[Status]Status{StatusLive: StatusLive, StatusFinished: StatusFinished},
+			wantErr: ErrSetScoreNotAllowed,
 		},
 		{
 			name:    "Finish",
@@ -151,6 +151,29 @@ func TestSetScore(t *testing.T) {
 	}
 	if score := m.Score(); score == nil || *score != (Score{Home: 2, Away: 1}) {
 		t.Errorf("score = %v, want 2-1", score)
+	}
+}
+
+func TestSetScore_CorrectsAFinishedMatch(t *testing.T) {
+	m := matchIn(StatusLive)
+	if err := m.SetScore(2, 1); err != nil {
+		t.Fatalf("SetScore() error = %v", err)
+	}
+	if err := m.Finish(); err != nil {
+		t.Fatalf("Finish() error = %v", err)
+	}
+
+	if err := m.SetScore(-1, 1); !errors.Is(err, ErrSetScoreNegative) {
+		t.Errorf("negative score: error = %v, want ErrSetScoreNegative", err)
+	}
+	if err := m.SetScore(1, 3); err != nil {
+		t.Fatalf("SetScore() error = %v", err)
+	}
+	if m.Status() != StatusFinished {
+		t.Errorf("status = %s, want finished", m.Status())
+	}
+	if score := m.Score(); score == nil || *score != (Score{Home: 1, Away: 3}) {
+		t.Errorf("score = %v, want 1-3", score)
 	}
 }
 

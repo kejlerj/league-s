@@ -124,8 +124,8 @@ func (m *Match) Start() error {
 }
 
 func (m *Match) SetScore(home, away int32) error {
-	if m.status != StatusLive {
-		return ErrSetScoreNotLive
+	if m.status != StatusLive && m.status != StatusFinished {
+		return ErrSetScoreNotAllowed
 	}
 	if home < 0 || away < 0 {
 		return ErrSetScoreNegative
@@ -232,8 +232,8 @@ type SetScoreError string
 func (e SetScoreError) Error() string { return string(e) }
 
 const (
-	ErrSetScoreNotLive  SetScoreError = "the score can only change while the match is live"
-	ErrSetScoreNegative SetScoreError = "a score cannot be negative"
+	ErrSetScoreNotAllowed SetScoreError = "the score can only change on a live or finished match"
+	ErrSetScoreNegative   SetScoreError = "a score cannot be negative"
 )
 
 type FinishError string
