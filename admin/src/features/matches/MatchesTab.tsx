@@ -11,6 +11,7 @@ import { DataTable, type Column } from '@/ui/DataTable'
 import { Field, SelectField } from '@/ui/Field'
 import { Modal } from '@/ui/Modal'
 import { PageState } from '@/ui/PageState'
+import { TeamName } from '@/ui/TeamLogo'
 import { ACTION_LABELS, matchActions, STATUS_LABELS, type MatchAction } from './matchActions'
 import { newestFirst } from './matchOrder'
 import { EditForm, PostponeForm, ScheduleForm } from './MatchForm'
@@ -86,9 +87,9 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
   const columns: Column<Match>[] = [
     { header: 'J', width: '3rem', cell: (match) => match.matchday },
     { header: 'Date', width: '9rem', cell: (match) => formatDateTime(match.kickoff_at) },
-    { header: 'Domicile', cell: (match) => match.home_team.name, title: (match) => match.home_team.name },
+    { header: 'Domicile', cell: (match) => <TeamName team={match.home_team} />, title: (match) => match.home_team.name },
     { header: 'Score', width: '4.5rem', cell: (match) => <span className="whitespace-nowrap">{score(match)}</span> },
-    { header: 'Extérieur', cell: (match) => match.away_team.name, title: (match) => match.away_team.name },
+    { header: 'Extérieur', cell: (match) => <TeamName team={match.away_team} />, title: (match) => match.away_team.name },
     { header: 'Statut', width: '6rem', cell: (match) => STATUS_LABELS[match.status] },
     {
       header: '',
