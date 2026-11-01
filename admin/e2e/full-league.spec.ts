@@ -70,52 +70,57 @@ test('a superadmin builds a full league through the admin', async ({ page }) => 
 
   await page.getByRole('tab', { name: 'Matchs' }).click()
   for (const fixture of fixtures) {
+    const { home, away, outcome } = fixture
     await page.getByRole('button', { name: 'Programmer un match' }).click()
     const form = page.getByRole('dialog', { name: 'Programmer un match' })
-    await form.getByLabel('Domicile').selectOption({ label: fixture.home })
-    await form.getByLabel('Extérieur').selectOption({ label: fixture.away })
+    await form.getByLabel('Domicile').selectOption({ label: home })
+    await form.getByLabel('Extérieur').selectOption({ label: away })
     await form.getByLabel('Journée').fill(String(fixture.matchday))
     await form.getByLabel("Coup d'envoi").fill(fixture.kickoff)
     await form.getByRole('button', { name: 'Programmer' }).click()
     await expect(form).toBeHidden()
-  }
 
-  for (const { home, away, outcome } of fixtures) {
-    const row = page.getByRole('row').filter({ hasText: home }).filter({ hasText: away })
-    const act = (name: string) => row.getByRole('button', { name, exact: true }).click()
+    const header = page.getByRole('region', { name: 'Match' })
+    await expect(header).toContainText('Programmé')
+    const act = (name: string) => page.getByRole('group', { name: 'Statut du match' }).getByRole('button', { name, exact: true }).click()
 
     if (outcome.status === 'finished' || outcome.status === 'live') {
       await act('Démarrer')
-      await confirm(page, 'Démarrer le match', 'Démarrer')
-      await act('Score')
-      const form = page.getByRole('dialog', { name: 'Score' })
-      await form.getByLabel(home).fill(String(outcome.score[0]))
-      await form.getByLabel(away).fill(String(outcome.score[1]))
-      await form.getByRole('button', { name: 'Enregistrer' }).click()
-      await expect(form).toBeHidden()
-      await expect(row).toContainText(`${outcome.score[0]} – ${outcome.score[1]}`)
+      await expect(header).toContainText('En cours')
+      await page.getByRole('button', { name: 'Corriger le score' }).click()
+      const scoreForm = page.getByRole('dialog', { name: 'Corriger le score' })
+      await scoreForm.getByLabel(home).fill(String(outcome.score[0]))
+      await scoreForm.getByLabel(away).fill(String(outcome.score[1]))
+      await scoreForm.getByRole('button', { name: 'Enregistrer' }).click()
+      await expect(scoreForm).toBeHidden()
+      await expect(header).toContainText(`${outcome.score[0]} – ${outcome.score[1]}`)
     }
     if (outcome.status === 'finished') {
       await act('Terminer')
       await confirm(page, 'Terminer le match', 'Terminer')
+      await expect(header).toContainText('Terminé')
       if (outcome.video) {
-        await act('Modifier')
-        const form = page.getByRole('dialog', { name: 'Modifier le match' })
-        await form.getByLabel('Lien vidéo (URL)').fill(outcome.video)
-        await form.getByRole('button', { name: 'Enregistrer' }).click()
-        await expect(form).toBeHidden()
+        await page.getByRole('button', { name: 'Modifier' }).click()
+        const edit = page.getByRole('dialog', { name: 'Modifier le match' })
+        await edit.getByLabel('Lien vidéo (URL)').fill(outcome.video)
+        await edit.getByRole('button', { name: 'Enregistrer' }).click()
+        await expect(edit).toBeHidden()
       }
     }
     if (outcome.status === 'postponed') {
       await act('Reporter')
-      const form = page.getByRole('dialog', { name: 'Reporter le match' })
-      await form.getByRole('button', { name: 'Reporter' }).click()
-      await expect(form).toBeHidden()
+      const postpone = page.getByRole('dialog', { name: 'Reporter le match' })
+      await postpone.getByRole('button', { name: 'Reporter' }).click()
+      await expect(postpone).toBeHidden()
+      await expect(header).toContainText('Reporté')
     }
     if (outcome.status === 'cancelled') {
       await act('Annuler')
       await confirm(page, 'Annuler le match', 'Annuler le match')
+      await expect(header).toContainText('Annulé')
     }
+    await page.getByRole('link', { name: 'Retour aux matchs' }).click()
+    await expect(page.getByRole('button', { name: 'Programmer un match' })).toBeVisible()
   }
 
   const statusLabels = { finished: 'Terminé', live: 'En cours', postponed: 'Reporté', cancelled: 'Annulé', scheduled: 'Programmé' }
