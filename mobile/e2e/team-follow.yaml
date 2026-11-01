@@ -1,0 +1,18 @@
+appId: host.exp.Exponent
+name: Team follow
+---
+- runFlow:
+    file: common/choose-league.yaml
+    env:
+      LEAGUE: "District Five Demo"
+- runFlow:
+    file: common/open-team.yaml
+    env:
+      TEAM: "US Bastille"
+- assertVisible: "Suivez cette équipe pour la retrouver dans Suivi."
+- tapOn: "Suivre"
+- assertVisible: "Suivi ✓"
+- assertVisible: "Vous suivez cette équipe."
+- tapOn:
+    id: "tab-profile"
+- assertVisible: "Équipes suivies"

@@ -1,0 +1,23 @@
+appId: host.exp.Exponent
+name: Team history
+---
+- runFlow:
+    file: common/choose-league.yaml
+    env:
+      LEAGUE: "District Five Demo"
+- runFlow:
+    file: common/open-team.yaml
+    env:
+      TEAM: "US Bastille"
+- scrollUntilVisible:
+    element: "Saisons"
+    direction: DOWN
+- scrollUntilVisible:
+    element: "2025-2026"
+    direction: DOWN
+- tapOn: "2025-2026"
+- assertVisible: "Classement 2025-2026"
+- assertVisible: "US Bastille"
+- tapOn: "Athletic Goncourt"
+- assertVisible: "Athletic Goncourt"
+- assertVisible: "Derniers résultats"

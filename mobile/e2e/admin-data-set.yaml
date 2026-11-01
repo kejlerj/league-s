@@ -1,0 +1,36 @@
+appId: host.exp.Exponent
+name: League built through the admin
+tags:
+  - admin-data-set
+---
+- runFlow:
+    file: common/choose-league.yaml
+    env:
+      LEAGUE: "Ligue de vérification"
+- tapOn:
+    id: "tab-standings"
+- assertVisible: "Les Faucons"
+- assertVisible: "Les Aigles"
+- runFlow:
+    file: common/open-team.yaml
+    env:
+      TEAM: "Les Aigles"
+- tapOn: "Suivre"
+- tapOn: "‹ Retour"
+- tapOn: "Les Bisons"
+- tapOn: "Suivre"
+- tapOn: "‹ Retour"
+- tapOn: "Les Dauphins"
+- tapOn: "Suivre"
+- tapOn:
+    id: "tab-following"
+- assertVisible: "en cours"
+- assertVisible: "annulé"
+- assertVisible: "à définir"
+- assertVisible: "2–1"
+- tapOn: "Les Aigles — Les Bisons"
+- assertVisible: "‹ Journée 1"
+- assertVisible: "Résumé vidéo"
+- tapOn: "‹ Journée 1"
+- tapOn: "Les Aigles — Les Castors"
+- assertVisible: "En direct"

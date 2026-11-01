@@ -55,3 +55,11 @@ test('standing is looked up by team id, or null when absent', () => {
   expect(buildTeamDetail({ teamId: 'us', standings: [standing], finished: [], scheduled: [], squad }).standing).toBe(standing);
   expect(buildTeamDetail({ teamId: 'zz', standings: [standing], finished: [], scheduled: [], squad }).standing).toBeNull();
 });
+
+test('the squad is listed by shirt number', () => {
+  const rows: SquadRow[] = [3, 1, 2].map((number) => ({
+    membership_id: `m${number}`, player_id: `p${number}`, firstname: 'A', lastname: 'B', icon: null, number, joined_on: '2026-08-29', left_on: null,
+  }));
+  const detail = buildTeamDetail({ teamId: 'us', standings: [], finished: [], scheduled: [], squad: rows });
+  expect(detail.squad.map((row) => row.number)).toEqual([1, 2, 3]);
+});

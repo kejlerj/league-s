@@ -1,0 +1,18 @@
+appId: host.exp.Exponent
+name: Moi theme
+---
+- runFlow:
+    file: common/choose-league.yaml
+    env:
+      LEAGUE: "District Five Demo"
+- tapOn:
+    id: "tab-profile"
+- assertVisible: "Thème"
+- tapOn:
+    id: "segmented-tab-Sombre"
+- assertVisible: "Sombre"
+- tapOn:
+    id: "segmented-tab-Clair"
+- tapOn:
+    id: "segmented-tab-Système"
+- assertVisible: "Vos équipes de cette ligue sont enregistrées sur cet appareil."

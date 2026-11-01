@@ -11,8 +11,8 @@ export default function TabsLayout() {
       <Tabs key={leagueId} tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
         <Tabs.Screen name="following" />
         <Tabs.Screen name="standings" />
-        <Tabs.Screen name="predictions" />
-        <Tabs.Screen name="profile" />
+        <Tabs.Screen name="predictions/index" />
+        <Tabs.Screen name="profile/index" />
       </Tabs>
     </RequireLeague>
   );

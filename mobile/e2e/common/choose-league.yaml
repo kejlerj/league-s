@@ -1,0 +1,7 @@
+appId: host.exp.Exponent
+---
+- runFlow: start.yaml
+- tapOn: ${LEAGUE}
+- extendedWaitUntil:
+    visible: "Calendrier de mes équipes"
+    timeout: 15000

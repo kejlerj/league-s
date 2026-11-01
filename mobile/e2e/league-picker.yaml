@@ -1,0 +1,16 @@
+appId: host.exp.Exponent
+name: League picker
+---
+- runFlow: common/start.yaml
+- assertVisible: "Vous pourrez en changer depuis Moi."
+- assertVisible: "District Five Demo"
+- tapOn: "District Five Demo"
+- assertVisible: "Calendrier de mes équipes"
+- tapOn:
+    id: "tab-profile"
+- assertVisible: "District Five Demo"
+- tapOn: "Changer"
+- assertVisible: "Choisissez votre ligue"
+- assertVisible: "✓"
+- tapOn: "‹ Retour"
+- assertVisible: "Ligue"

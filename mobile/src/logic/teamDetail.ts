@@ -1,6 +1,7 @@
 import type { ApiMatch, ResultTag, SquadRow, StandingRow } from '@/src/types';
 import { parseApiDate } from './dateTime';
 import { isHomeFor, opponentOf, resultFor, formatScore } from './results';
+import { byShirtNumber } from './squad';
 
 export interface NextMatch {
   matchId: string;
@@ -85,6 +86,6 @@ export function buildTeamDetail({ teamId, standings, finished, scheduled, squad 
     form,
     nextMatch,
     lastResults,
-    squad,
+    squad: byShirtNumber(squad),
   };
 }

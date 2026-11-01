@@ -28,7 +28,7 @@ Closes #
 
 ## Simulator check
 
-<!-- Until PR-26: list the mobile screens this change affects, or write "Not needed". After PR-26: Maestro flows and result, screenshots (pr-assets branch). -->
+<!-- Mobile change the user can see: Maestro flows and result, screenshots (pr-assets branch). Otherwise "Not needed". -->
 
 ## Docs updated
 

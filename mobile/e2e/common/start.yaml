@@ -1,0 +1,20 @@
+appId: host.exp.Exponent
+---
+- launchApp:
+    clearState: true
+- openLink: exp://127.0.0.1:8081
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - swipe:
+          start: 50%, 50%
+          end: 50%, 98%
+- extendedWaitUntil:
+    visible: "Choisissez votre ligue"
+    timeout: 30000

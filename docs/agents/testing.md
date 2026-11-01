@@ -55,20 +55,15 @@ The generated files are `admin/src/api/schema.ts` and `mobile/src/types/api.ts`.
 - Check the JSON body and the status code, not only the status code.
 - Isolation: for every new route that reads by ID, add a test that a resource of another league is a 404.
 
-## Simulator (mobile): paused until PR-26
-
-To save usage, simulator checks are paused. Until the final simulator pass (PR-26):
-
-- a mobile change is covered by jest screen tests: loading, error and data states, plus the interaction that changed,
-- don't run the simulator or Maestro, and don't write Maestro flows,
-- in the PR body, under "Simulator check", list the screens the change affects, so PR-26 knows what to cover.
-
-PR-26 writes the Maestro flows for every screen, runs them on the simulator against seeded data, and fixes what it finds. After PR-26, the rules below apply to every mobile PR.
+## Simulator (mobile)
 
 A mobile change that the user can see needs:
 
-1. a Maestro flow in `mobile/e2e/` that goes through the change and asserts what is shown (`assertVisible` on French copy),
-2. a run on the iOS Simulator against the local API with seeded data (skill `simulator-check`),
-3. the Maestro result and a screenshot in the PR description.
+1. jest screen tests: loading, error and data states, plus the interaction that changed,
+2. a Maestro flow in `mobile/e2e/` that goes through the change and asserts what is shown (`assertVisible` on French copy). Add a new flow, or extend the flow of the screen,
+3. a run on the iOS Simulator against the local API with seeded data (skill `simulator-check`): `maestro test mobile/e2e/`,
+4. the Maestro result and screenshots in the PR description (`pr-assets` branch).
 
-Until PR-07 adds Maestro, do steps 2 and 3 with the desktop app's iOS Simulator tool (screenshots), and say so in the PR.
+The flows open the app in Expo Go (`exp://127.0.0.1:8081`) and pick the seeded league "District Five Demo". `mobile/e2e/admin-data-set.yaml` checks the league that the admin final check builds (`npx --prefix admin playwright test full-league`). It is tagged `admin-data-set` and excluded from the default run: run it with `maestro test --include-tags admin-data-set mobile/e2e/`.
+
+If Maestro isn't installed (`maestro --version`), do step 3 with the desktop app's iOS Simulator tool (screenshots), and say so in the PR.
