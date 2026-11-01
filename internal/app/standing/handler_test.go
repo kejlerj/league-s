@@ -107,6 +107,33 @@ func TestGetStandings_SeasonWithoutMatches(t *testing.T) {
 	}
 }
 
+func TestGetStandings_TeamLogo(t *testing.T) {
+	s := testdb.New(t, testPool)
+	season := s.CreateSeason(testdb.SeasonParams{})
+	bears := s.CreateTeam(testdb.TeamParams{Name: "Bears", Logo: "https://example.com/bears.png"})
+	lions := s.CreateTeam(testdb.TeamParams{Name: "Lions"})
+	s.RegisterTeams(season, bears, lions)
+
+	rec := testhttp.Do(t, newTestRouter(), http.MethodGet, standingsPath(season.LeagueID, season.ID), "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body)
+	}
+
+	var rows []map[string]any
+	if err := json.NewDecoder(rec.Body).Decode(&rows); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("standings have %d rows, want 2: %+v", len(rows), rows)
+	}
+	if got := rows[0]["team_logo"]; got != "https://example.com/bears.png" {
+		t.Errorf("Bears team_logo = %v, want https://example.com/bears.png", got)
+	}
+	if got, ok := rows[1]["team_logo"]; !ok || got != nil {
+		t.Errorf("Lions team_logo = %v (present: %t), want null", got, ok)
+	}
+}
+
 func TestGetStandings_Errors(t *testing.T) {
 	s := testdb.New(t, testPool)
 	season := s.CreateSeason(testdb.SeasonParams{})

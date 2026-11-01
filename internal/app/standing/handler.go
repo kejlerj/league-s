@@ -32,6 +32,7 @@ type rowResponse struct {
 	Rank           int       `json:"rank"`
 	TeamID         uuid.UUID `json:"team_id"`
 	TeamName       string    `json:"team_name"`
+	TeamLogo       *string   `json:"team_logo"`
 	Played         int32     `json:"played"`
 	Won            int32     `json:"won"`
 	Drawn          int32     `json:"drawn"`
@@ -76,7 +77,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 
 	teams := make([]Team, len(registered))
 	for i, t := range registered {
-		teams[i] = Team{ID: t.ID, Name: t.Name}
+		teams[i] = Team{ID: t.ID, Name: t.Name, Logo: t.Logo}
 	}
 
 	rows := Compute(teams, matches, Rules{

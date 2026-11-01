@@ -82,7 +82,7 @@ test('the standings show a full row', async () => {
     http.get(`${S}/standings`, () =>
       HttpResponse.json([
         {
-          rank: 1, team_id: 'T1', team_name: 'AS Alpha', played: 12, won: 8, drawn: 3, lost: 1,
+          rank: 1, team_id: 'T1', team_name: 'AS Alpha', team_logo: null, played: 12, won: 8, drawn: 3, lost: 1,
           goals_for: 27, goals_against: 9, goal_difference: 18, points: 26,
         },
       ]),
@@ -90,9 +90,27 @@ test('the standings show a full row', async () => {
   )
   const row = (await screen.findByText('AS Alpha')).closest('tr')!
   const cells = within(row).getAllByRole('cell').map((cell) => cell.textContent)
-  expect(cells).toEqual(['1', 'AS Alpha', '12', '8', '3', '1', '27', '9', '+18', '26'])
+  expect(cells).toEqual(['1', 'AAS Alpha', '12', '8', '3', '1', '27', '9', '+18', '26'])
   const headers = screen.getAllByRole('columnheader').map((header) => header.textContent)
   expect(headers).toEqual(['#', 'Équipe', 'J', 'G', 'N', 'P', 'BP', 'BC', 'Diff', 'Pts'])
+})
+
+test('each standings row shows the team logo, or its initial without one', async () => {
+  const base = { played: 1, won: 0, drawn: 1, lost: 0, goals_for: 0, goals_against: 0, goal_difference: 0, points: 1 }
+  setup(
+    'standings',
+    http.get(`${S}/standings`, () =>
+      HttpResponse.json([
+        { ...base, rank: 1, team_id: 'T1', team_name: 'AS Alpha', team_logo: 'https://img.test/alpha.png' },
+        { ...base, rank: 2, team_id: 'T2', team_name: 'FC Bravo', team_logo: null },
+      ]),
+    ),
+  )
+  const alpha = (await screen.findByText('AS Alpha')).closest('td')!
+  expect(alpha.querySelector('img')).toHaveAttribute('src', 'https://img.test/alpha.png')
+  const bravo = screen.getByText('FC Bravo').closest('td')!
+  expect(bravo.querySelector('img')).toBeNull()
+  expect(bravo).toHaveTextContent('FFC Bravo')
 })
 
 test('empty standings', async () => {

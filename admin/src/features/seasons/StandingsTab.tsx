@@ -3,6 +3,7 @@ import { getStandings } from '@/api/standings'
 import type { StandingRow } from '@/api/types'
 import { DataTable, type Column } from '@/ui/DataTable'
 import { PageState } from '@/ui/PageState'
+import { TeamName } from '@/ui/TeamLogo'
 
 const signed = (value: number) => (value > 0 ? `+${value}` : String(value))
 
@@ -14,7 +15,7 @@ const number = (header: string, value: (row: StandingRow) => number | string): C
 
 const COLUMNS: Column<StandingRow>[] = [
   { header: '#', cell: (row) => row.rank },
-  { header: 'Équipe', cell: (row) => row.team_name },
+  { header: 'Équipe', cell: (row) => <TeamName team={{ name: row.team_name, logo: row.team_logo }} /> },
   number('J', (row) => row.played),
   number('G', (row) => row.won),
   number('N', (row) => row.drawn),
