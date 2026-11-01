@@ -15,5 +15,7 @@ name: Suivi
     id: "tab-following"
 - assertVisible: "Calendrier de mes équipes"
 - assertVisible: ".*US Bastille.*"
-- assertVisible: "Les matchs les plus récents apparaissent en premier."
+- scrollUntilVisible:
+    element: "Les matchs les plus récents apparaissent en premier."
+    direction: DOWN
 - assertNotVisible: "Vous ne suivez aucune équipe pour le moment."
