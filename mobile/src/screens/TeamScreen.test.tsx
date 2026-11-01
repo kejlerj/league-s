@@ -39,7 +39,7 @@ beforeEach(() => {
   jest.mocked(leagueService.listTeamSeasons).mockResolvedValue([SEASON, OLD_SEASON]);
   jest.mocked(leagueService.getTeam).mockResolvedValue({ id: TEAM_ID, league_id: 'l', name: 'US Bastille', logo: null });
   jest.mocked(leagueService.getStandings).mockResolvedValue([
-    { rank: 2, team_id: TEAM_ID, team_name: 'US Bastille', played: 5, won: 3, drawn: 1, lost: 1, goals_for: 9, goals_against: 5, goal_difference: 4, points: 10 },
+    { rank: 2, team_id: TEAM_ID, team_name: 'US Bastille', team_logo: null, played: 5, won: 3, drawn: 1, lost: 1, goals_for: 9, goals_against: 5, goal_difference: 4, points: 10 },
   ]);
   jest.mocked(leagueService.getSquad).mockResolvedValue([
     { membership_id: 'x', player_id: 'p', firstname: 'David', lastname: 'Benali', icon: null, number: 4, joined_on: '2026-08-29', left_on: null },

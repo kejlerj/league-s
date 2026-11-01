@@ -20,7 +20,7 @@ function finished(matchday: number, home: string, away: string, homeScore: numbe
 }
 
 const standing: StandingRow = {
-  rank: 2, team_id: 'us', team_name: 'US', played: 5, won: 3, drawn: 1, lost: 1,
+  rank: 2, team_id: 'us', team_name: 'US', team_logo: null, played: 5, won: 3, drawn: 1, lost: 1,
   goals_for: 10, goals_against: 6, goal_difference: 4, points: 10,
 };
 
