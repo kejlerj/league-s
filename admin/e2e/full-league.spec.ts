@@ -126,6 +126,6 @@ test('a superadmin builds a full league through the admin', async ({ page }) => 
   await page.getByRole('tab', { name: 'Classement' }).click()
   const rows = page.getByRole('row')
   await expect(rows).toHaveCount(squads.length + 1)
-  await expect(rows.nth(1)).toContainText('Les Faucons')
-  await expect(rows.nth(2)).toContainText('Les Aigles')
+  await expect(rows.nth(1)).toContainText('Les Aigles')
+  await expect(rows.nth(2)).toContainText('Les Faucons')
 })
