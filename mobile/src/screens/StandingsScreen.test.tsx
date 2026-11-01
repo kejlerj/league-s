@@ -16,7 +16,7 @@ const RECENT = season({ id: 'recent', league_id: 'l', name: '2026-2027', start_o
 const PREVIOUS = season({ id: 'previous', league_id: 'l', name: '2025-2026', start_on: '2025-08-30', end_on: '2026-05-31' });
 
 function row(team_id: string, team_name: string, rank: number): StandingRow {
-  return { rank, team_id, team_name, team_logo: null, played: 5, won: 3, drawn: 1, lost: 1, goals_for: 9, goals_against: 5, goal_difference: 4, points: 10 };
+  return { rank, team_id, team_name, team_logo: null, played: 5, won: 3, drawn: 1, lost: 1, goals_for: 9, goals_against: 5, goal_difference: 4, points: 10, fair_play_points: 0 };
 }
 
 beforeEach(() => {

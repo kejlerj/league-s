@@ -21,7 +21,7 @@ func (p person) name() *match.PlayerName {
 }
 
 func goal(teamID uuid.UUID, scorer, assist *person) match.EventView {
-	v := match.EventView{Event: match.Event{ID: uuid.New(), TeamID: teamID, Type: match.EventGoal, Minute: 10}}
+	v := match.EventView{ID: uuid.New(), TeamID: teamID, Type: match.EventGoal, Minute: 10}
 	if scorer != nil {
 		v.PlayerID, v.Player = new(scorer.ID), scorer.name()
 	}
