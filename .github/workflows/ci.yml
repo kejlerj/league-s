@@ -326,6 +326,10 @@ jobs:
           MAESTRO_CLI_NO_ANALYTICS: 1
         run: maestro test mobile/e2e/ --debug-output "$GITHUB_WORKSPACE/maestro-debug" --flatten-debug-output --test-output-dir "$GITHUB_WORKSPACE/maestro-output"
 
+      - name: Screenshot the simulator
+        if: failure()
+        run: xcrun simctl io booted screenshot simulator.png || true
+
       - name: Upload logs and screenshots
         if: failure()
         uses: actions/upload-artifact@v7
@@ -334,5 +338,6 @@ jobs:
           path: |
             api.log
             expo.log
+            simulator.png
             maestro-debug
             maestro-output
