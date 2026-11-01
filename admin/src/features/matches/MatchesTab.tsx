@@ -90,17 +90,18 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
   }
 
   const columns: Column<Match>[] = [
-    { header: 'J', cell: (match) => match.matchday },
-    { header: 'Date', cell: (match) => formatDateTime(match.kickoff_at) },
-    { header: 'Domicile', cell: (match) => match.home_team.name },
-    { header: 'Score', cell: (match) => <span className="whitespace-nowrap">{score(match)}</span> },
-    { header: 'Extérieur', cell: (match) => match.away_team.name },
-    { header: 'Statut', cell: (match) => STATUS_LABELS[match.status] },
+    { header: 'J', width: '3rem', cell: (match) => match.matchday },
+    { header: 'Date', width: '9rem', cell: (match) => formatDateTime(match.kickoff_at) },
+    { header: 'Domicile', cell: (match) => match.home_team.name, title: (match) => match.home_team.name },
+    { header: 'Score', width: '4.5rem', cell: (match) => <span className="whitespace-nowrap">{score(match)}</span> },
+    { header: 'Extérieur', cell: (match) => match.away_team.name, title: (match) => match.away_team.name },
+    { header: 'Statut', width: '6rem', cell: (match) => STATUS_LABELS[match.status] },
     {
       header: '',
       align: 'right',
+      width: '16rem',
       cell: (match) => (
-        <span className="whitespace-nowrap">
+        <span className="flex flex-wrap justify-end">
           {matchActions(match.status).map((action) => (
             <Button key={action} variant="link" onClick={() => setPending({ action, match })}>
               {ACTION_LABELS[action]}
