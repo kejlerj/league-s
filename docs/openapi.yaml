@@ -1544,6 +1544,58 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/scorers:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+    get:
+      operationId: getScorers
+      summary: Scorers ranking
+      description: |
+        Access: public. The goals of the season's finished matches. Own goals and goals without a scorer are left out.
+        Equal values share a rank, sorted by last name then first name. Players with no goal are not listed.
+      tags: [standings]
+      security: []
+      responses:
+        "200":
+          description: One row per scorer, best first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankingRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/assists:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+    get:
+      operationId: getAssists
+      summary: Assists ranking
+      description: |
+        Access: public. The assists of the season's finished matches.
+        Equal values share a rank, sorted by last name then first name. Players with no assist are not listed.
+      tags: [standings]
+      security: []
+      responses:
+        "200":
+          description: One row per passer, best first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankingRow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   securitySchemes:
     sessionCookie:
@@ -2167,7 +2219,7 @@ components:
           description: "The player's last day in the team (included). `null`: still in the squad."
     SquadMember:
       type: object
-      required: [membership_id, player_id, firstname, lastname, icon, number, joined_on, left_on]
+      required: [membership_id, player_id, firstname, lastname, icon, number, joined_on, left_on, goals, assists]
       properties:
         membership_id:
           type: string
@@ -2191,6 +2243,16 @@ components:
           type: [string, "null"]
           format: date
           description: "The player's last day in the team (included). `null`: still in the squad."
+        goals:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The player's goals for this team in this season's finished matches. Own goals don't count.
+        assists:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The player's assists for this team in this season's finished matches.
     JoinSquadRequest:
       type: object
       required: [player_id, joined_on]
@@ -2460,9 +2522,34 @@ components:
           maxLength: 200
           description: Injuries only. Trimmed, then 1 to 200 characters.
 
+    RankingRow:
+      type: object
+      required: [rank, player_id, firstname, lastname, team_id, team_name, value]
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+        player_id:
+          type: string
+          format: uuid
+        firstname:
+          type: string
+        lastname:
+          type: string
+        team_id:
+          type: string
+          format: uuid
+          description: The team of the player's most recent goal or assist, so a player transferred during the season appears once.
+        team_name:
+          type: string
+        value:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Goals or assists.
     StandingRow:
       type: object
-      required: [rank, team_id, team_name, team_logo, played, won, drawn, lost, goals_for, goals_against, goal_difference, points]
+      required: [rank, team_id, team_name, team_logo, played, won, drawn, lost, goals_for, goals_against, goal_difference, points, fair_play_points]
       properties:
         rank:
           type: integer
@@ -2498,3 +2585,8 @@ components:
         points:
           type: integer
           format: int32
+        fair_play_points:
+          type: integer
+          format: int32
+          minimum: 0
+          description: "Cards in the season's finished matches, per player and per match: one yellow 1, two yellows 3, a direct red 4, a yellow then a direct red 5. Fewer is better."
