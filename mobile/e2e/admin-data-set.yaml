@@ -9,18 +9,18 @@ tags:
       LEAGUE: "Ligue de vérification"
 - tapOn:
     id: "tab-standings"
-- assertVisible: "Les Faucons"
-- assertVisible: "Les Aigles"
+- assertVisible: ".*Les Faucons.*"
+- assertVisible: ".*Les Aigles.*"
 - runFlow:
     file: common/open-team.yaml
     env:
       TEAM: "Les Aigles"
 - tapOn: "Suivre"
 - tapOn: "‹ Retour"
-- tapOn: "Les Bisons"
+- tapOn: ".*Les Bisons.*"
 - tapOn: "Suivre"
 - tapOn: "‹ Retour"
-- tapOn: "Les Dauphins"
+- tapOn: ".*Les Dauphins.*"
 - tapOn: "Suivre"
 - tapOn:
     id: "tab-following"

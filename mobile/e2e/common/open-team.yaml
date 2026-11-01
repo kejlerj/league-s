@@ -2,7 +2,7 @@ appId: host.exp.Exponent
 ---
 - tapOn:
     id: "tab-standings"
-- tapOn: ${TEAM}
+- tapOn: ".*${TEAM}.*"
 - extendedWaitUntil:
     visible: "Derniers résultats"
     timeout: 15000
