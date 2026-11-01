@@ -314,7 +314,9 @@ jobs:
           exit 1
 
       - name: Maestro flows
-        run: maestro test mobile/e2e/ --debug-output maestro-debug
+        env:
+          MAESTRO_CLI_NO_ANALYTICS: 1
+        run: maestro test mobile/e2e/ --debug-output "$GITHUB_WORKSPACE/maestro-debug" --flatten-debug-output --test-output-dir "$GITHUB_WORKSPACE/maestro-output"
 
       - name: Upload logs and screenshots
         if: failure()
@@ -325,4 +327,4 @@ jobs:
             api.log
             expo.log
             maestro-debug
-            ~/.maestro/tests
+            maestro-output
