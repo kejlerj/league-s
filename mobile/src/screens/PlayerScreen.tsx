@@ -66,7 +66,7 @@ export function PlayerScreen({ id }: { id: string }) {
               ) : (
                 career.data.map((entry, index) => (
                   <CardRow key={entry.membership_id} isFirst={index === 0}>
-                    <Crest size={26} uri={entry.team.logo} />
+                    <Crest size={26} uri={entry.team.logo} name={entry.team.name} />
                     <View className="flex-1">
                       <ThemedText weight="medium" size={14.5}>{entry.number === null ? entry.team.name : `${entry.team.name} · ${fr.player.number(entry.number)}`}</ThemedText>
                       <ThemedText tone="muted" size={12} className="mt-0.5">{stintDates(entry)}</ThemedText>

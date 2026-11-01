@@ -110,3 +110,11 @@ test('the seasons failing to load shows the error state', async () => {
   render(<TeamScreen id={TEAM_ID} origin="following" />);
   await waitFor(() => expect(screen.getByText(fr.team.error)).toBeTruthy());
 });
+
+test('the next match and the results show the opponent crest', async () => {
+  render(<TeamScreen id={TEAM_ID} origin="following" />);
+
+  await waitFor(() => expect(screen.getByText(/Racing Oberkampf/)).toBeTruthy());
+  const initials = screen.getAllByTestId('crest-initial', { includeHiddenElements: true }).map((node) => node.props.children);
+  expect(initials).toEqual(expect.arrayContaining(['R', 'A']));
+});

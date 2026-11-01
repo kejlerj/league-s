@@ -14,6 +14,7 @@ import { useCurrentSeason } from '../hooks/useCurrentSeason';
 import { useLeagueId } from '../hooks/useLeagueId';
 import { useAppStore } from '../store/useAppStore';
 import { getFollowedFixtures } from '../services/matches';
+import { Crest } from '../components/Avatar';
 import { toFixtureRow } from '../logic/fixtureRow';
 import { fr } from '../i18n/fr';
 
@@ -83,7 +84,13 @@ export function FollowingScreen() {
                         <ThemedText tone="muted" weight="medium" size={11.5}>{row.when}</ThemedText>
                       </View>
                       <View className="flex-1">
-                        <ThemedText weight="medium" size={14.5}>{row.title}</ThemedText>
+                        <View className="flex-row flex-wrap items-center gap-1.5">
+                          <Crest size={18} uri={row.home.logo} name={row.home.name} />
+                          <ThemedText weight="medium" size={14.5}>{row.home.name}</ThemedText>
+                          <ThemedText tone="muted" size={14.5}>—</ThemedText>
+                          <Crest size={18} uri={row.away.logo} name={row.away.name} />
+                          <ThemedText weight="medium" size={14.5}>{row.away.name}</ThemedText>
+                        </View>
                         <ThemedText tone="muted" size={11.5} className="mt-0.5">{row.sub}</ThemedText>
                       </View>
                       <SlotChip text={row.slot.text} tone={row.slot.tone} />

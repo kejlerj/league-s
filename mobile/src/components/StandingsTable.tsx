@@ -33,7 +33,7 @@ export function StandingsTable({ rows, highlightedTeamIds, onPressTeam }: Standi
               className={highlightedTeamIds.includes(row.team_id) ? 'bg-accent/5 dark:bg-accentDark/10' : undefined}
             >
               <ThemedText mono weight="semibold" size={14} style={{ width: 20 }}>{row.rank}</ThemedText>
-              <Crest size={26} />
+              <Crest size={26} name={row.team_name} />
               <ThemedText weight="medium" size={14.5} className="flex-1">{row.team_name}</ThemedText>
               <View style={{ width: 112 }} className="flex-row justify-between">
                 <ThemedText tone="muted" weight="medium" size={13.5}>{row.played}</ThemedText>

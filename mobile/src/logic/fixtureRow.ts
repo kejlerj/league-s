@@ -1,4 +1,4 @@
-import type { ApiMatch, MatchStatus } from '@/src/types';
+import type { ApiMatch, MatchStatus, TeamRef } from '@/src/types';
 import { formatDayMonth, formatTime, parseApiDate } from './dateTime';
 import { formatScore, isHomeFor, statusOf } from './results';
 import { fr } from '@/src/i18n/fr';
@@ -9,7 +9,8 @@ export interface FixtureRow {
   matchId: string;
   status: MatchStatus;
   when: string;
-  title: string;
+  home: TeamRef;
+  away: TeamRef;
   sub: string;
   slot: { text: string; tone: SlotTone };
   target: { kind: 'match'; id: string } | { kind: 'team'; id: string };
@@ -37,7 +38,8 @@ export function toFixtureRow(match: ApiMatch, teamId: string): FixtureRow {
     matchId: match.id,
     status,
     when: kickoff ? formatDayMonth(kickoff) : '—',
-    title: `${match.home_team.name} — ${match.away_team.name}`,
+    home: match.home_team,
+    away: match.away_team,
     sub: `${fr.fixture.matchdayShort(match.matchday)} · ${isHome ? fr.fixture.home : fr.fixture.away}`,
     slot,
     target: status === 'upcoming' ? { kind: 'team', id: teamId } : { kind: 'match', id: match.id },

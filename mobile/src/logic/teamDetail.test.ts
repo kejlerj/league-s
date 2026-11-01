@@ -63,3 +63,12 @@ test('the squad is listed by shirt number', () => {
   const detail = buildTeamDetail({ teamId: 'us', standings: [], finished: [], scheduled: [], squad: rows });
   expect(detail.squad.map((row) => row.number)).toEqual([1, 2, 3]);
 });
+
+test('the next match and the results carry the opponent logo', () => {
+  const played = { ...finished(1, 'us', 'a', 2, 0), away_team: { id: 'a', name: 'A', logo: 'https://img.test/a.png' } };
+  const next = { ...finished(2, 'b', 'us', 0, 0), status: 'scheduled' as const, home_score: null, away_score: null };
+  const detail = buildTeamDetail({ teamId: 'us', standings: [], finished: [played], scheduled: [next], squad });
+
+  expect(detail.lastResults[0].opponentLogo).toBe('https://img.test/a.png');
+  expect(detail.nextMatch?.opponentLogo).toBeNull();
+});
