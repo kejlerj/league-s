@@ -302,7 +302,7 @@ jobs:
           curl -fsSL "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
-      - name: Start the app in Expo Go
+      - name: Install Expo Go and bundle the app
         working-directory: mobile
         run: |
           npx expo start --ios > ../expo.log 2>&1 &
@@ -310,16 +310,9 @@ jobs:
             xcrun simctl listapps booted 2>/dev/null | grep -q host.exp.Exponent && curl -sf localhost:8081/status >/dev/null && break
             sleep 2
           done
-          for _ in $(seq 1 5); do
-            grep -q "iOS Bundled" ../expo.log && exit 0
-            xcrun simctl openurl booted exp://127.0.0.1:8081 || true
-            for _ in $(seq 1 60); do
-              grep -q "iOS Bundled" ../expo.log && exit 0
-              sleep 2
-            done
-          done
-          cat ../expo.log
-          exit 1
+          bundle=$(curl -sf -H "expo-platform: ios" -H "accept: application/expo+json,application/json" localhost:8081 | jq -r '.launchAsset.url' | sed -E 's#^http://[^/]+#http://localhost:8081#')
+          echo "$bundle"
+          curl -sf --max-time 600 "$bundle" -o /dev/null
 
       - name: Maestro flows
         env:
