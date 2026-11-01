@@ -3,22 +3,19 @@ package testdb
 import (
 	"context"
 	"log"
-	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/pressly/goose/v3"
 	tclog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
+
+	"league-s/internal/database"
 )
 
 func Run(m *testing.M, pool **pgxpool.Pool) int {
 	ctx := context.Background()
 
 	tclog.SetDefault(tclog.NewNoopLogger())
-	goose.SetLogger(goose.NopLogger())
 
 	ctr, err := postgres.Run(ctx, "postgres:18",
 		postgres.WithDatabase("test"),
@@ -42,12 +39,7 @@ func Run(m *testing.M, pool **pgxpool.Pool) int {
 	}
 	defer p.Close()
 
-	sqlDB := stdlib.OpenDBFromPool(p)
-	defer func() { _ = sqlDB.Close() }()
-	if err := goose.SetDialect("postgres"); err != nil {
-		log.Fatalf("goose dialect: %v", err)
-	}
-	if err := goose.Up(sqlDB, migrationsDir()); err != nil {
+	if _, err := database.Migrate(ctx, dsn); err != nil {
 		log.Fatalf("migrate: %v", err)
 	}
 
@@ -62,9 +54,4 @@ func Reset(t *testing.T, pool *pgxpool.Pool) {
 	if err != nil {
 		t.Fatalf("reset db: %v", err)
 	}
-}
-
-func migrationsDir() string {
-	_, file, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(file), "..", "..", "migrations")
 }

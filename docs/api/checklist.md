@@ -157,4 +157,4 @@
 
 - [x] **OpenAPI documentation** of the API (`docs/openapi.yaml`, checked against the router by `internal/server/openapi_test.go`)
   - TypeScript types generated from it for the admin and the mobile app: #66
-- [ ] **Deployment**: Docker image of the app, migrations at startup or in a separate job
+- [x] **Deployment**: Docker image of the app, migrations at startup or in a separate job (`Dockerfile`, `cmd/migrate`, `deploy/compose.yaml`; the deployment workflow is #43, HTTPS is #146)
