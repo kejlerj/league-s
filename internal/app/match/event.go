@@ -121,6 +121,7 @@ func (m *Match) RecordEvent(e Event, existing []Event) error {
 		}
 	case EventGoal:
 		return m.addGoal(e.TeamID, existing)
+	case EventSubstitution, EventInjury:
 	}
 	return nil
 }
@@ -205,6 +206,7 @@ func isSentOff(playerID uuid.UUID, events []Event) bool {
 			return true
 		case EventYellowCard:
 			yellows++
+		case EventGoal, EventSubstitution, EventInjury:
 		}
 	}
 	return yellows >= 2
@@ -230,6 +232,7 @@ func SummarizeEvents(homeTeamID uuid.UUID, events []Event) []EventSummary {
 		case EventYellowCard:
 			yellows[*e.PlayerID]++
 			res[i].SentOff = yellows[*e.PlayerID] == 2
+		case EventSubstitution, EventInjury:
 		}
 	}
 	return res
