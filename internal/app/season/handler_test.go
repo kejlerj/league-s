@@ -126,8 +126,8 @@ func TestCreateSeason_Defaults(t *testing.T) {
 	if got.MatchWinPts != 3 || got.MatchDrawPts != 1 || got.MatchLossPts != 0 {
 		t.Errorf("points = %d/%d/%d, want 3/1/0", got.MatchWinPts, got.MatchDrawPts, got.MatchLossPts)
 	}
-	if !slices.Equal(got.TieBreakers, []string{"goal_difference", "goals_scored"}) {
-		t.Errorf("tie_breakers = %v, want [goal_difference goals_scored]", got.TieBreakers)
+	if !slices.Equal(got.TieBreakers, []string{"goal_difference", "head_to_head"}) {
+		t.Errorf("tie_breakers = %v, want [goal_difference head_to_head]", got.TieBreakers)
 	}
 	if got.MaxSquadSize != nil {
 		t.Errorf("max_squad_size = %d, want null (no limit)", *got.MaxSquadSize)
@@ -197,6 +197,7 @@ func TestCreateSeason_Errors(t *testing.T) {
 		{"zero max squad size", seasonsPath, withField("max_squad_size", `0`), http.StatusUnprocessableEntity},
 		{"negative max squad size", seasonsPath, withField("max_squad_size", `-1`), http.StatusUnprocessableEntity},
 		{"unknown tie breaker", seasonsPath, withField("tie_breakers", `["coin_flip"]`), http.StatusUnprocessableEntity},
+		{"random tie breaker", seasonsPath, withField("tie_breakers", `["goal_difference", "random"]`), http.StatusUnprocessableEntity},
 		{"same name in the same league", seasonsPath, validSeasonBody, http.StatusConflict},
 		{"unknown league", func(db.League) string { return "/api/v1/leagues/" + uuid.NewString() + "/seasons" }, validSeasonBody, http.StatusNotFound},
 		{"invalid league id", func(db.League) string { return "/api/v1/leagues/abc/seasons" }, validSeasonBody, http.StatusBadRequest},

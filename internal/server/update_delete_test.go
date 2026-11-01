@@ -115,6 +115,7 @@ func TestUpdateAndDelete(t *testing.T) {
 		{"season: name taken", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"name": "2026-2027"}`, adminCookie, http.StatusConflict, ""},
 		{"season: end before start", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"end_on": "2027-01-01"}`, adminCookie, http.StatusUnprocessableEntity, `{"errors":{"end_on":"doit être après start_on"}}`},
 		{"season: unknown tie breaker", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"tie_breakers": ["coin"]}`, adminCookie, http.StatusUnprocessableEntity, ""},
+		{"season: random tie breaker", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"tie_breakers": ["random"]}`, adminCookie, http.StatusUnprocessableEntity, ""},
 		{"season: tie breakers", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"tie_breakers": ["head_to_head"]}`, adminCookie, http.StatusOK, `"tie_breakers":["head_to_head"]`},
 		{"season: start after end", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"start_on": "2028-06-01"}`, adminCookie, http.StatusUnprocessableEntity, `{"errors":{"end_on":"doit être après start_on"}}`},
 		{"season: date with a time", http.MethodPatch, base + "/seasons/" + empty.ID.String(), `{"start_on": "2027-08-01T00:00:00Z"}`, adminCookie, http.StatusUnprocessableEntity, `"start_on":"doit être une date au format AAAA-MM-JJ"`},
