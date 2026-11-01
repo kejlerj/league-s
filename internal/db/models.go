@@ -10,7 +10,53 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type MatchEventType string
+
+const (
+	MatchEventTypeGoal         MatchEventType = "goal"
+	MatchEventTypeYellowCard   MatchEventType = "yellow_card"
+	MatchEventTypeRedCard      MatchEventType = "red_card"
+	MatchEventTypeSubstitution MatchEventType = "substitution"
+	MatchEventTypeInjury       MatchEventType = "injury"
+)
+
+func (e *MatchEventType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = MatchEventType(s)
+	case string:
+		*e = MatchEventType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for MatchEventType: %T", src)
+	}
+	return nil
+}
+
+type NullMatchEventType struct {
+	MatchEventType MatchEventType
+	Valid          bool // Valid is true if MatchEventType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullMatchEventType) Scan(value interface{}) error {
+	if value == nil {
+		ns.MatchEventType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.MatchEventType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullMatchEventType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.MatchEventType), nil
+}
 
 type MatchStatus string
 
@@ -107,6 +153,23 @@ type Match struct {
 	Referee       *string
 	ConvocationAt *time.Time
 	VideoUrl      *string
+}
+
+type MatchEvent struct {
+	ID             uuid.UUID
+	LeagueID       uuid.UUID
+	SeasonID       uuid.UUID
+	MatchID        uuid.UUID
+	TeamID         uuid.UUID
+	Type           MatchEventType
+	Minute         int32
+	PlayerID       pgtype.UUID
+	AssistPlayerID pgtype.UUID
+	PlayerInID     pgtype.UUID
+	OwnGoal        bool
+	Penalty        bool
+	Note           *string
+	CreatedAt      time.Time
 }
 
 type PasswordReset struct {
