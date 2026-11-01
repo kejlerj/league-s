@@ -220,6 +220,7 @@ Changed responses:
 
 - `player`, `assist_player` and `player_in` are `null` when absent. They carry the names so the mobile app needs no other call.
 - `note` is the injury's note. It is `null` on other events, and on every event when the reader is not an admin of the league (§3.6).
+- How the handler knows the reader: `auth.Identify` already runs on every `/api/v1` request and never rejects one. It puts the user in the context when a valid session token is sent, and then sets `Cache-Control: no-store`, so an admin's response is never cached for others. `GET …/events` reads `auth.UserFrom` and asks `auth.Service.CanWrite` for the URL's league. No route reads the user on a public read today, so the events handler gets that check as a small interface (`LeagueAdminChecker`), and no new middleware is needed. No user, an unknown token or a non-admin all get `note: null`, never a 401 or 403.
 - `sent_off` is `true` on a yellow card that is the player's second in the match, and on a red card.
 - `home_score` and `away_score` are the running score **after** this event, on goals only (`null` on other events). They come from the goal events in minute order, so on a match whose scorers were filled in after the fact they can differ from the final score. The mobile app shows them only when the match's goal events add up to its score.
 
@@ -318,7 +319,7 @@ Six code issues, each its own PR:
 
 1. **Back: correct a finished match's score.** `Match.SetScore` accepts a finished match (§3.3). `docs/api/spec.md`: the row "the score starts at 0-0 at kickoff and only changes during the match" is rewritten. No dependency.
 2. **Admin: match page.** The page of §6 without the events section: header, status buttons, `Modifier`, `Corriger le score`, and the matches list rows opening it instead of row actions. Depends on 1 for correcting a finished score.
-3. **Back: events table and API.** Migration, `match` domain rules (including injuries), routes, OpenAPI, spec docs. No dependency: #121 (a live match can be interrupted) is merged.
+3. **Back: events table and API.** Migration, `match` domain rules (including injuries), routes, OpenAPI, spec docs. Includes the optional admin check on `GET …/events` (§5, `note`): the first public read that depends on who reads it. No dependency: #121 (a live match can be interrupted) is merged.
 4. **Back: rankings, squad stats and fair play.** `/scorers`, `/assists`, squad `goals`/`assists`, `fair_play` in `standing.Compute`, `fair_play_points` in the standings. `docs/api/spec.md`: the `fair_play` ⚠️ becomes ✅. Depends on 3.
 5. **Admin: event entry on the match page.** Depends on 2 and 3.
 6. **Mobile: Faits de match, Buteurs and Passeurs, squad stats.** Depends on 3 and 4.
