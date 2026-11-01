@@ -94,6 +94,10 @@ func main() {
 		}
 	}
 
+	cleanupCtx, stopCleanup := context.WithCancel(context.Background())
+	defer stopCleanup()
+	go auth.NewCleaner(auth.NewPostgresStore(db.Pool())).Run(cleanupCtx, cfg.CleanupInterval)
+
 	server := server.NewServer(cfg, db, notifier)
 
 	// Create a done channel to signal when the shutdown is complete

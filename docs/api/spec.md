@@ -124,4 +124,5 @@ An app for amateur football leagues (five-a-side, urban football), not for profe
 | A signed-in user changes their password by giving the current one | ✅ `PUT /me/password`. The account's other sessions are closed |
 | The superadmin appoints admins through an invitation: a single-use link, valid for 7 days, sent by `mailto:` from the web admin | ✅ table `invitation`, `auth.Invitations`. Only the token's hash is stored, the link is returned only on creation. A new invitation to the same address replaces the previous one. Accepting creates the account, or attaches the league to the existing account. No open sign-up in v1 |
 | A session lasts 30 days, extended on each use. Signing out deletes it on the server | ✅ table `session`, only the token's hash is stored |
+| Expired sessions, expired or used password reset links, and invitations that expired without being accepted are deleted. Accepted invitations stay, as the record of how an admin joined | ✅ `auth.Cleaner`, at startup and every `CLEANUP_INTERVAL` (1 hour by default) |
 | An admin of league A has no rights on league B | ✅ tested on the real router (`internal/server/auth_test.go`) |

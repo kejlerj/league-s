@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/joho/godotenv/autoload"
 
@@ -28,6 +29,7 @@ type Config struct {
 	SMTP            mailer.SMTPConfig
 	Environment     string
 	SentryDSN       string
+	CleanupInterval time.Duration
 }
 
 func Load() (Config, error) {
@@ -130,6 +132,14 @@ func Load() (Config, error) {
 		}
 	}
 
+	cleanupInterval := time.Hour
+	if raw := os.Getenv("CLEANUP_INTERVAL"); raw != "" {
+		cleanupInterval, err = time.ParseDuration(raw)
+		if err != nil || cleanupInterval <= 0 {
+			errs = append(errs, fmt.Errorf("CLEANUP_INTERVAL must be a positive duration such as 1h or 30m, got %q", raw))
+		}
+	}
+
 	if len(errs) > 0 {
 		return Config{}, errors.Join(errs...)
 	}
@@ -155,5 +165,6 @@ func Load() (Config, error) {
 		SMTP:            smtp,
 		Environment:     os.Getenv("APP_ENV"),
 		SentryDSN:       os.Getenv("SENTRY_DSN"),
+		CleanupInterval: cleanupInterval,
 	}, nil
 }

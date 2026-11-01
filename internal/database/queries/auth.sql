@@ -114,3 +114,14 @@ WHERE token_hash = $1
   AND accepted_at IS NULL
   AND expires_at > sqlc.arg(now)::timestamptz
 RETURNING league_id, email;
+
+-- name: DeleteExpiredSessions :execrows
+DELETE FROM session WHERE expires_at <= sqlc.arg(now)::timestamptz;
+
+-- name: DeleteDeadPasswordResets :execrows
+DELETE FROM password_reset
+WHERE expires_at <= sqlc.arg(now)::timestamptz OR used_at IS NOT NULL;
+
+-- name: DeleteExpiredInvitations :execrows
+DELETE FROM invitation
+WHERE accepted_at IS NULL AND expires_at <= sqlc.arg(now)::timestamptz;

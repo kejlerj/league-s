@@ -152,6 +152,44 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (AppUser
 	return i, err
 }
 
+const deleteDeadPasswordResets = `-- name: DeleteDeadPasswordResets :execrows
+DELETE FROM password_reset
+WHERE expires_at <= $1::timestamptz OR used_at IS NOT NULL
+`
+
+func (q *Queries) DeleteDeadPasswordResets(ctx context.Context, now time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteDeadPasswordResets, now)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteExpiredInvitations = `-- name: DeleteExpiredInvitations :execrows
+DELETE FROM invitation
+WHERE accepted_at IS NULL AND expires_at <= $1::timestamptz
+`
+
+func (q *Queries) DeleteExpiredInvitations(ctx context.Context, now time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredInvitations, now)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const deleteExpiredSessions = `-- name: DeleteExpiredSessions :execrows
+DELETE FROM session WHERE expires_at <= $1::timestamptz
+`
+
+func (q *Queries) DeleteExpiredSessions(ctx context.Context, now time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteExpiredSessions, now)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteOtherSessions = `-- name: DeleteOtherSessions :exec
 DELETE FROM session WHERE user_id = $1 AND token_hash <> $2
 `

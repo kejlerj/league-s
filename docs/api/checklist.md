@@ -109,7 +109,8 @@
   - table `invitation` (league, email, token hash, expiry, acceptance date)
   - accepting the link creates the account, or attaches the league to an existing account
   - list and remove a league's admins
-- [ ] **Clean up expired sessions** (a periodic query, or on sign-in)
+- [x] **Clean up expired sessions** (a periodic query, or on sign-in)
+  - `auth.Cleaner` runs at startup, then every `CLEANUP_INTERVAL` (1 hour by default): it deletes expired sessions, password reset links that are expired or used, and invitations that expired without being accepted. Accepted invitations are kept
 
 ## 🔒 Security
 
