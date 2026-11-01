@@ -141,6 +141,7 @@ All under `/admin`.
 | `/leagues/:leagueId` | League: teams, players, seasons, admins | league admin |
 | `/leagues/:leagueId/seasons/:seasonId` | Season: registered teams, matches, standings | league admin |
 | `/leagues/:leagueId/seasons/:seasonId/teams/:teamId` | Squad | league admin |
+| `/leagues/:leagueId/seasons/:seasonId/matches/:matchId` | Match page: header, status buttons, `Modifier`, `Corriger le score` | league admin |
 
 ## Behaviour
 
@@ -167,10 +168,12 @@ All under `/admin`.
 
 - **Registered teams**: register, unregister.
 - **Squad**: add a player, change the number, make them leave, transfer to another registered team.
-- **Matches**: list filterable by matchday and status, most recent first: kickoff descending, then matchday descending, and matches without a kickoff at the top. Schedule, edit, delete. Actions depending on the status:
-  - `scheduled`: start, postpone, cancel, edit, delete.
-  - `live`: enter the score, finish.
-  - `finished`, `postponed`, `cancelled`: the actions the API accepts, to read in `internal/app/match/service.go` when writing the plan.
+- **Matches**: list filterable by matchday and status, most recent first: kickoff descending, then matchday descending, and matches without a kickoff at the top. Each row opens the match page, and the list has no row actions. `Programmer un match` stays on the list, and leads to the new match's page.
+- **Match page** (`docs/specs/2026-10-31-match-events-design.md` §6):
+  - Header: teams, matchday, date, venue, status, the score in large type, and the elapsed minute on a live match with a kickoff.
+  - Status buttons: `scheduled` start, postpone, cancel, delete; `live` finish, postpone, cancel; `postponed` cancel; none for `finished` and `cancelled`. Finish, cancel and delete ask for confirmation. After delete, back to the list.
+  - `Modifier`: matchday and kickoff only on a scheduled or postponed match, plus venue, referee, call time and video link.
+  - `Corriger le score` on a live or finished match. A finished match stays finished, and the standings follow.
 - **Standings**: read-only, refreshed after each action on a match.
 
 ### Accepting an invitation
