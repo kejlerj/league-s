@@ -20,6 +20,7 @@ gh issue view <N> --repo kejlerj/league-s --comments
   - otherwise → stop and report what you are waiting for.
 - Read the specs that the issue names. If the specs don't answer a product question, or the work needs a new library or tool, follow "Decisions" in `pr-workflow.md` and stop.
 - Comment on the issue that you are starting it, and add yourself as assignee: `gh issue edit <N> --add-assignee @me`.
+- Every comment, thread reply and issue body you write on GitHub starts with `🤖 ` (`CLAUDE.md` › Rules for git), e.g. `gh issue comment <N> --body "🤖 Starting this."`. You post with the owner's account: the marker is how the orchestrator tells your notes from the owner's answers.
 
 ## 2. Branch in a worktree
 
@@ -36,7 +37,7 @@ Stacked PR: use `refs/remotes/origin/<parent-branch>` instead of `refs/remotes/o
 
 ## 3. Build it
 
-1. Read `docs/agents/code-style.md`, then look at the closest existing package or screen and follow its patterns. Write a short task list (skill `superpowers:writing-plans`) and post it as a comment on the issue, as a checklist. Tick its items (`gh issue comment --edit-last`) as you go. If the session stops, the next one resumes from that list.
+1. Read `docs/agents/code-style.md`, then look at the closest existing package or screen and follow its patterns. Write a short task list (skill `superpowers:writing-plans`) and post it as a comment on the issue, as a checklist starting with `🤖 `. Tick its items (`gh issue comment --edit-last`) as you go. If the session stops, the next one resumes from that list.
 2. For each task that changes behaviour, write the failing test, watch it fail, write the code, watch it pass (skill `superpowers:test-driven-development`). A PR that changes no behaviour (CI, types only, pure refactor, docs, dependencies, config) needs no new tests: see `docs/agents/testing.md`.
 3. SQL changed: `sqlc generate`. New migration: next free number in `migrations/`.
 4. Update the docs listed in `CLAUDE.md` › Rules for code.
@@ -100,7 +101,7 @@ For each comment from `claude[bot]` that has no reply from you yet:
 - Reply in the thread with what you did and the commit SHA:
 
   ```bash
-  gh api repos/kejlerj/league-s/pulls/<PR>/comments/<comment_id>/replies -f body="Fixed in <sha>: <what>"
+  gh api repos/kejlerj/league-s/pulls/<PR>/comments/<comment_id>/replies -f body="🤖 Fixed in <sha>: <what>"
   ```
 
 - Don't resolve the threads: the reviewer does.

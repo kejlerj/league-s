@@ -27,7 +27,7 @@ When the issue and the specs disagree, the specs win. Say so in the PR descripti
 1. **Branch.** In a worktree, named `<type>/SOC-<issue>-<slug>`:
    - from the latest `origin/main` when every dependency is merged,
    - from the parent PR's branch when a dependency is still open (see Stacked PRs).
-2. **Plan.** Write a short task list (skill `superpowers:writing-plans`) and post it on the issue as a checklist comment. Keep it ticked as you go. It lets another session resume the work, and gives the reviewer context. Never commit it to the repo.
+2. **Plan.** Write a short task list (skill `superpowers:writing-plans`) and post it on the issue as a checklist comment, starting with `🤖 ` like every comment an agent writes (see Agent comments). Keep it ticked as you go. It lets another session resume the work, and gives the reviewer context. Never commit it to the repo.
 3. **Tests first.** Write the failing spec tests, then the code (skill `superpowers:test-driven-development`). See `testing.md`.
 4. **Docs.** Update `docs/api/*.md` and the specs touched by the change.
 5. **Local checks.** Run every check of the parts you touched (`CLAUDE.md` › Commands), including the simulator check for a visible mobile change (`testing.md` › Simulator).
@@ -36,7 +36,7 @@ When the issue and the specs disagree, the specs win. Say so in the PR descripti
 8. **Review loop.** For each reviewer comment:
    - **blocking**: fix it, or explain why the comment is wrong (with a reference to the spec or the code),
    - **nit**: fix it if cheap, otherwise reply why not,
-   - reply in the comment's thread with what you did and the commit SHA,
+   - reply in the comment's thread with what you did and the commit SHA (`🤖 Fixed in <sha>: <what>`),
    - never resolve the reviewer's threads yourself: the reviewer resolves them.
 
    Then push. The push starts a new review.
@@ -79,7 +79,7 @@ Rebase the child on the parent's new tip, rerun the checks, and `git push --forc
 - **Size.** Aim for less than about 600 changed lines, generated code excluded. Bigger means split the item into two PRs.
 - **Parallel work.** No limit on PRs open at the same time. If the Pro plan's usage limit is hit, sessions wait for the reset. Two PRs that both add a migration, or that touch the same files, run one after the other.
 - **Review workflow changes.** The Claude action refuses to run on a PR that changes `.github/workflows/claude-review.yml` (the file must match `main`, so a PR can't rewrite the reviewer). Such a PR gets no review: put the change in its own small PR, label it `needs-human`, and the owner reviews and merges it.
-- **Decisions.** A product question the specs don't answer, a business rule change, or a new library, tool or service is never decided by an agent (`CLAUDE.md` › Decisions that need the user). Label the issue `needs-decision`, write the question in a comment (options, trade-offs, recommendation), and move to the next issue. The owner answers in a comment on that issue; the orchestrator then closes it and turns the answer into issues.
+- **Decisions.** A product question the specs don't answer, a business rule change, or a new library, tool or service is never decided by an agent (`CLAUDE.md` › Decisions that need the user). Label the issue `needs-decision`, write the question in a comment (options, trade-offs, recommendation), and move to the next issue. The owner answers in a comment on that issue; the orchestrator then closes it and turns the answer into issues. Only an unmarked comment from `kejlerj` is an answer (see Agent comments).
 
 ## Follow-up issues
 
@@ -94,6 +94,19 @@ How:
 3. Don't fix it in the current PR, unless the PR can't be correct without it.
 
 The orchestrator picks these issues up like any other plan item. A refactor issue never changes behaviour (`refactor:` PR, no new tests needed if existing tests cover the code).
+
+## Agent comments
+
+Agents post on GitHub with the owner's account, so their comments look like the owner's. To tell them apart, every comment, thread reply, review body and issue body an agent writes starts with `🤖 `:
+
+```bash
+gh issue comment <N> --body "🤖 Starting this."
+gh api repos/kejlerj/league-s/pulls/<PR>/comments/<comment_id>/replies -f body="🤖 Fixed in <sha>: <what>"
+```
+
+- An unmarked comment from `kejlerj` is the owner. Only such a comment answers a `needs-decision` issue.
+- Exception: a bot command (`@dependabot rebase`) must be the first thing in the comment, so it gets no marker.
+- `claude[bot]` comments are already told apart by their author, and need no marker.
 
 ## Repository settings this relies on
 
