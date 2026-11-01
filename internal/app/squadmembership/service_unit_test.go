@@ -225,7 +225,7 @@ func TestServiceJoin_Errors(t *testing.T) {
 	}
 }
 
-func TestServiceLeave_LoadsTheMembershipChecksTheRulesThenLeaves(t *testing.T) {
+func TestServiceLeave_LoadsTheMembershipChecksTheRulesThenLeavesInOneTransaction(t *testing.T) {
 	store := newFakeStore()
 	current := newMembership()
 	current.ID = uuid.New()
@@ -237,7 +237,7 @@ func TestServiceLeave_LoadsTheMembershipChecksTheRulesThenLeaves(t *testing.T) {
 		t.Fatalf("Leave() error = %v", err)
 	}
 
-	wantCalls := []string{"Get", "Rules", "Leave"}
+	wantCalls := []string{"begin", "tx.Get", "tx.Rules", "tx.Leave", "commit"}
 	if !slices.Equal(store.state.calls, wantCalls) {
 		t.Errorf("calls = %v, want %v", store.state.calls, wantCalls)
 	}
@@ -262,42 +262,42 @@ func TestServiceLeave_Errors(t *testing.T) {
 			prepare:   func(s *fakeState) { s.getErr = ErrGetNotFound },
 			leftOn:    date(2025, time.December, 31),
 			wantErr:   ErrLeaveNotFound,
-			wantCalls: []string{"Get"},
+			wantCalls: []string{"begin", "tx.Get", "rollback"},
 		},
 		{
 			name:      "already left",
 			prepare:   func(s *fakeState) { s.current.LeftOn = new(date(2025, time.November, 30)) },
 			leftOn:    date(2025, time.December, 31),
 			wantErr:   ErrLeaveNotActive,
-			wantCalls: []string{"Get"},
+			wantCalls: []string{"begin", "tx.Get", "rollback"},
 		},
 		{
 			name:      "team not registered",
 			prepare:   func(s *fakeState) { s.rulesErr = ErrRulesTeamNotRegistered },
 			leftOn:    date(2025, time.December, 31),
 			wantErr:   ErrLeaveTeamNotRegistered,
-			wantCalls: []string{"Get", "Rules"},
+			wantCalls: []string{"begin", "tx.Get", "tx.Rules", "rollback"},
 		},
 		{
 			name:      "rules fail",
 			prepare:   func(s *fakeState) { s.rulesErr = errBoom },
 			leftOn:    date(2025, time.December, 31),
 			wantErr:   errBoom,
-			wantCalls: []string{"Get", "Rules"},
+			wantCalls: []string{"begin", "tx.Get", "tx.Rules", "rollback"},
 		},
 		{
 			name:      "leaving after the season",
 			prepare:   func(*fakeState) {},
 			leftOn:    date(2026, time.June, 1),
 			wantErr:   ErrLeaveOutsideSeason,
-			wantCalls: []string{"Get", "Rules"},
+			wantCalls: []string{"begin", "tx.Get", "tx.Rules", "rollback"},
 		},
 		{
 			name:      "store refuses the leave",
 			prepare:   func(s *fakeState) { s.leaveErr = ErrLeaveBeforeJoining },
 			leftOn:    date(2025, time.December, 31),
 			wantErr:   ErrLeaveBeforeJoining,
-			wantCalls: []string{"Get", "Rules", "Leave"},
+			wantCalls: []string{"begin", "tx.Get", "tx.Rules", "tx.Leave", "rollback"},
 		},
 	}
 
