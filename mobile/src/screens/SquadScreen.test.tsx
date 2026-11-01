@@ -17,7 +17,7 @@ const SEASON = season({ id: 'season-1', league_id: 'l', name: '2026-2027', start
 const TEAM_ID = 'team-us';
 
 function member(id: string, firstname: string, lastname: string, number: number, left_on: string | null): SquadRow {
-  return { membership_id: `m-${id}`, player_id: id, firstname, lastname, icon: null, number, joined_on: '2026-08-29', left_on };
+  return { membership_id: `m-${id}`, player_id: id, firstname, lastname, icon: null, number, joined_on: '2026-08-29', left_on, goals: 0, assists: 0 };
 }
 
 beforeEach(() => {

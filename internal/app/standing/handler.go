@@ -41,6 +41,7 @@ type rowResponse struct {
 	GoalsAgainst   int32     `json:"goals_against"`
 	GoalDifference int32     `json:"goal_difference"`
 	Points         int32     `json:"points"`
+	FairPlayPoints int32     `json:"fair_play_points"`
 }
 
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
@@ -75,9 +76,21 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bookings, err := h.matches.ListFinishedSeasonEvents(r.Context(), leagueID, seasonID, match.EventYellowCard, match.EventRedCard)
+	if err != nil {
+		slog.ErrorContext(r.Context(), "list cards for standings", "err", err, "league_id", leagueID, "season_id", seasonID)
+		httpx.Error(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	cards := make([]match.Event, len(bookings))
+	for i, b := range bookings {
+		cards[i] = b.Event
+	}
+	fairPlay := FairPlayPoints(cards)
+
 	teams := make([]Team, len(registered))
 	for i, t := range registered {
-		teams[i] = Team{ID: t.ID, Name: t.Name, Logo: t.Logo}
+		teams[i] = Team{ID: t.ID, Name: t.Name, Logo: t.Logo, FairPlayPoints: fairPlay[t.ID]}
 	}
 
 	rows := Compute(teams, matches, Rules{

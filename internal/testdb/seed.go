@@ -67,6 +67,17 @@ type Score struct {
 	Away int32
 }
 
+type MatchEventParams struct {
+	Season  db.Season
+	MatchID uuid.UUID
+	Team    db.Team
+	Type    db.MatchEventType
+	Minute  int32
+	Player  *db.Player
+	Assist  *db.Player
+	OwnGoal bool
+}
+
 type SquadMemberParams struct {
 	Season   db.Season
 	Team     db.Team
@@ -192,6 +203,31 @@ func (s *Seeder) CreateMatch(p MatchParams) uuid.UUID {
 	).Scan(&id)
 	if err != nil {
 		s.t.Fatalf("create match %q vs %q: %v", p.Home.Name, p.Away.Name, err)
+	}
+	return id
+}
+
+func (s *Seeder) CreateMatchEvent(p MatchEventParams) uuid.UUID {
+	s.t.Helper()
+	if p.Minute == 0 {
+		p.Minute = 10
+	}
+	var playerID, assistID *uuid.UUID
+	if p.Player != nil {
+		playerID = &p.Player.ID
+	}
+	if p.Assist != nil {
+		assistID = &p.Assist.ID
+	}
+
+	var id uuid.UUID
+	err := s.pool.QueryRow(context.Background(),
+		`INSERT INTO match_event (league_id, season_id, match_id, team_id, type, minute, player_id, assist_player_id, own_goal)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
+		p.Season.LeagueID, p.Season.ID, p.MatchID, p.Team.ID, p.Type, p.Minute, playerID, assistID, p.OwnGoal,
+	).Scan(&id)
+	if err != nil {
+		s.t.Fatalf("create %s event for %q: %v", p.Type, p.Team.Name, err)
 	}
 	return id
 }

@@ -161,3 +161,37 @@ func (s *PostgresStore) IsSquadMember(ctx context.Context, leagueID, seasonID, t
 	}
 	return ok, nil
 }
+
+func (s *PostgresStore) ListFinishedSeasonEvents(ctx context.Context, leagueID, seasonID uuid.UUID, types ...EventType) ([]EventView, error) {
+	dbTypes := make([]string, len(types))
+	for i, t := range types {
+		dbTypes[i] = string(t)
+	}
+
+	rows, err := s.q.ListFinishedSeasonEvents(ctx, db.ListFinishedSeasonEventsParams{LeagueID: leagueID, SeasonID: seasonID, Types: dbTypes})
+	if err != nil {
+		return nil, fmt.Errorf("list events of season %s: %w", seasonID, err)
+	}
+
+	res := make([]EventView, len(rows))
+	for i, r := range rows {
+		res[i] = EventView{
+			Event: toEvent(db.MatchEvent{
+				ID:             r.ID,
+				MatchID:        r.MatchID,
+				TeamID:         r.TeamID,
+				Type:           r.Type,
+				Minute:         r.Minute,
+				PlayerID:       r.PlayerID,
+				AssistPlayerID: r.AssistPlayerID,
+				PlayerInID:     r.PlayerInID,
+				OwnGoal:        r.OwnGoal,
+				Penalty:        r.Penalty,
+				Note:           r.Note,
+			}),
+			Player:       playerName(r.PlayerID, r.PlayerFirstname, r.PlayerLastname),
+			AssistPlayer: playerName(r.AssistPlayerID, r.AssistFirstname, r.AssistLastname),
+		}
+	}
+	return res, nil
+}

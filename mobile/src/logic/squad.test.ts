@@ -2,7 +2,7 @@ import { byShirtNumber } from './squad';
 import type { SquadRow } from '@/src/types';
 
 function member(id: string, number: number): SquadRow {
-  return { membership_id: id, player_id: id, firstname: id, lastname: id, icon: null, number, joined_on: '2026-08-29', left_on: null };
+  return { membership_id: id, player_id: id, firstname: id, lastname: id, icon: null, number, joined_on: '2026-08-29', left_on: null, goals: 0, assists: 0 };
 }
 
 test('byShirtNumber lists the squad by shirt number without changing the input', () => {

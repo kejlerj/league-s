@@ -16,7 +16,7 @@ jest.mock('../services/league');
 const SEASON = season({ id: 'season-0', league_id: 'l', name: '2025-2026', start_on: '2025-08-30', end_on: '2026-05-31' });
 
 function row(team_id: string, team_name: string, rank: number): StandingRow {
-  return { rank, team_id, team_name, team_logo: null, played: 18, won: 10, drawn: 4, lost: 4, goals_for: 30, goals_against: 20, goal_difference: 10, points: 34 };
+  return { rank, team_id, team_name, team_logo: null, played: 18, won: 10, drawn: 4, lost: 4, goals_for: 30, goals_against: 20, goal_difference: 10, points: 34, fair_play_points: 0 };
 }
 
 beforeEach(() => {

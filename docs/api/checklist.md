@@ -88,8 +88,9 @@
 - [x] **Tie-breakers in the order set by the season**: goal difference, goals scored, head-to-head
   - head-to-head is the trickiest case, with several tied teams
   - `random` is removed (decision #122): the default is goal difference, then head-to-head
-  - `fair_play` is still ignored: there is no card data
+  - `fair_play` counts the cards of finished matches (#178)
 - [x] **The endpoint** `GET /leagues/{leagueID}/seasons/{seasonID}/standings`, which counts only `finished` matches
+- [x] **Scorers and assists** (#178): `GET …/scorers` and `GET …/assists`, and `goals` and `assists` in the squad
 
 ## 🧪 Scenario tests
 

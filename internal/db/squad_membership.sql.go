@@ -278,7 +278,22 @@ func (q *Queries) ListPlayerCareer(ctx context.Context, arg ListPlayerCareerPara
 }
 
 const listSquadMemberships = `-- name: ListSquadMemberships :many
-SELECT player.id, player.league_id, player.firstname, player.lastname, player.icon, player.created_at, player.updated_at, squad_membership.id AS membership_id, squad_membership.number, squad_membership.joined_on, squad_membership.left_on
+SELECT player.id, player.league_id, player.firstname, player.lastname, player.icon, player.created_at, player.updated_at, squad_membership.id AS membership_id, squad_membership.number, squad_membership.joined_on, squad_membership.left_on,
+       (SELECT count(*) FROM match_event
+        JOIN match ON match.id = match_event.match_id AND match.status = 'finished'
+        WHERE match_event.league_id = squad_membership.league_id
+          AND match_event.season_id = squad_membership.season_id
+          AND match_event.team_id = squad_membership.team_id
+          AND match_event.type = 'goal'
+          AND NOT match_event.own_goal
+          AND match_event.player_id = squad_membership.player_id)::int AS goals,
+       (SELECT count(*) FROM match_event
+        JOIN match ON match.id = match_event.match_id AND match.status = 'finished'
+        WHERE match_event.league_id = squad_membership.league_id
+          AND match_event.season_id = squad_membership.season_id
+          AND match_event.team_id = squad_membership.team_id
+          AND match_event.type = 'goal'
+          AND match_event.assist_player_id = squad_membership.player_id)::int AS assists
 FROM squad_membership
 JOIN player ON player.id = squad_membership.player_id
   AND player.league_id = squad_membership.league_id
@@ -302,6 +317,8 @@ type ListSquadMembershipsRow struct {
 	Number       *int32
 	JoinedOn     time.Time
 	LeftOn       *time.Time
+	Goals        int32
+	Assists      int32
 }
 
 func (q *Queries) ListSquadMemberships(ctx context.Context, arg ListSquadMembershipsParams) ([]ListSquadMembershipsRow, error) {
@@ -330,6 +347,8 @@ func (q *Queries) ListSquadMemberships(ctx context.Context, arg ListSquadMembers
 			&i.Number,
 			&i.JoinedOn,
 			&i.LeftOn,
+			&i.Goals,
+			&i.Assists,
 		); err != nil {
 			return nil, err
 		}
