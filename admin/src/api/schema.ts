@@ -806,8 +806,8 @@ export interface paths {
         };
         get?: never;
         /**
-         * Set the score of a live match
-         * @description Access: league admin.
+         * Set the score of a live match, or correct a finished one
+         * @description Access: league admin. A finished match stays finished. 409 for a scheduled, postponed or cancelled match.
          */
         put: operations["setMatchScore"];
         post?: never;

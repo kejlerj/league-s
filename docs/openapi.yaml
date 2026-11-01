@@ -1320,8 +1320,8 @@ paths:
       - $ref: "#/components/parameters/MatchID"
     put:
       operationId: setMatchScore
-      summary: Set the score of a live match
-      description: "Access: league admin."
+      summary: Set the score of a live match, or correct a finished one
+      description: "Access: league admin. A finished match stays finished. 409 for a scheduled, postponed or cancelled match."
       tags: [matches]
       requestBody:
         required: true

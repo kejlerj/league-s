@@ -110,7 +110,7 @@ A body that fails validation gets a 422 with one readable French message per fie
 | ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}` | admin | Change the matchday or the kickoff, and fill in venue, referee, call time, video link |
 | ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}` | admin | Delete a match scheduled by mistake |
 | ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/start` | admin | Move to `live` |
-| ✅ | `PUT` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/score` | admin | Update the score |
+| ✅ | `PUT` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/score` | admin | Update the score of a live match, or correct the score of a finished match (it stays finished). 409 for a scheduled, postponed or cancelled match |
 | ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/finish` | admin | Finish the match |
 | ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/postpone` | admin | Postpone (optional new date) |
 | ✅ | `POST` | `/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/cancel` | admin | Cancel |

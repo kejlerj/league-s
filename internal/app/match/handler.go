@@ -184,7 +184,7 @@ func errorStatus(err error) (int, bool) {
 	}
 	if e, ok := errors.AsType[SetScoreError](err); ok {
 		switch e {
-		case ErrSetScoreNotLive:
+		case ErrSetScoreNotAllowed:
 			return http.StatusConflict, true
 		case ErrSetScoreNegative:
 			return http.StatusUnprocessableEntity, true
