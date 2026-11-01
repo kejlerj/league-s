@@ -13,6 +13,10 @@ export function listMatches(leagueId: string, seasonId: string, filters: MatchFi
   })
 }
 
+export function getMatch(leagueId: string, seasonId: string, matchId: string): Promise<Match> {
+  return api<Match>('GET', one(leagueId, seasonId, matchId))
+}
+
 export function scheduleMatch(leagueId: string, seasonId: string, input: ScheduleInput): Promise<Match> {
   return api<Match>('POST', base(leagueId, seasonId), { body: input })
 }

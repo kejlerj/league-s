@@ -13,9 +13,10 @@ type Props<T> = {
   columns: Column<T>[]
   rowKey: (row: T) => string
   empty: string
+  onRowClick?: (row: T) => void
 }
 
-export function DataTable<T>({ rows, columns, rowKey, empty }: Props<T>) {
+export function DataTable<T>({ rows, columns, rowKey, empty, onRowClick }: Props<T>) {
   if (rows.length === 0) {
     return <p className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">{empty}</p>
   }
@@ -45,7 +46,11 @@ export function DataTable<T>({ rows, columns, rowKey, empty }: Props<T>) {
         </thead>
         <tbody className="divide-y divide-slate-100">
           {rows.map((row) => (
-            <tr key={rowKey(row)}>
+            <tr
+              key={rowKey(row)}
+              onClick={onRowClick === undefined ? undefined : () => onRowClick(row)}
+              className={onRowClick === undefined ? undefined : 'cursor-pointer hover:bg-slate-50'}
+            >
               {columns.map((column, index) => (
                 <td
                   key={index}
