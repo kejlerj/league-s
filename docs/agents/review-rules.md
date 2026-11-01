@@ -14,7 +14,7 @@ What the reviewer (`claude[bot]`, `.github/workflows/claude-review.yml`) checks.
    - a spec test for each new or changed rule,
    - a non-regression test for each bug fix,
    - no test deleted or loosened without a spec change,
-   - mobile change: jest screen tests cover it, and the description lists the affected screens. Until PR-26 is merged, a missing simulator run or Maestro flow is **not** blocking. After PR-26, both are required.
+   - mobile change the user can see: jest screen tests cover it, a Maestro flow in `mobile/e2e/` goes through it, and the description has the simulator result and screenshots. A missing flow or simulator run is blocking. Only the Maestro run itself may be replaced by screenshots when the description says Maestro isn't installed.
 7. **Docs.** Spec docs updated: ⚠️ → ✅, new routes, ticked checklist items.
 8. **Conventions** (`CLAUDE.md`, `docs/agents/code-style.md`):
    - PR title `<type>: [SOC-<issue>] <Summary>`, with the type matching the change (a `refactor` that changes behaviour is a `feat` or a `fix`),

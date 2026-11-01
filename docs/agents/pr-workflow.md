@@ -30,7 +30,7 @@ When the issue and the specs disagree, the specs win. Say so in the PR descripti
 2. **Plan.** Write a short task list (skill `superpowers:writing-plans`) and post it on the issue as a checklist comment. Keep it ticked as you go. It lets another session resume the work, and gives the reviewer context. Never commit it to the repo.
 3. **Tests first.** Write the failing spec tests, then the code (skill `superpowers:test-driven-development`). See `testing.md`.
 4. **Docs.** Update `docs/api/*.md` and the specs touched by the change.
-5. **Local checks.** Run every check of the parts you touched (`CLAUDE.md` › Commands). Simulator checks are paused until PR-26.
+5. **Local checks.** Run every check of the parts you touched (`CLAUDE.md` › Commands), including the simulator check for a visible mobile change (`testing.md` › Simulator).
 6. **Draft PR.** `gh pr create --draft`, titled `<type>: [SOC-<issue>] <Summary>` (`CLAUDE.md` › Rules for git), filling in `.github/pull_request_template.md`. The body says `Closes #<issue>`.
 7. **Ready.** When every local check passed, run `gh pr ready` in the same turn as `gh pr create`, without waiting for CI: Auto-fix wakes the author on a CI failure, never on green CI. A PR stays a draft only when a local check could not run, and the orchestrator nudges it. That starts the review. If the PR's base is `main`, also turn on auto-merge: `gh pr merge --auto --squash`. Exception: a design spec PR for a product feature (Phase 6) never gets auto-merge. Label it `needs-decision` instead: the user approves the spec by merging it.
 8. **Review loop.** For each reviewer comment:

@@ -1,0 +1,22 @@
+appId: host.exp.Exponent
+name: Match
+---
+- runFlow:
+    file: common/choose-league.yaml
+    env:
+      LEAGUE: "District Five Demo"
+- runFlow:
+    file: common/open-team.yaml
+    env:
+      TEAM: "US Bastille"
+- tapOn: "Suivre"
+- tapOn:
+    id: "tab-following"
+- scrollUntilVisible:
+    element: "J1 · .*"
+    direction: DOWN
+- tapOn: "J1 · .*"
+- assertVisible: "‹ Journée 1"
+- assertVisible: "Informations"
+- assertVisible: "Coup d'envoi"
+- assertVisible: "US Bastille"

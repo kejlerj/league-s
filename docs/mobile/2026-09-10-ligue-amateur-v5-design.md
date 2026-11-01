@@ -616,6 +616,13 @@ Write the logic tests first, then components, then screens.
 - Team: Follow button label toggles and `useAppStore.follows` updates.
 - Match: vote button toggles label and the displayed vote count changes by 1.
 
+**E2E (Maestro, `mobile/e2e/`)** — one flow per screen against the seeded API in
+Expo Go: `league-picker`, `following` (Suivi), `standings` (Classement),
+`team-follow`, `match`, `profile-theme` (Moi), `player` (full squad and player),
+`team-history`; plus `admin-data-set` (tag `admin-data-set`) for the league built
+by the admin final check. Shared steps in `e2e/common/`. Run: `maestro test
+mobile/e2e/`.
+
 **Bar for "done":** `npm test` green; app boots in Expo Go (or dev client) to
 Suivi; all four tabs reachable; Team and Match reachable from lists; Match has no
 tab bar and back returns to the list; theme toggle in Moi flips light/dark and

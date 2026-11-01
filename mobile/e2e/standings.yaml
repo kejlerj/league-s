@@ -1,0 +1,16 @@
+appId: host.exp.Exponent
+name: Classement
+---
+- runFlow:
+    file: common/choose-league.yaml
+    env:
+      LEAGUE: "District Five Demo"
+- tapOn:
+    id: "tab-standings"
+- assertVisible: "Classement"
+- assertVisible: "PTS"
+- assertVisible: "US Bastille"
+- tapOn: "2025-2026"
+- assertVisible: "Athletic Goncourt"
+- tapOn: "2026-2027"
+- assertVisible: "US Bastille"

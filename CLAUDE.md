@@ -41,7 +41,7 @@ The `plan/` folder at the root is the old, git-ignored copy of `docs/api/`. Don'
 | Admin, Mobile | `docs/openapi.yaml` changed | `npm --prefix admin run api-types` and `npm --prefix mobile run api-types`, then commit the generated files |
 | Mobile | tests | `npm --prefix mobile test` |
 | Mobile | types | `cd mobile && npx tsc --noEmit` |
-| Mobile | simulator (paused until PR-26) | skill `simulator-check` |
+| Mobile | simulator and Maestro (`maestro test mobile/e2e/`) | skill `simulator-check` |
 
 Local API: `docker compose up -d`, `make migrate-up`, then `make run` (port 8080). Copy `.env.example` to `.env` first.
 
@@ -83,6 +83,6 @@ Never decide these alone. Open an issue labelled `needs-decision` (template: opt
 - Review (GitHub Actions): Sonnet 5.5.
 - No limit on PRs running at the same time. Hitting the Pro plan's usage limit is fine: sessions resume when it resets.
 
-## Simulator checks are paused
+## Simulator checks
 
-Until the final simulator pass (plan item PR-26), don't run the simulator or Maestro, and don't ask for screenshots. Mobile changes rely on jest screen tests. See `docs/agents/testing.md`.
+A mobile change the user can see is checked on the iOS Simulator with its Maestro flow (skill `simulator-check`), on top of jest screen tests. See `docs/agents/testing.md` › Simulator.

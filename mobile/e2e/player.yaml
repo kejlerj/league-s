@@ -1,0 +1,21 @@
+appId: host.exp.Exponent
+name: Player and full squad
+---
+- runFlow:
+    file: common/choose-league.yaml
+    env:
+      LEAGUE: "District Five Demo"
+- runFlow:
+    file: common/open-team.yaml
+    env:
+      TEAM: "US Bastille"
+- scrollUntilVisible:
+    element: "Voir l'effectif complet"
+    direction: DOWN
+- tapOn: "Voir l'effectif complet"
+- assertVisible: "Effectif actuel · 8 joueurs"
+- tapOn: "Théo Sow"
+- assertVisible: "Club actuel · US Bastille"
+- assertVisible: "Parcours"
+- assertVisible: "US Bastille · N° 8"
+- assertVisible: "2025-2026"

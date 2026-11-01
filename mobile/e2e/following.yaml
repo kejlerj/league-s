@@ -1,0 +1,19 @@
+appId: host.exp.Exponent
+name: Suivi
+---
+- runFlow:
+    file: common/choose-league.yaml
+    env:
+      LEAGUE: "District Five Demo"
+- assertVisible: "Vous ne suivez aucune équipe pour le moment."
+- runFlow:
+    file: common/open-team.yaml
+    env:
+      TEAM: "US Bastille"
+- tapOn: "Suivre"
+- tapOn:
+    id: "tab-following"
+- assertVisible: "Calendrier de mes équipes"
+- assertVisible: ".*US Bastille.*"
+- assertVisible: "Les matchs les plus récents apparaissent en premier."
+- assertNotVisible: "Vous ne suivez aucune équipe pour le moment."
