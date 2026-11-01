@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -29,6 +31,15 @@ func newTestRouter() http.Handler {
 
 func teamSeasonsPath(t db.Team) string {
 	return fmt.Sprintf("/api/v1/leagues/%s/teams/%s/seasons", t.LeagueID, t.ID)
+}
+
+func decode[T any](t *testing.T, rec *httptest.ResponseRecorder) T {
+	t.Helper()
+	var v T
+	if err := json.NewDecoder(rec.Body).Decode(&v); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	return v
 }
 
 func seasonsPath(l db.League) string {
@@ -258,6 +269,75 @@ func TestCreateSeason_Overlap(t *testing.T) {
 			}
 			if tt.wantStatus == http.StatusConflict && !strings.Contains(rec.Body.String(), "season overlaps another season of the league") {
 				t.Errorf("body = %s, want the overlap error", rec.Body)
+			}
+		})
+	}
+}
+
+func TestUpdateSeason_DatesMustKeepTheSeasonContent(t *testing.T) {
+	const squadOutside = "season dates would leave squad memberships outside the season"
+	const matchesOutside = "season dates would leave matches outside the season"
+	kickoff := func(v string) *time.Time {
+		d, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			t.Fatalf("invalid kickoff %q: %v", v, err)
+		}
+		return &d
+	}
+
+	tests := []struct {
+		name       string
+		joinedOn   string
+		leftOn     string
+		kickoffAt  *time.Time
+		noMatch    bool
+		body       string
+		wantStatus int
+		wantError  string
+	}{
+		{name: "membership joined before the new start", joinedOn: "2025-09-01", noMatch: true, body: `{"start_on": "2025-09-02"}`, wantStatus: http.StatusConflict, wantError: squadOutside},
+		{name: "membership left after the new end", joinedOn: "2025-09-01", leftOn: "2026-03-31", noMatch: true, body: `{"end_on": "2026-03-30"}`, wantStatus: http.StatusConflict, wantError: squadOutside},
+		{name: "membership joined after the new end", joinedOn: "2026-04-01", noMatch: true, body: `{"end_on": "2026-03-31"}`, wantStatus: http.StatusConflict, wantError: squadOutside},
+		{name: "open membership, joined before the new end", joinedOn: "2025-09-01", noMatch: true, body: `{"end_on": "2026-01-31"}`, wantStatus: http.StatusOK},
+		{name: "new bounds on a membership's first and last days", joinedOn: "2025-09-01", leftOn: "2026-03-31", noMatch: true, body: `{"start_on": "2025-09-01", "end_on": "2026-03-31"}`, wantStatus: http.StatusOK},
+		{name: "match before the new start", kickoffAt: kickoff("2025-08-10T18:00:00Z"), body: `{"start_on": "2025-08-11"}`, wantStatus: http.StatusConflict, wantError: matchesOutside},
+		{name: "match after the new end", kickoffAt: kickoff("2026-05-31T20:00:00Z"), body: `{"end_on": "2026-05-30"}`, wantStatus: http.StatusConflict, wantError: matchesOutside},
+		{name: "match on the new last day", kickoffAt: kickoff("2026-05-30T20:00:00Z"), body: `{"end_on": "2026-05-30"}`, wantStatus: http.StatusOK},
+		{name: "match without a kickoff", body: `{"start_on": "2026-01-01"}`, wantStatus: http.StatusOK},
+		{name: "other fields only", joinedOn: "2025-09-01", kickoffAt: kickoff("2025-08-10T18:00:00Z"), body: `{"name": "Renamed"}`, wantStatus: http.StatusOK},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := testdb.New(t, testPool)
+			league := s.CreateLeague(testdb.LeagueParams{})
+			season := s.CreateSeason(testdb.SeasonParams{League: &league, StartOn: "2025-08-01", EndOn: "2026-05-31"})
+			home := s.CreateTeam(testdb.TeamParams{League: &league})
+			away := s.CreateTeam(testdb.TeamParams{League: &league})
+			s.RegisterTeams(season, home, away)
+			if tt.joinedOn != "" {
+				player := s.CreatePlayer(testdb.PlayerParams{League: &league})
+				s.CreateSquadMember(testdb.SquadMemberParams{Season: season, Team: home, Player: player, Number: 9, JoinedOn: tt.joinedOn, LeftOn: tt.leftOn})
+			}
+			if !tt.noMatch {
+				s.CreateMatch(testdb.MatchParams{Season: season, Home: home, Away: away, Matchday: 1, KickoffAt: tt.kickoffAt})
+			}
+
+			rec := testhttp.Do(t, newTestRouter(), http.MethodPatch, seasonPath(season), tt.body)
+			if rec.Code != tt.wantStatus {
+				t.Fatalf("status = %d, want %d, body = %s", rec.Code, tt.wantStatus, rec.Body)
+			}
+			if tt.wantError == "" {
+				return
+			}
+			if got := decode[map[string]string](t, rec)["error"]; got != tt.wantError {
+				t.Errorf("error = %q, want %q", got, tt.wantError)
+			}
+
+			rec = testhttp.Do(t, newTestRouter(), http.MethodGet, seasonPath(season), "")
+			got := decode[seasonResponse](t, rec)
+			if got.StartOn != "2025-08-01" || got.EndOn != "2026-05-31" {
+				t.Errorf("dates = %s..%s, want 2025-08-01..2026-05-31: a refused change keeps the old dates", got.StartOn, got.EndOn)
 			}
 		})
 	}

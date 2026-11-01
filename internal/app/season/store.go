@@ -16,11 +16,12 @@ import (
 )
 
 type PostgresStore struct {
-	q *db.Queries
+	pool *pgxpool.Pool
+	q    *db.Queries
 }
 
 func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore {
-	return &PostgresStore{q: db.New(pool)}
+	return &PostgresStore{pool: pool, q: db.New(pool)}
 }
 
 func (s *PostgresStore) Create(ctx context.Context, season *Season) (*Season, error) {
@@ -194,7 +195,20 @@ func toSeason(s db.Season) *Season {
 }
 
 func (s *PostgresStore) Update(ctx context.Context, leagueID, id uuid.UUID, u Update) (*Season, error) {
-	res, err := s.q.UpdateSeason(ctx, db.UpdateSeasonParams{
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	q := s.q.WithTx(tx)
+
+	if u.StartOn != nil || u.EndOn != nil {
+		if err := checkNewDates(ctx, q, leagueID, id, u); err != nil {
+			return nil, err
+		}
+	}
+
+	res, err := q.UpdateSeason(ctx, db.UpdateSeasonParams{
 		ID:           id,
 		LeagueID:     leagueID,
 		Name:         u.Name,
@@ -223,7 +237,49 @@ func (s *PostgresStore) Update(ctx context.Context, leagueID, id uuid.UUID, u Up
 		return nil, fmt.Errorf("update season %s: %w", id, err)
 	}
 
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
+	}
 	return toSeason(res), nil
+}
+
+func checkNewDates(ctx context.Context, q *db.Queries, leagueID, id uuid.UUID, u Update) error {
+	current, err := q.LockSeason(ctx, db.LockSeasonParams{ID: id, LeagueID: leagueID})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrUpdateNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("lock season %s: %w", id, err)
+	}
+
+	season := Season{StartOn: current.StartOn, EndOn: current.EndOn}
+	if u.StartOn != nil {
+		season.StartOn = *u.StartOn
+	}
+	if u.EndOn != nil {
+		season.EndOn = *u.EndOn
+	}
+	if season.CheckDates() != nil {
+		return ErrUpdateInvalidDates
+	}
+
+	var content Content
+	squad, err := q.GetSeasonSquadSpan(ctx, id)
+	switch {
+	case err == nil:
+		content.FirstSquadDay, content.LastSquadDay = &squad.FirstDay, &squad.LastDay
+	case !errors.Is(err, pgx.ErrNoRows):
+		return fmt.Errorf("squad span of season %s: %w", id, err)
+	}
+	matches, err := q.GetSeasonMatchSpan(ctx, id)
+	switch {
+	case err == nil:
+		content.FirstKickoff, content.LastKickoff = &matches.FirstKickoff, &matches.LastKickoff
+	case !errors.Is(err, pgx.ErrNoRows):
+		return fmt.Errorf("match span of season %s: %w", id, err)
+	}
+
+	return season.CheckContent(content)
 }
 
 func (s *PostgresStore) Delete(ctx context.Context, leagueID, id uuid.UUID) error {

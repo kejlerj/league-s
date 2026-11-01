@@ -96,15 +96,34 @@ type Update struct {
 	TieBreakers  []string
 }
 
+type Content struct {
+	FirstSquadDay *time.Time
+	LastSquadDay  *time.Time
+	FirstKickoff  *time.Time
+	LastKickoff   *time.Time
+}
+
+func (s *Season) CheckContent(c Content) error {
+	if c.FirstSquadDay != nil && (c.FirstSquadDay.Before(s.StartOn) || c.LastSquadDay.After(s.EndOn)) {
+		return ErrUpdateMembershipsOutside
+	}
+	if c.FirstKickoff != nil && (c.FirstKickoff.Before(s.StartOn) || !c.LastKickoff.Before(s.EndOn.AddDate(0, 0, 1))) {
+		return ErrUpdateMatchesOutside
+	}
+	return nil
+}
+
 type UpdateError string
 
 func (e UpdateError) Error() string { return string(e) }
 
 const (
-	ErrUpdateNotFound     UpdateError = "season not found"
-	ErrUpdateNameTaken    UpdateError = "season name is already taken"
-	ErrUpdateInvalidDates UpdateError = "season must end after it starts"
-	ErrUpdateOverlap      UpdateError = "season overlaps another season of the league"
+	ErrUpdateNotFound           UpdateError = "season not found"
+	ErrUpdateNameTaken          UpdateError = "season name is already taken"
+	ErrUpdateInvalidDates       UpdateError = "season must end after it starts"
+	ErrUpdateOverlap            UpdateError = "season overlaps another season of the league"
+	ErrUpdateMembershipsOutside UpdateError = "season dates would leave squad memberships outside the season"
+	ErrUpdateMatchesOutside     UpdateError = "season dates would leave matches outside the season"
 )
 
 type DeleteError string

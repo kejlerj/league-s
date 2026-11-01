@@ -25,6 +25,14 @@ const CONFLICTS: Record<string, { field: string; message: string }> = {
     message: "Ces dates chevauchent une autre saison de la ligue. Une ligue n'a qu'une saison à la fois.",
   },
   'season name is already taken': { field: 'name', message: 'Ce nom est déjà pris dans la ligue.' },
+  'season dates would leave squad memberships outside the season': {
+    field: 'dates',
+    message: "Des joueurs ont des dates d'effectif en dehors de ces dates. Modifiez leurs arrivées ou départs d'abord.",
+  },
+  'season dates would leave matches outside the season': {
+    field: 'dates',
+    message: "Des matchs sont programmés en dehors de ces dates. Déplacez-les d'abord.",
+  },
 }
 
 async function conflictsOnFields<T>(request: Promise<T>): Promise<T> {

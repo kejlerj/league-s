@@ -441,6 +441,26 @@ func TestLockSquad_BlocksASecondTransaction(t *testing.T) {
 	}
 }
 
+func TestLockSquad_BlocksASeasonDateChange(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+
+	join, err := testPool.Begin(ctx)
+	if err != nil {
+		t.Fatalf("begin: %v", err)
+	}
+	defer func() { _ = join.Rollback(ctx) }()
+	if _, err := f.store.WithTx(join).LockSquad(ctx, f.season.LeagueID, f.season.ID, f.home.ID); err != nil {
+		t.Fatalf("LockSquad() error = %v", err)
+	}
+
+	waitCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	if _, err := testPool.Exec(waitCtx, `SELECT 1 FROM season WHERE id = $1 FOR UPDATE`, f.season.ID); err == nil {
+		t.Fatal("locking the season returned while a join holds the squad lock, want it to wait")
+	}
+}
+
 func TestCountActive(t *testing.T) {
 	f := newFixture(t)
 	f.join(t, f.home, f.player, nil, "2025-08-01")

@@ -358,7 +358,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) {
 		case ErrUpdateNotFound:
 			httpx.Error(w, http.StatusNotFound, updateErr.Error())
 			return
-		case ErrUpdateNameTaken, ErrUpdateOverlap:
+		case ErrUpdateNameTaken, ErrUpdateOverlap, ErrUpdateMembershipsOutside, ErrUpdateMatchesOutside:
 			httpx.Error(w, http.StatusConflict, updateErr.Error())
 			return
 		case ErrUpdateInvalidDates:

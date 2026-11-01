@@ -65,7 +65,7 @@ JOIN season ON season.id = season_team.season_id
 WHERE season_team.season_id = sqlc.arg(season_id)
   AND season_team.team_id = sqlc.arg(team_id)
   AND season_team.league_id = sqlc.arg(league_id)
-FOR UPDATE OF season_team;
+FOR UPDATE OF season_team FOR SHARE OF season;
 
 -- name: CountActiveSquadMembers :one
 SELECT count(*) FROM squad_membership
