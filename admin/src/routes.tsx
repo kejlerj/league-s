@@ -7,6 +7,7 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { ResetPasswordPage } from '@/features/auth/ResetPasswordPage'
 import { LeaguePage } from '@/features/leagues/LeaguePage'
 import { LeaguesPage } from '@/features/leagues/LeaguesPage'
+import { MatchPage } from '@/features/matches/MatchPage'
 import { SeasonPage } from '@/features/seasons/SeasonPage'
 import { SquadPage } from '@/features/squad/SquadPage'
 
@@ -27,6 +28,7 @@ export const routes: RouteObject[] = [
           { index: true, element: <LeaguePage /> },
           { path: 'seasons/:seasonId', element: <SeasonPage /> },
           { path: 'seasons/:seasonId/teams/:teamId', element: <SquadPage /> },
+          { path: 'seasons/:seasonId/matches/:matchId', element: <MatchPage /> },
         ],
       },
     ],
