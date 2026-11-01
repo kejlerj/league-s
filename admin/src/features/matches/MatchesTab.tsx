@@ -12,10 +12,11 @@ import { Field, SelectField } from '@/ui/Field'
 import { Modal } from '@/ui/Modal'
 import { PageState } from '@/ui/PageState'
 import { TeamName } from '@/ui/TeamLogo'
-import { ACTION_LABELS, matchActions, STATUS_LABELS, type MatchAction } from './matchActions'
+import { ACTION_ICONS, ACTION_LABELS, matchActions, STATUS_LABELS, type MatchAction } from './matchActions'
 import { newestFirst } from './matchOrder'
 import { EditForm, PostponeForm, ScheduleForm } from './MatchForm'
 import { ScoreForm } from './ScoreForm'
+import { IconButton } from '@/ui/IconButton'
 
 type Pending = { action: MatchAction; match: Match }
 type ConfirmAction = 'start' | 'finish' | 'cancel' | 'delete'
@@ -94,13 +95,17 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
     {
       header: '',
       align: 'right',
-      width: '16rem',
+      width: '11rem',
       cell: (match) => (
-        <span className="flex flex-wrap justify-end">
+        <span className="inline-flex justify-end">
           {matchActions(match.status).map((action) => (
-            <Button key={action} variant="link" onClick={() => setPending({ action, match })}>
-              {ACTION_LABELS[action]}
-            </Button>
+            <IconButton
+              key={action}
+              label={ACTION_LABELS[action]}
+              icon={ACTION_ICONS[action]}
+              danger={action === 'cancel' || action === 'delete'}
+              onClick={() => setPending({ action, match })}
+            />
           ))}
         </span>
       ),

@@ -15,6 +15,8 @@ import { PageState } from '@/ui/PageState'
 import { useSubmit } from '@/ui/useSubmit'
 import { JoinForm } from './JoinForm'
 import { TransferForm } from './TransferForm'
+import { ArrowRightLeft, Hash, LogOut } from 'lucide-react'
+import { IconButton } from '@/ui/IconButton'
 
 type Dialog =
   | { kind: 'join' }
@@ -83,16 +85,10 @@ export function SquadPage() {
       align: 'right',
       cell: (member) =>
         member.left_on === null ? (
-          <span className="whitespace-nowrap">
-            <Button variant="link" onClick={() => setDialog({ kind: 'number', member })}>
-              Numéro
-            </Button>
-            <Button variant="link" onClick={() => setDialog({ kind: 'leave', member })}>
-              Départ
-            </Button>
-            <Button variant="link" onClick={() => setDialog({ kind: 'transfer', member })}>
-              Transférer
-            </Button>
+          <span className="inline-flex justify-end">
+            <IconButton label="Numéro" icon={Hash} onClick={() => setDialog({ kind: 'number', member })} />
+            <IconButton label="Départ" icon={LogOut} onClick={() => setDialog({ kind: 'leave', member })} />
+            <IconButton label="Transférer" icon={ArrowRightLeft} onClick={() => setDialog({ kind: 'transfer', member })} />
           </span>
         ) : null,
     },

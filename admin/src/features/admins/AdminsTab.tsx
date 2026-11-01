@@ -10,6 +10,8 @@ import { DataTable, type Column } from '@/ui/DataTable'
 import { Field, FormError } from '@/ui/Field'
 import { PageState } from '@/ui/PageState'
 import { useSubmit } from '@/ui/useSubmit'
+import { Ban, UserMinus } from 'lucide-react'
+import { IconButton } from '@/ui/IconButton'
 
 type Props = { leagueId: string; leagueName: string }
 
@@ -101,9 +103,7 @@ export function AdminsTab({ leagueId, leagueName }: Props) {
       header: '',
       align: 'right',
       cell: (admin) => (
-        <Button variant="link" onClick={() => setRemoving(admin)}>
-          Retirer
-        </Button>
+        <IconButton label="Retirer" icon={UserMinus} onClick={() => setRemoving(admin)} />
       ),
     })
   }
@@ -115,9 +115,7 @@ export function AdminsTab({ leagueId, leagueName }: Props) {
       header: '',
       align: 'right',
       cell: (invitation) => (
-        <Button variant="link" onClick={() => setCancelling(invitation)}>
-          Annuler
-        </Button>
+        <IconButton label="Annuler" icon={Ban} danger onClick={() => setCancelling(invitation)} />
       ),
     },
   ]
