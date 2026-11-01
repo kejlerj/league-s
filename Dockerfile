@@ -3,6 +3,9 @@ WORKDIR /src/admin
 COPY admin/package.json admin/package-lock.json ./
 RUN npm ci
 COPY admin/ ./
+ARG VITE_SENTRY_DSN
+ARG VITE_SENTRY_ENVIRONMENT
+ARG VITE_SENTRY_RELEASE
 RUN npm run build
 
 FROM golang:1.27.3-alpine AS build
