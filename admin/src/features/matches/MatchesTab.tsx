@@ -1,59 +1,32 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { cancelMatch, deleteMatch, finishMatch, listMatches, startMatch } from '@/api/matches'
+import { Link, useNavigate } from 'react-router'
+import { listMatches } from '@/api/matches'
 import { listSeasonTeams } from '@/api/seasons'
 import type { Match, MatchStatus } from '@/api/types'
 import { formatDateTime } from '@/lib/dates'
 import { useDebounced } from '@/lib/useDebounced'
 import { Button } from '@/ui/Button'
-import { ConfirmDialog } from '@/ui/ConfirmDialog'
 import { DataTable, type Column } from '@/ui/DataTable'
 import { Field, SelectField } from '@/ui/Field'
 import { Modal } from '@/ui/Modal'
 import { PageState } from '@/ui/PageState'
 import { TeamName } from '@/ui/TeamLogo'
-import { ACTION_ICONS, ACTION_LABELS, matchActions, STATUS_LABELS, type MatchAction } from './matchActions'
+import { STATUS_LABELS } from './matchActions'
 import { newestFirst } from './matchOrder'
-import { EditForm, PostponeForm, ScheduleForm } from './MatchForm'
-import { ScoreForm } from './ScoreForm'
-import { IconButton } from '@/ui/IconButton'
-
-type Pending = { action: MatchAction; match: Match }
-type ConfirmAction = 'start' | 'finish' | 'cancel' | 'delete'
+import { ScheduleForm } from './MatchForm'
 
 const STATUSES = Object.keys(STATUS_LABELS) as MatchStatus[]
-
-const FORM_TITLES: Partial<Record<MatchAction, string>> = {
-  score: 'Score',
-  edit: 'Modifier le match',
-  postpone: 'Reporter le match',
-}
-
-const CONFIRMS: Record<ConfirmAction, { title: string; message: string; label: string; danger: boolean }> = {
-  start: { title: 'Démarrer le match', message: 'Le match passe en cours avec un score de 0 – 0.', label: 'Démarrer', danger: false },
-  finish: { title: 'Terminer le match', message: 'Le score devient définitif et compte au classement.', label: 'Terminer', danger: false },
-  cancel: {
-    title: 'Annuler le match',
-    message: 'Un match annulé ne peut plus être joué ni reprogrammé. Un match en cours garde son score, qui ne compte pas au classement.',
-    label: 'Annuler le match',
-    danger: true,
-  },
-  delete: { title: 'Supprimer le match', message: 'Le match est retiré du calendrier.', label: 'Supprimer', danger: true },
-}
-
-const describe = (match: Match) => `${match.home_team.name} – ${match.away_team.name}, journée ${match.matchday}`
-
-const isConfirm = (action: MatchAction): action is ConfirmAction => action in CONFIRMS
 
 const score = (match: Match) =>
   match.home_score === null || match.away_score === null ? '–' : `${match.home_score} – ${match.away_score}`
 
 export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId: string }) {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [matchdayInput, setMatchdayInput] = useState('')
   const [status, setStatus] = useState<MatchStatus | ''>('')
   const [scheduling, setScheduling] = useState(false)
-  const [pending, setPending] = useState<Pending | null>(null)
   const matchday = useDebounced(matchdayInput.trim(), 300)
   const matches = useQuery({
     queryKey: ['season', seasonId, 'matches', matchday, status],
@@ -62,59 +35,35 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
   })
   const teams = useQuery({ queryKey: ['season', seasonId, 'teams'], queryFn: () => listSeasonTeams(leagueId, seasonId) })
 
-  const refresh = async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['season', seasonId, 'matches'] }),
-      queryClient.invalidateQueries({ queryKey: ['season', seasonId, 'standings'] }),
-    ])
-  }
-  const close = () => setPending(null)
-  const done = () => {
-    close()
-    setScheduling(false)
-    void refresh()
-  }
-
-  const run = (action: ConfirmAction, match: Match): Promise<unknown> => {
-    const calls: Record<ConfirmAction, () => Promise<unknown>> = {
-      start: () => startMatch(leagueId, seasonId, match.id),
-      finish: () => finishMatch(leagueId, seasonId, match.id),
-      cancel: () => cancelMatch(leagueId, seasonId, match.id),
-      delete: () => deleteMatch(leagueId, seasonId, match.id),
-    }
-    return calls[action]()
-  }
+  const pageOf = (match: Match) => `/leagues/${leagueId}/seasons/${seasonId}/matches/${match.id}`
 
   const columns: Column<Match>[] = [
     { header: 'J', width: '3rem', cell: (match) => match.matchday },
     { header: 'Date', width: '9rem', cell: (match) => formatDateTime(match.kickoff_at) },
     { header: 'Domicile', cell: (match) => <TeamName team={match.home_team} />, title: (match) => match.home_team.name },
-    { header: 'Score', width: '4.5rem', cell: (match) => <span className="whitespace-nowrap">{score(match)}</span> },
-    { header: 'Extérieur', cell: (match) => <TeamName team={match.away_team} />, title: (match) => match.away_team.name },
-    { header: 'Statut', width: '6rem', cell: (match) => STATUS_LABELS[match.status] },
     {
-      header: '',
-      align: 'right',
-      width: '11rem',
+      header: 'Score',
+      width: '4.5rem',
       cell: (match) => (
-        <span className="inline-flex justify-end">
-          {matchActions(match.status).map((action) => (
-            <IconButton
-              key={action}
-              label={ACTION_LABELS[action]}
-              icon={ACTION_ICONS[action]}
-              danger={action === 'cancel' || action === 'delete'}
-              onClick={() => setPending({ action, match })}
-            />
-          ))}
-        </span>
+        <Link
+          to={pageOf(match)}
+          aria-label={`Ouvrir le match ${match.home_team.name} – ${match.away_team.name}`}
+          className="whitespace-nowrap text-emerald-800 underline-offset-2 hover:underline"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {score(match)}
+        </Link>
       ),
     },
+    { header: 'Extérieur', cell: (match) => <TeamName team={match.away_team} />, title: (match) => match.away_team.name },
+    { header: 'Statut', width: '6rem', cell: (match) => STATUS_LABELS[match.status] },
   ]
 
-  const confirm = pending !== null && isConfirm(pending.action) ? { ...CONFIRMS[pending.action], action: pending.action } : null
-  const formTitle = pending !== null ? FORM_TITLES[pending.action] : undefined
-  const common = { leagueId, seasonId, onDone: done, onCancel: close }
+  const onScheduled = (match: Match) => {
+    setScheduling(false)
+    void queryClient.invalidateQueries({ queryKey: ['season', seasonId, 'matches'] })
+    navigate(pageOf(match))
+  }
 
   return (
     <div>
@@ -146,32 +95,19 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
             columns={columns}
             rowKey={(match) => match.id}
             empty="Aucun match."
+            onRowClick={(match) => navigate(pageOf(match))}
           />
         )}
       </PageState>
       <Modal title="Programmer un match" open={scheduling} onClose={() => setScheduling(false)}>
-        <ScheduleForm {...common} teams={teams.data ?? []} onCancel={() => setScheduling(false)} />
+        <ScheduleForm
+          leagueId={leagueId}
+          seasonId={seasonId}
+          teams={teams.data ?? []}
+          onScheduled={onScheduled}
+          onCancel={() => setScheduling(false)}
+        />
       </Modal>
-      <Modal title={formTitle ?? ''} open={formTitle !== undefined} onClose={close}>
-        {pending !== null ? <p className="mb-4 text-sm text-slate-600">{describe(pending.match)}</p> : null}
-        {pending?.action === 'score' ? <ScoreForm {...common} match={pending.match} /> : null}
-        {pending?.action === 'edit' ? <EditForm {...common} match={pending.match} /> : null}
-        {pending?.action === 'postpone' ? <PostponeForm {...common} match={pending.match} /> : null}
-      </Modal>
-      <ConfirmDialog
-        open={confirm !== null}
-        title={confirm?.title ?? ''}
-        message={confirm !== null && pending !== null ? `${describe(pending.match)}. ${confirm.message}` : ''}
-        confirmLabel={confirm?.label ?? ''}
-        danger={confirm?.danger ?? false}
-        onClose={close}
-        onConfirm={async () => {
-          if (pending !== null && confirm !== null) {
-            await run(confirm.action, pending.match)
-            await refresh()
-          }
-        }}
-      />
     </div>
   )
 }
