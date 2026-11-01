@@ -13,11 +13,11 @@ name: Team history
     element: "Saisons"
     direction: DOWN
 - scrollUntilVisible:
-    element: "2025-2026"
+    element: ".*2025-2026.*"
     direction: DOWN
-- tapOn: "2025-2026"
+- tapOn: "2025-2026, ›"
 - assertVisible: "Classement 2025-2026"
-- assertVisible: "US Bastille"
-- tapOn: "Athletic Goncourt"
+- assertVisible: ".*US Bastille.*"
+- tapOn: ".*Athletic Goncourt.*"
 - assertVisible: "Athletic Goncourt"
 - assertVisible: "Derniers résultats"

@@ -13,9 +13,9 @@ name: Match
 - tapOn:
     id: "tab-following"
 - scrollUntilVisible:
-    element: "J1 · .*"
+    element: ".*J1 · .*"
     direction: DOWN
-- tapOn: "J1 · .*"
+- tapOn: ".*J1 · .*"
 - assertVisible: "‹ Journée 1"
 - assertVisible: "Informations"
 - assertVisible: "Coup d'envoi"

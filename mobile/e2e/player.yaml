@@ -10,11 +10,11 @@ name: Player and full squad
     env:
       TEAM: "US Bastille"
 - scrollUntilVisible:
-    element: "Voir l'effectif complet"
+    element: ".*Voir l'effectif complet.*"
     direction: DOWN
-- tapOn: "Voir l'effectif complet"
+- tapOn: ".*Voir l'effectif complet.*"
 - assertVisible: "Effectif actuel · 8 joueurs"
-- tapOn: "Théo Sow"
+- tapOn: ".*Théo Sow.*"
 - assertVisible: "Club actuel · US Bastille"
 - assertVisible: "Parcours"
 - assertVisible: "US Bastille · N° 8"

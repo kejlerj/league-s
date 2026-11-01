@@ -3,6 +3,10 @@ appId: host.exp.Exponent
 - launchApp:
     clearState: true
 - openLink: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 30000
+    optional: true
 - runFlow:
     when:
       visible: "Continue"
