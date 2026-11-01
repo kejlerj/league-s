@@ -306,9 +306,17 @@ jobs:
         working-directory: mobile
         run: |
           npx expo start --ios > ../expo.log 2>&1 &
-          for _ in $(seq 1 300); do
-            grep -q "iOS Bundled" ../expo.log && exit 0
+          for _ in $(seq 1 150); do
+            xcrun simctl listapps booted 2>/dev/null | grep -q host.exp.Exponent && curl -sf localhost:8081/status >/dev/null && break
             sleep 2
+          done
+          for _ in $(seq 1 5); do
+            grep -q "iOS Bundled" ../expo.log && exit 0
+            xcrun simctl openurl booted exp://127.0.0.1:8081 || true
+            for _ in $(seq 1 60); do
+              grep -q "iOS Bundled" ../expo.log && exit 0
+              sleep 2
+            done
           done
           cat ../expo.log
           exit 1
