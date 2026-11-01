@@ -12,6 +12,7 @@ import { Field, SelectField } from '@/ui/Field'
 import { Modal } from '@/ui/Modal'
 import { PageState } from '@/ui/PageState'
 import { ACTION_LABELS, matchActions, STATUS_LABELS, type MatchAction } from './matchActions'
+import { newestFirst } from './matchOrder'
 import { EditForm, PostponeForm, ScheduleForm } from './MatchForm'
 import { ScoreForm } from './ScoreForm'
 
@@ -44,13 +45,6 @@ const isConfirm = (action: MatchAction): action is ConfirmAction => action in CO
 
 const score = (match: Match) =>
   match.home_score === null || match.away_score === null ? '–' : `${match.home_score} – ${match.away_score}`
-
-function byMatchdayThenKickoff(a: Match, b: Match): number {
-  if (a.matchday !== b.matchday) {
-    return a.matchday - b.matchday
-  }
-  return (a.kickoff_at ?? '9999').localeCompare(b.kickoff_at ?? '9999')
-}
 
 export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId: string }) {
   const queryClient = useQueryClient()
@@ -142,7 +136,7 @@ export function MatchesTab({ leagueId, seasonId }: { leagueId: string; seasonId:
       <PageState query={matches}>
         {(rows) => (
           <DataTable
-            rows={[...rows].sort(byMatchdayThenKickoff)}
+            rows={[...rows].sort(newestFirst)}
             columns={columns}
             rowKey={(match) => match.id}
             empty="Aucun match."

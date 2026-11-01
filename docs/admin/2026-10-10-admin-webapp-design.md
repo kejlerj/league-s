@@ -166,7 +166,7 @@ All under `/admin`.
 
 - **Registered teams**: register, unregister.
 - **Squad**: add a player, change the number, make them leave, transfer to another registered team.
-- **Matches**: list filterable by matchday and status. Schedule, edit, delete. Actions depending on the status:
+- **Matches**: list filterable by matchday and status, most recent first: kickoff descending, then matchday descending, and matches without a kickoff at the top. Schedule, edit, delete. Actions depending on the status:
   - `scheduled`: start, postpone, cancel, edit, delete.
   - `live`: enter the score, finish.
   - `finished`, `postponed`, `cancelled`: the actions the API accepts, to read in `internal/app/match/service.go` when writing the plan.
