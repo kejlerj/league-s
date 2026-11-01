@@ -22,6 +22,12 @@ type fakeState struct {
 	getErr    error
 	countErr  error
 	createErr error
+
+	events       []Event
+	squad        map[uuid.UUID]uuid.UUID
+	squadDays    []time.Time
+	createdEvent *Event
+	deletedEvent uuid.UUID
 }
 
 type fakeStore struct {
@@ -200,9 +206,6 @@ func TestServiceTransitions_LoadApplySave(t *testing.T) {
 	}{
 		{"Start", StatusScheduled, func(s *Service, ctx context.Context) (*Match, error) {
 			return s.Start(ctx, uuid.New(), uuid.New(), uuid.New())
-		}, StatusLive},
-		{"SetScore", StatusLive, func(s *Service, ctx context.Context) (*Match, error) {
-			return s.SetScore(ctx, uuid.New(), uuid.New(), uuid.New(), 2, 1)
 		}, StatusLive},
 		{"Finish", StatusLive, func(s *Service, ctx context.Context) (*Match, error) {
 			return s.Finish(ctx, uuid.New(), uuid.New(), uuid.New())

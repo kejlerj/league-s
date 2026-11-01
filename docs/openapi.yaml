@@ -1431,6 +1431,95 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/MatchID"
+    get:
+      operationId: listMatchEvents
+      summary: The events of a match, by minute
+      description: |
+        Access: public. Events are sorted by minute, then by entry order.
+        `note` is returned only to an admin of the league. It is `null` for anyone else.
+      tags: [matches]
+      security: []
+      responses:
+        "200":
+          description: The match's events.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MatchEvent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: recordMatchEvent
+      summary: Record a goal, a card, a substitution or an injury
+      description: |
+        Access: league admin. Only on a live or finished match (409 otherwise).
+        Every player named is in the right team's squad on the match day: the UTC date of the kickoff, or today without a kickoff (422).
+        A goal on a live match adds 1 to its team's score. On a finished match, a goal is accepted only while the team has fewer goal events than goals (409), and the score doesn't change.
+        A player sent off (a red card, or a second yellow card) gets no further card (409).
+        `PUT …/score` refuses a score lower than a team's number of goal events (409).
+      tags: [matches]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordMatchEventRequest"
+      responses:
+        "201":
+          description: The recorded event.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchEvent"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /api/v1/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events/{eventID}:
+    parameters:
+      - $ref: "#/components/parameters/LeagueID"
+      - $ref: "#/components/parameters/SeasonID"
+      - $ref: "#/components/parameters/MatchID"
+      - $ref: "#/components/parameters/EventID"
+    delete:
+      operationId: deleteMatchEvent
+      summary: Delete a match event
+      description: |
+        Access: league admin. An event can't be edited: a wrong one is deleted and entered again.
+        Deleting a goal of a live match takes 1 off its team's score. On a finished match, the score doesn't change.
+      tags: [matches]
+      responses:
+        "204":
+          description: Deleted.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
   /api/v1/leagues/{leagueID}/seasons/{seasonID}/standings:
     parameters:
       - $ref: "#/components/parameters/LeagueID"
@@ -1503,6 +1592,13 @@ components:
         format: uuid
     MatchID:
       name: matchID
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    EventID:
+      name: eventID
       in: path
       required: true
       schema:
@@ -2257,6 +2353,112 @@ components:
         kickoff_at:
           type: [string, "null"]
           format: date-time
+
+    MatchEventType:
+      type: string
+      enum: [goal, yellow_card, red_card, substitution, injury]
+    MatchEventPlayer:
+      type: object
+      required: [id, firstname, lastname]
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstname:
+          type: string
+        lastname:
+          type: string
+    MatchEvent:
+      type: object
+      required: [id, match_id, team_id, type, minute, player, assist_player, player_in, own_goal, penalty, note, sent_off, home_score, away_score]
+      properties:
+        id:
+          type: string
+          format: uuid
+        match_id:
+          type: string
+          format: uuid
+        team_id:
+          type: string
+          format: uuid
+          description: The team the event counts for. An own goal counts for this team, and its scorer is in the other team.
+        type:
+          $ref: "#/components/schemas/MatchEventType"
+        minute:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 150
+        player:
+          description: The scorer, the player booked or injured, or the player leaving. `null` for a goal without a known scorer.
+          oneOf:
+            - $ref: "#/components/schemas/MatchEventPlayer"
+            - type: "null"
+        assist_player:
+          oneOf:
+            - $ref: "#/components/schemas/MatchEventPlayer"
+            - type: "null"
+        player_in:
+          description: The player coming in, on a substitution.
+          oneOf:
+            - $ref: "#/components/schemas/MatchEventPlayer"
+            - type: "null"
+        own_goal:
+          type: boolean
+        penalty:
+          type: boolean
+        note:
+          type: [string, "null"]
+          description: The injury's note, returned only to an admin of the league.
+        sent_off:
+          type: boolean
+          description: "`true` on a red card, and on a player's second yellow card."
+        home_score:
+          type: [integer, "null"]
+          format: int32
+          description: The running score after this goal, from the goal events in minute order. `null` on other events.
+        away_score:
+          type: [integer, "null"]
+          format: int32
+    RecordMatchEventRequest:
+      type: object
+      required: [type, team_id, minute]
+      additionalProperties: false
+      properties:
+        type:
+          $ref: "#/components/schemas/MatchEventType"
+        team_id:
+          type: string
+          format: uuid
+          description: The home or the away team of the match.
+        minute:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 150
+        player_id:
+          type: [string, "null"]
+          format: uuid
+          description: Optional on a goal. Required on a card, a substitution (the player leaving) and an injury.
+        assist_player_id:
+          type: [string, "null"]
+          format: uuid
+          description: Goals only, not on a penalty or an own goal. In the scorer's team, and not the scorer.
+        player_in_id:
+          type: [string, "null"]
+          format: uuid
+          description: Substitutions only, and required there. Different from `player_id`.
+        own_goal:
+          type: boolean
+          default: false
+        penalty:
+          type: boolean
+          default: false
+        note:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 200
+          description: Injuries only. Trimmed, then 1 to 200 characters.
 
     StandingRow:
       type: object

@@ -87,7 +87,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 		r.Mount("/leagues/{leagueID}/players/{playerID}/career", squad.CareerRoutes())
 
 		matchStore := match.NewPostgresStore(pool)
-		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/matches", match.NewHandler(match.NewService(matchStore), matchStore, seasonStore).Routes())
+		matchSvc := match.NewService(matchStore)
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/matches", match.NewHandler(matchSvc, matchStore, seasonStore).Routes())
+		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events", match.NewEventHandler(matchSvc, matchStore, authSvc).Routes())
 		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/standings", standing.NewHandler(seasonStore, matchStore).Routes())
 	})
 

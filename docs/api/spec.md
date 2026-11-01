@@ -104,6 +104,30 @@ An app for amateur football leagues (five-a-side, urban football), not for profe
 | A team plays at most one match per matchday (cancelled matches don't count) | ✅ `match.Service`, with a lock on the season against concurrent creates, 409 |
 | The kickoff is during the season (first and last day included, in UTC) | ✅ `match.Service`, 422 |
 
+## Match events
+
+Design: `docs/specs/2026-10-31-match-events-design.md`.
+
+| Rule | Status |
+|---|---|
+| An event belongs to one match and to one of its two teams | ✅ `Match.RecordEvent`, 422 on `team_id`. `match_event_match_fkey` keeps the event in the match's season |
+| Events are recorded and deleted on a live or finished match only | ✅ `Match.RecordEvent`, `Match.RemoveEvent`, 409. A finished match stays finished |
+| The minute is required, between 1 and 150 | ✅ DTO validation and `Event.Clean`, 422. `CHECK` in the database |
+| Every player named is in the squad of the right team on the match day (the UTC date of the kickoff, or the day the event is recorded without a kickoff) | ✅ `match.Service.RecordEvent`, in the transaction that locks the match, 422 on the player field |
+| An event can't be edited: a wrong event is deleted and entered again | ✅ no `PATCH` route |
+| Events are listed by minute, then by entry order, and can be read by anyone | ✅ `ListMatchEvents`, public `GET` |
+| A goal's scorer is optional. An own goal counts for `team_id`, and its scorer is in the other team's squad | ✅ `Event.SquadTeamID`, 422 |
+| A penalty or an own goal has no assist. The assist is in the scorer's team, and is not the scorer | ✅ `Event.Clean`, `match.Service`, 422. `CHECK` in the database |
+| On a live match, a goal adds 1 to its team's score, and deleting it removes 1, in the same transaction | ✅ `Match.RecordEvent`, `Match.RemoveEvent`, the match row locked `FOR UPDATE` |
+| On a finished match, a goal is accepted only while the team has fewer goal events than goals, and the score doesn't move | ✅ `Match.RecordEvent`, 409 |
+| `PUT …/score` refuses a score lower than a team's number of goal events | ✅ `Match.CheckGoalEvents`, called by `match.Service.SetScore`, 409 |
+| A card names a player. A player sent off (a red card, or a second yellow card) gets no further card, so at most two yellows and one red per match | ✅ `Match.RecordEvent`, 409 |
+| A second yellow card is stored as a yellow card, and read as a sending-off | ✅ `SummarizeEvents`, `sent_off` in the response |
+| A substitution names the player leaving and the player coming in, both in the team's squad, and different. Who is on the pitch is not checked (no line-ups) | ✅ `Event.Clean`, `match.Service`, 422. `CHECK` in the database |
+| An injury names a player and takes an optional note of 1 to 200 characters after trimming. Only an injury has a note | ✅ `Event.Clean`, 422. `CHECK` in the database |
+| The injury note is returned only to an admin of the league | ✅ the events handler asks `auth.Service.CanWrite`. Anyone else gets `note: null`, never a 401 or 403 |
+| A player with events can't be deleted | ✅ `ON DELETE RESTRICT` on the player foreign keys |
+
 ## Standings (planned)
 
 | Rule | Status |

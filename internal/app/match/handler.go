@@ -205,6 +205,9 @@ func errorStatus(err error) (int, bool) {
 	if _, ok := errors.AsType[DeleteError](err); ok {
 		return http.StatusConflict, true
 	}
+	if e, ok := errors.AsType[EventError](err); ok {
+		return eventErrorStatus(e), true
+	}
 	return 0, false
 }
 

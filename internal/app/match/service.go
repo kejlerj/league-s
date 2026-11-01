@@ -14,15 +14,20 @@ type Store interface {
 	GetForUpdate(ctx context.Context, leagueID, seasonID, id uuid.UUID) (*Match, error)
 	Save(ctx context.Context, leagueID uuid.UUID, m *Match) (*Match, error)
 	Delete(ctx context.Context, leagueID, seasonID, id uuid.UUID) error
+	ListEvents(ctx context.Context, leagueID, seasonID, matchID uuid.UUID) ([]Event, error)
+	CreateEvent(ctx context.Context, leagueID, seasonID uuid.UUID, e Event) (Event, error)
+	DeleteEvent(ctx context.Context, leagueID, seasonID, matchID, id uuid.UUID) error
+	IsSquadMember(ctx context.Context, leagueID, seasonID, teamID, playerID uuid.UUID, day time.Time) (bool, error)
 	InTx(ctx context.Context, fn func(store Store) error) error
 }
 
 type Service struct {
 	store Store
+	now   func() time.Time
 }
 
 func NewService(store Store) *Service {
-	return &Service{store: store}
+	return &Service{store: store, now: time.Now}
 }
 
 func (s *Service) Schedule(ctx context.Context, leagueID, seasonID, homeTeamID, awayTeamID uuid.UUID, matchday int32, kickoffAt *time.Time, venue *string) (*Match, error) {
@@ -89,9 +94,27 @@ func (s *Service) Start(ctx context.Context, leagueID, seasonID, id uuid.UUID) (
 }
 
 func (s *Service) SetScore(ctx context.Context, leagueID, seasonID, id uuid.UUID, home, away int32) (*Match, error) {
-	return s.transition(ctx, leagueID, seasonID, id, func(m *Match) error {
-		return m.SetScore(home, away)
+	var res *Match
+	err := s.store.InTx(ctx, func(store Store) error {
+		m, err := store.GetForUpdate(ctx, leagueID, seasonID, id)
+		if err != nil {
+			return err
+		}
+		if err := m.SetScore(home, away); err != nil {
+			return err
+		}
+		events, err := store.ListEvents(ctx, leagueID, seasonID, id)
+		if err != nil {
+			return err
+		}
+		if err := m.CheckGoalEvents(events); err != nil {
+			return err
+		}
+
+		res, err = store.Save(ctx, leagueID, m)
+		return err
 	})
+	return res, err
 }
 
 func (s *Service) Finish(ctx context.Context, leagueID, seasonID, id uuid.UUID) (*Match, error) {

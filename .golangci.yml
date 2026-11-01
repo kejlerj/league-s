@@ -22,6 +22,10 @@ linters:
     - unparam
     - intrange
     - thelper
+  settings:
+    misspell:
+      ignore-rules:
+        - blessure
   exclusions:
     paths:
       - internal/db
