@@ -66,4 +66,6 @@ A mobile change that the user can see needs:
 
 The flows open the app in Expo Go (`exp://127.0.0.1:8081`) and pick the seeded league "District Five Demo". `mobile/e2e/admin-data-set.yaml` checks the league that the admin final check builds (`npx --prefix admin playwright test full-league`). It is tagged `admin-data-set` and excluded from the default run: run it with `maestro test --include-tags admin-data-set mobile/e2e/`.
 
+The `Mobile E2E` CI job runs the same default flows on a macOS runner for every PR that touches `mobile/`: Postgres, the API with the seed, Expo Go on an iOS simulator, then `maestro test mobile/e2e/`. When it fails, the `mobile-e2e` artifact of the run holds the API and Expo logs and Maestro's screenshots.
+
 If Maestro isn't installed (`maestro --version`), do step 3 with the desktop app's iOS Simulator tool (screenshots), and say so in the PR.
