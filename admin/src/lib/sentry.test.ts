@@ -1,8 +1,8 @@
 import * as Sentry from '@sentry/react'
 import type { BrowserOptions, ErrorEvent } from '@sentry/react'
-import { initSentry, scrubBreadcrumb, scrubEvent } from '@/lib/sentry'
+import { initSentry, scrubBreadcrumb, scrubEvent, scrubSpan } from '@/lib/sentry'
 
-type TransactionEvent = Parameters<NonNullable<BrowserOptions['beforeSendTransaction']>>[0]
+type StreamedSpan = Parameters<NonNullable<BrowserOptions['beforeSendSpan']>>[0]
 
 vi.mock('@sentry/react', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@sentry/react')>()),
@@ -62,24 +62,21 @@ test('an error event never carries a reset or invitation token', () => {
   expect(scrubbed).toContain('token=[Filtered]&x=1')
 })
 
-test('a transaction never carries a token in its spans', () => {
-  const event: TransactionEvent = {
-    type: 'transaction',
-    transaction: '/admin/reset-password',
-    request: { url: 'https://league.test/admin/reset-password?token=secret1' },
-    spans: [
-      {
-        span_id: '1',
-        trace_id: '2',
-        start_timestamp: 0,
-        status: 'ok',
-        description: 'GET /api/v1/invitations?token=secret2',
-        data: { url: '/api/v1/invitations?token=secret3' },
-      },
-    ],
+test('a span never carries a token', () => {
+  const span: StreamedSpan = {
+    trace_id: '1',
+    span_id: '2',
+    name: 'GET /api/v1/invitations?token=secret1',
+    start_timestamp: 0,
+    status: 'ok',
+    is_segment: false,
+    attributes: { url: '/api/v1/invitations?token=secret2', 'http.response.status_code': 200 },
   }
 
-  expect(JSON.stringify(scrubEvent(event))).not.toMatch(/secret\d/)
+  const scrubbed = scrubSpan(span)
+
+  expect(JSON.stringify(scrubbed)).not.toMatch(/secret\d/)
+  expect(scrubbed.attributes['http.response.status_code']).toBe(200)
 })
 
 test('a breadcrumb never carries a token', () => {

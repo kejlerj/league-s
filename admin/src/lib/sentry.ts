@@ -10,7 +10,7 @@ export type SentryEnv = {
   VITE_SENTRY_RELEASE?: string
 }
 
-type TransactionEvent = Parameters<NonNullable<BrowserOptions['beforeSendTransaction']>>[0]
+type StreamedSpan = Parameters<NonNullable<BrowserOptions['beforeSendSpan']>>[0]
 
 const FILTERED = '[Filtered]'
 const tokenInUrl = /(token=)[^&\s"'#]+/gi
@@ -37,7 +37,11 @@ export function scrubBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb {
   }
 }
 
-export function scrubEvent<T extends ErrorEvent | TransactionEvent>(event: T): T {
+export function scrubSpan(span: StreamedSpan): StreamedSpan {
+  return { ...span, name: scrub(span.name), attributes: scrubValues(span.attributes) }
+}
+
+export function scrubEvent(event: ErrorEvent): ErrorEvent {
   const { request } = event
   return {
     ...event,
@@ -53,11 +57,6 @@ export function scrubEvent<T extends ErrorEvent | TransactionEvent>(event: T): T
       headers: request.headers && scrubHeaders(request.headers),
     },
     breadcrumbs: event.breadcrumbs?.map(scrubBreadcrumb),
-    spans: event.spans?.map((span) => ({
-      ...span,
-      description: span.description && scrub(span.description),
-      data: span.data && scrubValues(span.data),
-    })),
   }
 }
 
@@ -79,7 +78,7 @@ export function initSentry(env: SentryEnv): boolean {
     ],
     tracesSampleRate: 0.2,
     beforeSend: scrubEvent,
-    beforeSendTransaction: scrubEvent,
+    beforeSendSpan: scrubSpan,
     beforeBreadcrumb: scrubBreadcrumb,
   })
   return true
