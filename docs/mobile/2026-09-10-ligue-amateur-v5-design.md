@@ -61,6 +61,7 @@ Confirmed scope with the product owner:
 | Fonts | `@expo-google-fonts/ibm-plex-mono` (numeric/mono); system font otherwise |
 | Misc | `expo-linking` (open video), RN core `Share` |
 | Test | `jest-expo`, `@testing-library/react-native` |
+| Error tracking | `@sentry/react-native` (Sentry project `league-s-mobile`, see §14b) |
 
 **Why a service layer *and* Zustand:** they own different things. Services own
 server data (fixtures, standings, team, match) and are the single import site for
@@ -648,6 +649,17 @@ survives a reload.
    config in `package.json` (`preset: "jest-expo"`), `test` script.
 5. `git init`; `.gitignore` from the Expo template; initial commit. *(The working
    directory is not currently a git repository.)*
+
+---
+
+## 14b. Error tracking (Sentry)
+
+- `@sentry/react-native` (the version `npx expo install` picks for the SDK) and its config plugin in `app.json` (EU region `https://de.sentry.io/`, org `personal-7zd`, project `league-s-mobile`).
+- `src/monitoring/sentry.ts` starts Sentry from `app/_layout.tsx` before the first render, and the root layout is wrapped in `Sentry.wrap`. No `EXPO_PUBLIC_SENTRY_DSN` means no `init`, so dev runs and jest send nothing.
+- `environment` is the build's `APP_ENV`, passed to the app as `extra.appEnv` by `app.config.ts`.
+- Errors and tracing, with the React Navigation integration registered on Expo Router's container, so transactions carry screen names. Traces are sampled at 100%, or 20% in production. No session replay, logs or profiling.
+- Privacy: `sendDefaultPii: false`, no user set, and `beforeSend` / `beforeSendTransaction` walk the event and replace every `token=` value in its strings (URLs, breadcrumbs, messages) with `[Filtered]`.
+- Source maps and dSYM uploads aren't set up yet (#172). Until then, native builds need `SENTRY_DISABLE_AUTO_UPLOAD=true` (in `mobile/.env.example`), otherwise the Xcode build phase stops for a missing `SENTRY_AUTH_TOKEN`.
 
 ---
 

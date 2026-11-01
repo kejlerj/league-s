@@ -1,6 +1,7 @@
 import '../global.css';
 import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, useNavigationContainerRef } from 'expo-router';
+import * as Sentry from '@sentry/react-native';
 import {
   useFonts,
   IBMPlexMono_400Regular,
@@ -9,11 +10,19 @@ import {
 } from '@expo-google-fonts/ibm-plex-mono';
 import * as SplashScreen from 'expo-splash-screen';
 import { useThemeSync } from '@/src/theme/useThemeSync';
+import { initSentry, navigationIntegration } from '@/src/monitoring/sentry';
 
+initSentry();
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
   useThemeSync();
+  const navigationRef = useNavigationContainerRef();
+
+  useEffect(() => {
+    navigationIntegration.registerNavigationContainer(navigationRef);
+  }, [navigationRef]);
+
   const [fontsLoaded] = useFonts({
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
@@ -35,3 +44,5 @@ export default function RootLayout() {
     </Stack>
   );
 }
+
+export default Sentry.wrap(RootLayout);

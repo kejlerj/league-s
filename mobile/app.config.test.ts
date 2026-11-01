@@ -57,3 +57,10 @@ test('keeps the rest of the app config', () => {
   expect(config.ios?.supportsTablet).toBe(true);
   expect(config.ios?.infoPlist?.UIViewControllerBasedStatusBarAppearance).toBe(true);
 });
+
+test.each([
+  ['development', {}],
+  ['production', { APP_ENV: 'production', EXPO_PUBLIC_API_URL: HTTPS_API }],
+])('the %s build tells the app its environment', (appEnv, vars) => {
+  expect(withEnvironment(BASE, vars).extra?.appEnv).toBe(appEnv);
+});
