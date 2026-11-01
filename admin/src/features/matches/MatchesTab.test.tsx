@@ -71,6 +71,18 @@ test('the match table keeps the same column widths from one season to the next',
   expect(within(live).getByRole('cell', { name: 'FC Bravo' })).toHaveAttribute('title', 'FC Bravo')
 })
 
+test('the most recent match is listed first', async () => {
+  mockSeason()
+  server.use(
+    http.get(`${S}/teams`, () => HttpResponse.json([])),
+    http.get(M, () => HttpResponse.json([{ ...matchLive, kickoff_at: '2026-10-04T13:00:00Z' }, matchScheduled])),
+  )
+  renderRoute('/leagues/L1/seasons/S1?tab=matches', { me: adminOne })
+  await rowOf('En cours')
+  const statuses = screen.getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell')[5].textContent)
+  expect(statuses).toEqual(['Programmé', 'En cours'])
+})
+
 test('entering the score', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.put(`${M}/M2/score`, capture(sent)))
