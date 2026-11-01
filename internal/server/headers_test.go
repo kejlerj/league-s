@@ -39,7 +39,7 @@ func TestTheAdminHasItsOwnContentSecurityPolicy(t *testing.T) {
 	testdb.New(t, testPool)
 	router := (&Server{db: poolService{testPool}}).RegisterRoutes()
 
-	admin := "default-src 'self'; img-src 'self' https:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+	admin := "default-src 'self'; img-src 'self' https:; connect-src 'self' https://*.ingest.de.sentry.io; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 	tests := []struct {
 		path string
 		want string

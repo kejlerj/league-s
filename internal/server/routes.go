@@ -25,7 +25,7 @@ import (
 	"league-s/internal/logging"
 )
 
-const adminContentSecurityPolicy = "default-src 'self'; img-src 'self' https:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+const adminContentSecurityPolicy = "default-src 'self'; img-src 'self' https:; connect-src 'self' https://*.ingest.de.sentry.io; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 
 func (s *Server) RegisterRoutes() http.Handler {
 	r := chi.NewRouter()
