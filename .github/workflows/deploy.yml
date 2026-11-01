@@ -1,0 +1,77 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  deploy:
+    name: Deploy
+    if: >-
+      vars.DEPLOY_HOST != '' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      DEPLOY_HOST: ${{ vars.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ vars.DEPLOY_USER }}
+      DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SHA }}
+
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host deploy\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/id_deploy\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' "$DEPLOY_HOST" "$DEPLOY_USER" > ~/.ssh/config
+
+      - name: Build the image
+        run: docker build -t "league-s:$SHA" .
+
+      - name: Send the image
+        run: docker save "league-s:$SHA" | gzip | ssh deploy 'gunzip | docker load'
+
+      - name: Send the compose files
+        run: scp deploy/compose.yaml deploy/deploy.sh "deploy:$DEPLOY_PATH/"
+
+      - name: Migrate and start
+        run: ssh deploy "cd '$DEPLOY_PATH' && sh deploy.sh 'league-s:$SHA'"
+
+      - name: Smoke test
+        run: |
+          health=$(ssh deploy "cd '$DEPLOY_PATH' && docker compose exec -T api wget -qO- http://127.0.0.1:8080/health")
+          echo "$health"
+          case "$health" in
+            *'"status":"up"'*) ;;
+            *) exit 1 ;;
+          esac
+
+      - name: Report the failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue create --repo "$GITHUB_REPOSITORY" --label bug \
+            --title "Deploy failed for ${SHA:0:7}" \
+            --body "🤖 The deployment of $SHA failed: $RUN_URL. If \`migrate\` failed, the previous version is still running."
