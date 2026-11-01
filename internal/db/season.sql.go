@@ -108,6 +108,44 @@ func (q *Queries) GetSeasonByID(ctx context.Context, arg GetSeasonByIDParams) (S
 	return i, err
 }
 
+const getSeasonMatchSpan = `-- name: GetSeasonMatchSpan :one
+SELECT min(kickoff_at)::timestamptz AS first_kickoff, max(kickoff_at)::timestamptz AS last_kickoff
+FROM match
+WHERE season_id = $1 AND kickoff_at IS NOT NULL
+HAVING count(*) > 0
+`
+
+type GetSeasonMatchSpanRow struct {
+	FirstKickoff time.Time
+	LastKickoff  time.Time
+}
+
+func (q *Queries) GetSeasonMatchSpan(ctx context.Context, seasonID uuid.UUID) (GetSeasonMatchSpanRow, error) {
+	row := q.db.QueryRow(ctx, getSeasonMatchSpan, seasonID)
+	var i GetSeasonMatchSpanRow
+	err := row.Scan(&i.FirstKickoff, &i.LastKickoff)
+	return i, err
+}
+
+const getSeasonSquadSpan = `-- name: GetSeasonSquadSpan :one
+SELECT min(joined_on)::date AS first_day, max(COALESCE(left_on, joined_on))::date AS last_day
+FROM squad_membership
+WHERE season_id = $1
+HAVING count(*) > 0
+`
+
+type GetSeasonSquadSpanRow struct {
+	FirstDay time.Time
+	LastDay  time.Time
+}
+
+func (q *Queries) GetSeasonSquadSpan(ctx context.Context, seasonID uuid.UUID) (GetSeasonSquadSpanRow, error) {
+	row := q.db.QueryRow(ctx, getSeasonSquadSpan, seasonID)
+	var i GetSeasonSquadSpanRow
+	err := row.Scan(&i.FirstDay, &i.LastDay)
+	return i, err
+}
+
 const getSeasonsByLeague = `-- name: GetSeasonsByLeague :many
 SELECT id, name, start_on, end_on, match_win_pts, match_draw_pts, match_loss_pts, tie_breakers, max_squad_size, league_id, created_at, updated_at FROM season WHERE league_id = $1 ORDER BY start_on DESC
 `

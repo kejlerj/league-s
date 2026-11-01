@@ -79,7 +79,7 @@ A body that fails validation gets a 422 with one readable French message per fie
 | ✅ | `POST` | `/leagues/{leagueID}/seasons` | admin | Create a season (points 3/1/0 by default, optional `max_squad_size`). Dates overlapping another season of the league → 409 |
 | ✅ | `GET` | `/leagues/{leagueID}/seasons` | public | List the league's seasons, most recent first. Unknown league → 404 |
 | ✅ | `GET` | `/leagues/{leagueID}/seasons/{seasonID}` | public | Read a season |
-| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Change dates, points or tie-breakers (careful with standings already published). Dates overlapping another season of the league → 409 |
+| ✅ | `PATCH` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Change dates, points or tie-breakers (careful with standings already published). Dates overlapping another season of the league → 409. Dates that would leave squad memberships or matches outside the season → 409 |
 | ✅ | `DELETE` | `/leagues/{leagueID}/seasons/{seasonID}` | admin | Delete (refused if it has matches). Its registrations and squads are deleted with it |
 
 ## Teams registered for a season

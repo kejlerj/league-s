@@ -184,6 +184,20 @@ test('edit: an overlapping season shows the message near the dates', async () =>
   expect(await within(dialog).findByText(OVERLAP_MESSAGE)).toBeInTheDocument()
 })
 
+test.each([
+  ['season dates would leave squad memberships outside the season', "Des joueurs ont des dates d'effectif en dehors de ces dates. Modifiez leurs arrivées ou départs d'abord."],
+  ['season dates would leave matches outside the season', "Des matchs sont programmés en dehors de ces dates. Déplacez-les d'abord."],
+])('edit: dates that leave the season content outside show the message near the dates (%s)', async (apiError, message) => {
+  server.use(http.patch(`${API}/leagues/L1/seasons/S1`, () => HttpResponse.json({ error: apiError }, { status: 409 })))
+  const { user } = setup()
+  const row = (await screen.findByRole('link', { name: '2026-2027' })).closest('tr')!
+  await user.click(within(row).getByRole('button', { name: 'Modifier' }))
+  const dialog = screen.getByRole('dialog')
+  await user.click(within(dialog).getByRole('button', { name: 'Enregistrer' }))
+  expect(await within(dialog).findByText(message)).toBeInTheDocument()
+  expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument()
+})
+
 test('a taken name shows the message under the name', async () => {
   server.use(
     http.post(`${API}/leagues/L1/seasons`, () => HttpResponse.json({ error: 'season name is already taken' }, { status: 409 })),

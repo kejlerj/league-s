@@ -848,7 +848,7 @@ paths:
     patch:
       operationId: updateSeason
       summary: Change a season's name, dates, points or tie breakers
-      description: "Access: league admin. Only the fields sent change; `null` or omitted keeps the value. The name is unique in the league (409). The end must stay after the start (422). The new dates, first and last days included, must not overlap another season of the league (409). The standings are computed on read, so they follow the new points and tie breakers."
+      description: "Access: league admin. Only the fields sent change; `null` or omitted keeps the value. The name is unique in the league (409). The end must stay after the start (422). The new dates, first and last days included, must not overlap another season of the league (409), and must keep every squad membership and match kickoff of the season inside them (409). The standings are computed on read, so they follow the new points and tie breakers."
       tags: [seasons]
       requestBody:
         required: true

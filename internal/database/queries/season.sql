@@ -26,3 +26,15 @@ RETURNING *;
 
 -- name: DeleteSeason :execrows
 DELETE FROM season WHERE id = $1 AND league_id = $2;
+
+-- name: GetSeasonSquadSpan :one
+SELECT min(joined_on)::date AS first_day, max(COALESCE(left_on, joined_on))::date AS last_day
+FROM squad_membership
+WHERE season_id = $1
+HAVING count(*) > 0;
+
+-- name: GetSeasonMatchSpan :one
+SELECT min(kickoff_at)::timestamptz AS first_kickoff, max(kickoff_at)::timestamptz AS last_kickoff
+FROM match
+WHERE season_id = $1 AND kickoff_at IS NOT NULL
+HAVING count(*) > 0;
