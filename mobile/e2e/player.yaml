@@ -14,7 +14,7 @@ name: Player and full squad
     direction: DOWN
 - tapOn: ".*Voir l'effectif complet.*"
 - assertVisible: "Effectif actuel · 8 joueurs"
-- tapOn: "Théo Sow"
+- tapOn: ".*Théo Sow.*"
 - assertVisible: "Club actuel · US Bastille"
 - assertVisible: "Parcours"
 - assertVisible: "US Bastille · N° 8"
