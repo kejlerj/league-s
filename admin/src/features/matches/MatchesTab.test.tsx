@@ -61,6 +61,16 @@ test('the row shows the teams, the score and the local date', async () => {
   expect(within(scheduled).getByText(/^11\/10\/2026 \d{2}:\d{2}$/)).toBeInTheDocument()
 })
 
+test('the match table keeps the same column widths from one season to the next', async () => {
+  setup()
+  const live = await rowOf('En cours')
+  const table = live.closest('table')!
+  expect(table).toHaveClass('table-fixed')
+  const widths = [...table.querySelectorAll('colgroup col')].map((col) => (col as HTMLElement).style.width)
+  expect(widths.filter((width) => width !== '')).toHaveLength(widths.length - 2)
+  expect(within(live).getByRole('cell', { name: 'FC Bravo' })).toHaveAttribute('title', 'FC Bravo')
+})
+
 test('entering the score', async () => {
   const sent: Sent = { calls: 0 }
   const { user } = setup([], http.put(`${M}/M2/score`, capture(sent)))
