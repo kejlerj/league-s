@@ -297,3 +297,19 @@ func (s *PostgresStore) AcceptInvitation(ctx context.Context, tokenHash []byte, 
 
 	return &Invitation{LeagueID: row.LeagueID, Email: row.Email}, nil
 }
+
+func (s *PostgresStore) DeleteExpired(ctx context.Context, now time.Time) (Cleaned, error) {
+	var res Cleaned
+	var err error
+
+	if res.Sessions, err = s.q.DeleteExpiredSessions(ctx, now); err != nil {
+		return Cleaned{}, fmt.Errorf("delete expired sessions: %w", err)
+	}
+	if res.PasswordResets, err = s.q.DeleteDeadPasswordResets(ctx, now); err != nil {
+		return Cleaned{}, fmt.Errorf("delete expired password resets: %w", err)
+	}
+	if res.Invitations, err = s.q.DeleteExpiredInvitations(ctx, now); err != nil {
+		return Cleaned{}, fmt.Errorf("delete expired invitations: %w", err)
+	}
+	return res, nil
+}

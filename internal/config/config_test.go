@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"league-s/internal/mailer"
 )
@@ -31,6 +32,41 @@ func setValidEnv(t *testing.T) {
 	t.Setenv("MAIL_FROM", "")
 	t.Setenv("APP_ENV", "")
 	t.Setenv("SENTRY_DSN", "")
+	t.Setenv("CLEANUP_INTERVAL", "")
+}
+
+func TestLoad_CleanupInterval(t *testing.T) {
+	tests := []struct {
+		raw     string
+		want    time.Duration
+		wantErr bool
+	}{
+		{"", time.Hour, false},
+		{"15m", 15 * time.Minute, false},
+		{"0s", 0, true},
+		{"-1h", 0, true},
+		{"often", 0, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.raw, func(t *testing.T) {
+			setValidEnv(t)
+			t.Setenv("CLEANUP_INTERVAL", tt.raw)
+
+			cfg, err := Load()
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Load() error = nil, want an error for %q", tt.raw)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Load() error = %v", err)
+			}
+			if cfg.CleanupInterval != tt.want {
+				t.Errorf("CleanupInterval = %v, want %v", cfg.CleanupInterval, tt.want)
+			}
+		})
+	}
 }
 
 func TestLoad_ErrorTracking(t *testing.T) {
