@@ -237,3 +237,92 @@ jobs:
 
       - name: Types
         run: npx tsc --noEmit
+
+  mobile-e2e:
+    name: Mobile E2E
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.mobile == 'true'
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      PORT: 8080
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_DATABASE: league_s
+      DB_USERNAME: league_s
+      DB_PASSWORD: league_s
+      COOKIE_SECURE: false
+      LOG_FORMAT: text
+      EXPO_PUBLIC_API_URL: http://localhost:8080/api/v1
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Start Postgres
+        run: |
+          brew install postgresql@18
+          brew services start postgresql@18
+          pg="$(brew --prefix postgresql@18)/bin"
+          until "$pg/pg_isready" -h localhost; do sleep 1; done
+          "$pg/psql" -h localhost -d postgres -c "CREATE ROLE league_s LOGIN PASSWORD 'league_s'"
+          "$pg/createdb" -h localhost -O league_s league_s
+
+      - name: Install goose
+        run: go install "github.com/pressly/goose/v3/cmd/goose@$(go list -m -f '{{.Version}}' github.com/pressly/goose/v3)"
+
+      - name: Migrate, start the API and seed
+        run: |
+          make migrate-up
+          go build -o main ./cmd/api
+          ./main > api.log 2>&1 &
+          until curl -sf localhost:8080/health; do sleep 1; done
+          go run ./cmd/seed
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: npm ci
+
+      - name: Boot a simulator
+        run: |
+          udid=$(xcrun simctl list devices available -j | jq -r '[.devices | to_entries[] | select(.key | test("iOS")) | .value[] | select(.name | test("^iPhone"))][0].udid')
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid" -b
+
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Start the app in Expo Go
+        working-directory: mobile
+        run: |
+          npx expo start --ios > ../expo.log 2>&1 &
+          for _ in $(seq 1 300); do
+            grep -q "iOS Bundled" ../expo.log && exit 0
+            sleep 2
+          done
+          cat ../expo.log
+          exit 1
+
+      - name: Maestro flows
+        run: maestro test mobile/e2e/ --debug-output maestro-debug
+
+      - name: Upload logs and screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-e2e
+          path: |
+            api.log
+            expo.log
+            maestro-debug
+            ~/.maestro/tests
