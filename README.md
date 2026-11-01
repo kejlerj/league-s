@@ -94,6 +94,10 @@ make e2e
 
 After `make e2e`, the league stays in the database, so the mobile app can be checked against data entered through the admin. It has generated IDs: find it by name in `GET /api/v1/leagues`. The next `make seed` or `make e2e` replaces it.
 
+## Deployment
+
+Production runs the Docker image (`Dockerfile`) with docker compose on one VPS. See [`deploy/README.md`](deploy/README.md).
+
 ## Database schema
 
 The app is multi-tenant: each league is an independent space run by its own
