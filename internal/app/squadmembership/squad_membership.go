@@ -25,6 +25,8 @@ type Member struct {
 	Number       *int32
 	JoinedOn     time.Time
 	LeftOn       *time.Time
+	Goals        int32
+	Assists      int32
 }
 
 type Stint struct {

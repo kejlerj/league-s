@@ -17,6 +17,7 @@ import (
 	"league-s/internal/app/league"
 	"league-s/internal/app/match"
 	"league-s/internal/app/player"
+	"league-s/internal/app/ranking"
 	"league-s/internal/app/season"
 	"league-s/internal/app/squadmembership"
 	"league-s/internal/app/standing"
@@ -91,6 +92,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/matches", match.NewHandler(matchSvc, matchStore, seasonStore).Routes())
 		r.With(leagueAdmin).Mount("/leagues/{leagueID}/seasons/{seasonID}/matches/{matchID}/events", match.NewEventHandler(matchSvc, matchStore, authSvc).Routes())
 		r.Mount("/leagues/{leagueID}/seasons/{seasonID}/standings", standing.NewHandler(seasonStore, matchStore).Routes())
+		rankings := ranking.NewHandler(seasonStore, matchStore)
+		r.Get("/leagues/{leagueID}/seasons/{seasonID}/scorers", rankings.Scorers)
+		r.Get("/leagues/{leagueID}/seasons/{seasonID}/assists", rankings.Assists)
 	})
 
 	return r

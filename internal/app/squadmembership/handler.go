@@ -83,6 +83,8 @@ type memberResponse struct {
 	Number       *int32    `json:"number"`
 	JoinedOn     string    `json:"joined_on"`
 	LeftOn       *string   `json:"left_on"`
+	Goals        int32     `json:"goals"`
+	Assists      int32     `json:"assists"`
 }
 
 type seasonRefResponse struct {
@@ -139,6 +141,8 @@ func toMemberResponse(m *Member) memberResponse {
 		Number:       m.Number,
 		JoinedOn:     httpx.FormatDate(m.JoinedOn),
 		LeftOn:       httpx.FormatOptionalDate(m.LeftOn),
+		Goals:        m.Goals,
+		Assists:      m.Assists,
 	}
 }
 

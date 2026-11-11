@@ -111,7 +111,7 @@ The owner decided on #154 that an injury is an event type.
 
 | Rule | Where |
 |---|---|
-| Buteurs and Passeurs count the goals of the season's **live and finished** matches: a goal shows as soon as it is entered | query |
+| Buteurs and Passeurs count the goals of the season's **finished** matches, like fair play, so an interrupted attempt never counts whatever #184 decides. A goal shows in the rankings once its match is finished (#178) | query |
 | Own goals count for the team but not in Buteurs. Goals without a scorer count for the team only. Assists come from `assist_player_id` | query |
 | A ranking row is a player. Its team is the team of the player's most recent goal or assist (a player transferred during the season appears once) | query |
 | Equal values share a rank (1, 1, 3), sorted by last name then first name | query |
@@ -340,7 +340,7 @@ Each has the choice this spec makes. Merging the spec as is accepts these choice
 
 1. **Fair-play scale.** This spec uses FIFA's values (yellow 1, two yellows 3, direct red 4, yellow then red 5). A simpler scale (yellow 1, red 3) is an option.
 2. **Goals without a scorer.** This spec allows them (`Buteur inconnu`), so an organizer who doesn't know the scorer can still record the goal and its minute. The alternative is to require a scorer.
-3. **Events of an interrupted match.** With #121, a live match can be postponed or cancelled. This spec keeps its events for the record. They don't count in Buteurs, Passeurs or fair play, since only live and finished matches (finished for fair play) count. The alternative is to delete them.
+3. **Events of an interrupted match.** With #121, a live match can be postponed or cancelled. This spec keeps its events for the record. They don't count in Buteurs, Passeurs or fair play, since only finished matches count (#178). The alternative is to delete them.
 4. **Minute required.** This spec requires a minute (prefilled from kickoff). Some organizers may prefer to record only "who scored", without the minute.
 5. **Audit trail for corrections.** Correcting a finished match changes published standings. This spec keeps **no audit trail**: a correction leaves no trace beyond the new values, and events have a `created_at` only. The options are a `match_change` table (who, when, old and new score, event added or deleted), shown on the match page, or a log line per correction. Recommendation: no table now, but one structured log line per correction of a finished match (admin, match, old and new values), which costs nothing and can become a table if disputes happen.
 6. **Line-ups.** Without them there is no "matches played" per player, and substitutions are not checked. Line-ups could be a later feature.

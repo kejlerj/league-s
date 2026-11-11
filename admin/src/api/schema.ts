@@ -975,6 +975,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leagues/{leagueID}/seasons/{seasonID}/scorers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Scorers ranking
+         * @description Access: public. The goals of the season's finished matches. Own goals and goals without a scorer are left out.
+         *     Equal values share a rank, sorted by last name then first name. Players with no goal are not listed.
+         */
+        get: operations["getScorers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/leagues/{leagueID}/seasons/{seasonID}/assists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Assists ranking
+         * @description Access: public. The assists of the season's finished matches.
+         *     Equal values share a rank, sorted by last name then first name. Players with no assist are not listed.
+         */
+        get: operations["getAssists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1266,6 +1314,16 @@ export interface components {
              * @description The player's last day in the team (included). `null`: still in the squad.
              */
             left_on: string | null;
+            /**
+             * Format: int32
+             * @description The player's goals for this team in this season's finished matches. Own goals don't count.
+             */
+            goals: number;
+            /**
+             * Format: int32
+             * @description The player's assists for this team in this season's finished matches.
+             */
+            assists: number;
         };
         JoinSquadRequest: {
             /** Format: uuid */
@@ -1433,6 +1491,24 @@ export interface components {
             /** @description Injuries only. Trimmed, then 1 to 200 characters. */
             note?: string | null;
         };
+        RankingRow: {
+            rank: number;
+            /** Format: uuid */
+            player_id: string;
+            firstname: string;
+            lastname: string;
+            /**
+             * Format: uuid
+             * @description The team of the player's most recent goal or assist, so a player transferred during the season appears once.
+             */
+            team_id: string;
+            team_name: string;
+            /**
+             * Format: int32
+             * @description Goals or assists.
+             */
+            value: number;
+        };
         StandingRow: {
             rank: number;
             /** Format: uuid */
@@ -1456,6 +1532,11 @@ export interface components {
             goal_difference: number;
             /** Format: int32 */
             points: number;
+            /**
+             * Format: int32
+             * @description Cards in the season's finished matches, per player and per match: one yellow 1, two yellows 3, a direct red 4, a yellow then a direct red 5. Fewer is better.
+             */
+            fair_play_points: number;
         };
     };
     responses: {
@@ -3145,6 +3226,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StandingRow"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getScorers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One row per scorer, best first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankingRow"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getAssists: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                leagueID: components["parameters"]["LeagueID"];
+                seasonID: components["parameters"]["SeasonID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One row per passer, best first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankingRow"][];
                 };
             };
             400: components["responses"]["BadRequest"];

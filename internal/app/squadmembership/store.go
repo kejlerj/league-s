@@ -192,6 +192,8 @@ func (s *PostgresStore) List(ctx context.Context, leagueID, seasonID, teamID uui
 			Number:       r.Number,
 			JoinedOn:     r.JoinedOn,
 			LeftOn:       r.LeftOn,
+			Goals:        r.Goals,
+			Assists:      r.Assists,
 		}
 	}
 

@@ -21,7 +21,7 @@ function finished(matchday: number, home: string, away: string, homeScore: numbe
 
 const standing: StandingRow = {
   rank: 2, team_id: 'us', team_name: 'US', team_logo: null, played: 5, won: 3, drawn: 1, lost: 1,
-  goals_for: 10, goals_against: 6, goal_difference: 4, points: 10,
+  goals_for: 10, goals_against: 6, goal_difference: 4, points: 10, fair_play_points: 0,
 };
 
 const squad: SquadRow[] = [];
@@ -58,7 +58,7 @@ test('standing is looked up by team id, or null when absent', () => {
 
 test('the squad is listed by shirt number', () => {
   const rows: SquadRow[] = [3, 1, 2].map((number) => ({
-    membership_id: `m${number}`, player_id: `p${number}`, firstname: 'A', lastname: 'B', icon: null, number, joined_on: '2026-08-29', left_on: null,
+    membership_id: `m${number}`, player_id: `p${number}`, firstname: 'A', lastname: 'B', icon: null, number, joined_on: '2026-08-29', left_on: null, goals: 0, assists: 0,
   }));
   const detail = buildTeamDetail({ teamId: 'us', standings: [], finished: [], scheduled: [], squad: rows });
   expect(detail.squad.map((row) => row.number)).toEqual([1, 2, 3]);

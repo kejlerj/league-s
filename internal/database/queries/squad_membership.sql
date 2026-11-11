@@ -38,7 +38,22 @@ WHERE player_id = $1
   AND left_on IS NULL;
 
 -- name: ListSquadMemberships :many
-SELECT sqlc.embed(player), squad_membership.id AS membership_id, squad_membership.number, squad_membership.joined_on, squad_membership.left_on
+SELECT sqlc.embed(player), squad_membership.id AS membership_id, squad_membership.number, squad_membership.joined_on, squad_membership.left_on,
+       (SELECT count(*) FROM match_event
+        JOIN match ON match.id = match_event.match_id AND match.status = 'finished'
+        WHERE match_event.league_id = squad_membership.league_id
+          AND match_event.season_id = squad_membership.season_id
+          AND match_event.team_id = squad_membership.team_id
+          AND match_event.type = 'goal'
+          AND NOT match_event.own_goal
+          AND match_event.player_id = squad_membership.player_id)::int AS goals,
+       (SELECT count(*) FROM match_event
+        JOIN match ON match.id = match_event.match_id AND match.status = 'finished'
+        WHERE match_event.league_id = squad_membership.league_id
+          AND match_event.season_id = squad_membership.season_id
+          AND match_event.team_id = squad_membership.team_id
+          AND match_event.type = 'goal'
+          AND match_event.assist_player_id = squad_membership.player_id)::int AS assists
 FROM squad_membership
 JOIN player ON player.id = squad_membership.player_id
   AND player.league_id = squad_membership.league_id

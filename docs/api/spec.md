@@ -57,7 +57,7 @@ An app for amateur football leagues (five-a-side, urban football), not for profe
 | A season that has matches can't be deleted. Without matches, its registrations and squads are deleted with it | ✅ `ON DELETE RESTRICT` from `match` on `season_team`, 409. `ON DELETE CASCADE` for `season_team` and `squad_membership` |
 | **Only one season at a time per league** | ✅ see League |
 | Default points: 3 (win), 1 (draw), 0 (loss) | ✅ optional fields in the DTO: an omitted field takes the default value (`season.DefaultMatchWinPts`…), an explicit `0` is kept |
-| Possible tie-breakers: goal difference, goals scored, head-to-head, fair play, applied in the chosen order. By default: goal difference, then head-to-head (who won between the tied teams). No drawing lots (decision #122) | ✅ `tie_breakers` omitted on create → `season.DefaultTieBreakers()` (`goal_difference`, `head_to_head`), like the column's default value. A single name, `goals_scored`, in the database and in the validator. `standing.Compute` applies `goal_difference`, `goals_scored` and `head_to_head`. `random` is refused (422), and migration 00013 removed it from existing seasons. ⚠️ `fair_play` is accepted but ignored: there is no card data. On a complete tie, alphabetical order decides |
+| Possible tie-breakers: goal difference, goals scored, head-to-head, fair play, applied in the chosen order. By default: goal difference, then head-to-head (who won between the tied teams). No drawing lots (decision #122) | ✅ `tie_breakers` omitted on create → `season.DefaultTieBreakers()` (`goal_difference`, `head_to_head`), like the column's default value. A single name, `goals_scored`, in the database and in the validator. `standing.Compute` applies `goal_difference`, `goals_scored`, `head_to_head` and `fair_play` (fewer fair-play points ranks higher). `random` is refused (422), and migration 00013 removed it from existing seasons. On a complete tie, alphabetical order decides |
 | Maximum squad size, optional | ✅ `max_squad_size` (`NULL` = no limit, `CHECK > 0`), accepted on create (`min=1`, 422 otherwise) and returned by the seasons API |
 
 ## Squad
@@ -135,6 +135,10 @@ Design: `docs/specs/2026-10-31-match-events-design.md`.
 | The standings are not stored: they are computed from the matches, with the season's rules | ✅ `standing.Compute` |
 | Only finished matches count | ✅ `Match.Winner` refuses the others |
 | Tie-breakers apply in the order set by the season | ✅ `standing.Compute`. Head-to-head counts only the matches between the tied teams, and is recomputed on the remaining subgroup |
+| Fair-play points per team, over the season's finished matches. Per player and per match: one yellow 1, two yellows 3, a direct red 4, a yellow then a direct red 5 (FIFA's values). `fair_play` uses the whole season, not only the matches between the tied teams | ✅ `standing.FairPlayPoints`, `fair_play_points` in each row |
+| Buteurs and Passeurs count the goals of the season's finished matches. Own goals and goals without a scorer are left out. Assists come from `assist_player_id` | ✅ `ranking.Scorers`, `ranking.Assists`, `GET …/scorers` and `GET …/assists` |
+| A ranking row is a player, with the team of their most recent goal or assist. Equal values share a rank (1, 1, 3), sorted by last name then first name. Players with 0 are not listed | ✅ `ranking.build` |
+| A squad member's goals and assists count for that team and that season only, in finished matches | ✅ `ListSquadMemberships`, `goals` and `assists` in `GET …/squad` |
 
 ## Access (planned)
 
