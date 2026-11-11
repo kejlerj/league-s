@@ -1,0 +1,62 @@
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-league}
+      POSTGRES_USER: ${SERVICE_USER_POSTGRES}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - db:/var/lib/postgresql
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_SENTRY_DSN: ${VITE_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: production
+        VITE_SENTRY_RELEASE: ${SOURCE_COMMIT:-}
+    entrypoint: ["/bin/sh", "-c", "/app/migrate && exec /app/api"]
+    restart: unless-stopped
+    expose:
+      - "8080"
+    environment:
+      PORT: "8080"
+      APP_ENV: production
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-league}
+      DB_USERNAME: ${SERVICE_USER_POSTGRES}
+      DB_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      DB_SCHEMA: public
+      LOG_FORMAT: json
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      CLEANUP_INTERVAL: ${CLEANUP_INTERVAL:-1h}
+      CORS_ORIGINS: ${CORS_ORIGINS:?}
+      COOKIE_SECURE: "true"
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:?}
+      ADMIN_URL: ${ADMIN_URL:?}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db:
