@@ -80,7 +80,7 @@ test('a superadmin builds a full league through the admin', async ({ page }) => 
     await form.getByRole('button', { name: 'Programmer' }).click()
     await expect(form).toBeHidden()
 
-    const header = page.getByRole('region', { name: 'Match' })
+    const header = page.getByRole('region', { name: 'Match', exact: true })
     await expect(header).toContainText('Programmé')
     const act = (name: string) => page.getByRole('group', { name: 'Statut du match' }).getByRole('button', { name, exact: true }).click()
 

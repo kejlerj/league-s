@@ -16,6 +16,7 @@ import { useSubmit } from '@/ui/useSubmit'
 import { elapsedMinute } from './elapsedMinute'
 import { ACTION_ICONS, ACTION_LABELS, STATUS_LABELS, statusActions, type StatusAction } from './matchActions'
 import { EditForm, PostponeForm } from './MatchForm'
+import { MatchEvents } from './events/MatchEvents'
 import { ScoreForm } from './ScoreForm'
 
 type Confirmed = 'finish' | 'cancel' | 'delete'
@@ -181,6 +182,7 @@ export function MatchPage() {
                   </Button>
                 ) : null}
               </div>
+              {canScore ? <MatchEvents leagueId={leagueId} seasonId={seasonId} match={match} onChanged={refresh} /> : null}
               <Modal title={formDialog === null ? '' : FORM_TITLES[formDialog]} open={formDialog !== null} onClose={close}>
                 {formDialog === 'postpone' ? <PostponeForm {...common} /> : null}
                 {formDialog === 'edit' ? <EditForm {...common} /> : null}
