@@ -1,0 +1,37 @@
+appId: host.exp.Exponent
+name: League fixed by the build
+tags:
+  - fixed-league
+---
+- launchApp:
+    clearState: true
+- openLink: exp://127.0.0.1:8081
+- extendedWaitUntil:
+    visible: "Continue"
+    timeout: 30000
+    optional: true
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - swipe:
+          start: 50%, 50%
+          end: 50%, 98%
+- extendedWaitUntil:
+    visible: "Calendrier de mes équipes"
+    timeout: 30000
+- assertNotVisible: "Choisissez votre ligue"
+- tapOn:
+    id: "tab-profile"
+- assertVisible: "District Five Demo"
+- assertNotVisible: "Changer"
+- openLink: exp://127.0.0.1:8081/--/leagues
+- extendedWaitUntil:
+    visible: "Calendrier de mes équipes"
+    timeout: 15000
+- assertNotVisible: "Choisissez votre ligue"

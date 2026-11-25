@@ -12,6 +12,7 @@ import { useLeagueId } from '../hooks/useLeagueId';
 import { useAppStore, type ThemeMode } from '../store/useAppStore';
 import { getLeague } from '../services/league';
 import { fr } from '../i18n/fr';
+import { fixedLeagueId } from '../config';
 
 const THEME_MODES: ThemeMode[] = ['system', 'light', 'dark'];
 
@@ -42,9 +43,11 @@ export function ProfileScreen() {
               >
                 {league.error ? fr.profile.leagueError : league.data?.name ?? ''}
               </ThemedText>
-              <ThemedText tone="accent" weight="medium" size={12.5} onPress={() => router.push('/leagues')}>
-                {fr.profile.changeLeague}
-              </ThemedText>
+              {!fixedLeagueId() && (
+                <ThemedText tone="accent" weight="medium" size={12.5} onPress={() => router.push('/leagues')}>
+                  {fr.profile.changeLeague}
+                </ThemedText>
+              )}
             </CardRow>
           </Card>
         </View>

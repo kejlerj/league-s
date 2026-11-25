@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { fixedLeagueId } from '../config';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 export type NotifyLevel = 'full' | 'result';
@@ -34,6 +35,11 @@ export function migrateAppState(persisted: unknown, version: number): PersistedS
   return { themeMode: state.themeMode, leagueId: null, followsByLeague: {} };
 }
 
+export function mergeAppState<T extends PersistedState>(persisted: unknown, current: T, fixed: string | null): T {
+  const merged = { ...current, ...(persisted as Partial<PersistedState> | undefined) };
+  return fixed ? { ...merged, leagueId: fixed } : merged;
+}
+
 function currentFollows(state: PersistedState): Follows {
   return state.leagueId ? state.followsByLeague[state.leagueId] ?? NO_FOLLOWS : NO_FOLLOWS;
 }
@@ -46,7 +52,7 @@ export const useAppStore = create<AppState>()(
 
       return {
         themeMode: 'system',
-        leagueId: null,
+        leagueId: fixedLeagueId(),
         followsByLeague: {},
 
         setThemeMode: (mode) => set({ themeMode: mode }),
@@ -82,6 +88,7 @@ export const useAppStore = create<AppState>()(
       version: STORE_VERSION,
       storage: createJSONStorage(() => AsyncStorage),
       migrate: (persisted, version) => migrateAppState(persisted, version),
+      merge: (persisted, current) => mergeAppState(persisted, current, fixedLeagueId()),
       partialize: (state) => ({
         themeMode: state.themeMode,
         leagueId: state.leagueId,

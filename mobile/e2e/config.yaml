@@ -2,3 +2,4 @@ flows:
   - "*.yaml"
 excludeTags:
   - admin-data-set
+  - fixed-league

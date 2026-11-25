@@ -4,12 +4,14 @@ import { ProfileScreen } from './ProfileScreen';
 import * as leagueService from '../services/league';
 import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
+import { fixedLeagueId } from '../config';
 
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 jest.mock('../services/league');
+jest.mock('../config');
 
 const LEAGUE = 'league-paris';
 
@@ -24,6 +26,14 @@ beforeEach(() => {
     },
   });
   jest.mocked(leagueService.getLeague).mockResolvedValue({ id: LEAGUE, name: 'Five Paris', logo: null });
+  jest.mocked(fixedLeagueId).mockReturnValue(null);
+});
+
+test('with a league fixed by the build, the league cannot be changed', async () => {
+  jest.mocked(fixedLeagueId).mockReturnValue(LEAGUE);
+  render(<ProfileScreen />);
+  await waitFor(() => expect(screen.getByText('Five Paris')).toBeTruthy());
+  expect(screen.queryByText(fr.profile.changeLeague)).toBeNull();
 });
 
 test('shows how many teams are followed in the current league', async () => {

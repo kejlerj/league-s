@@ -467,6 +467,12 @@ depuis Moi.` **Body**: one `Card` with a row per league from `GET /leagues`
 row saves the league (`setLeague`) and replaces the screen with `/following`.
 Loading skeleton, error with `Réessayer`, `Aucune ligue disponible.` when empty.
 
+**Fixed league (Ligue S build).** A build can fix the league with
+`EXPO_PUBLIC_LEAGUE_ID` (a league UUID, checked by `app.config.ts`, passed to the app
+as `extra.leagueId`). The app then opens on that league: the picker redirects to
+`/following`, and Moi shows the league without `Changer`. Without the variable, the
+picker works as above (development, tests).
+
 **Moi** gets a `LIGUE` section above the stats: the current league's name
 (`GET /leagues/{id}`) and a `Changer` link to `/leagues`. The followed-teams count
 is for the current league.
@@ -500,12 +506,12 @@ There is no separate NativeWind "dark mode provider" to configure.
   | `textMuted` | `#5B6270` | `textMutedDark` | `#9AA2AE` |
   | `textFaint` | `#5F6773` | `textFaintDark` | `#9AA2AE` |
   | `field` | `#F8F9FB` | `fieldDark` | `#22262E` |
-  | `accent` | `#7C5CFF` | `accentDark` | `#9B87FF` |
+  | `accent` | `#1D418F` | `accentDark` | `#7B9AE0` |
   | `pos` / `posBg` | `#1E7F4F` / `#E4F3EA` | `posDark` / `posBgDark` | `#5AD08C` / `#1E2A22` |
   | `neg` / `negBg` | `#A82C1E` / `#FFE4E0` | `negDark` / `negBgDark` | `#F09080` / `#3A211D` |
   | `warn` / `warnBg` | `#8A5A00` / `#FFEFD6` | `warnDark` / `warnBgDark` | `#E7B45A` / `#2E2413` |
 
-  (Accent purple is one token pair — "the accent is one setting, everything derives from it".)
+  (The accent is the Ligue S blue, one token pair — "the accent is one setting, everything derives from it". `accentDark` is a lighter tint of it, readable on dark cards.)
 - Components pair each utility with its dark companion inline, e.g.
   `className="bg-canvas dark:bg-canvasDark"`. This pairing is written **once**,
   inside the shared primitives (`Screen`, `HeaderCard`, `Card`, `ThemedText`,
@@ -621,7 +627,8 @@ Write the logic tests first, then components, then screens.
 Expo Go: `league-picker`, `following` (Suivi), `standings` (Classement),
 `team-follow`, `match`, `profile-theme` (Moi), `player` (full squad and player),
 `team-history`; plus `admin-data-set` (tag `admin-data-set`) for the league built
-by the admin final check. Shared steps in `e2e/common/`. Run: `maestro test
+by the admin final check, and `fixed-league` (tag `fixed-league`) for a build with
+`EXPO_PUBLIC_LEAGUE_ID`. Shared steps in `e2e/common/`. Run: `maestro test
 mobile/e2e/`.
 
 **Bar for "done":** `npm test` green; app boots in Expo Go (or dev client) to

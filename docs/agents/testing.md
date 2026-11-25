@@ -64,7 +64,7 @@ A mobile change that the user can see needs:
 3. a run on the iOS Simulator against the local API with seeded data (skill `simulator-check`): `maestro test mobile/e2e/`,
 4. the Maestro result and screenshots in the PR description (`pr-assets` branch).
 
-The flows open the app in Expo Go (`exp://127.0.0.1:8081`) and pick the seeded league "District Five Demo". `mobile/e2e/admin-data-set.yaml` checks the league that the admin final check builds (`npx --prefix admin playwright test full-league`). It is tagged `admin-data-set` and excluded from the default run: run it with `maestro test --include-tags admin-data-set mobile/e2e/`.
+The flows open the app in Expo Go (`exp://127.0.0.1:8081`) and pick the seeded league "District Five Demo". `mobile/e2e/admin-data-set.yaml` checks the league that the admin final check builds (`npx --prefix admin playwright test full-league`). It is tagged `admin-data-set` and excluded from the default run: run it with `maestro test --include-tags admin-data-set mobile/e2e/`. `mobile/e2e/fixed-league.yaml` checks a build with a fixed league: it is tagged `fixed-league`, excluded too, and needs Expo started with the seeded league, `EXPO_PUBLIC_LEAGUE_ID=01a10d58-8ae3-7c66-ac38-c7cac896cc65 npx expo start`, then `maestro test --include-tags fixed-league mobile/e2e/`.
 
 The `Mobile E2E` CI job runs the same default flows on a macOS runner for every PR that touches `mobile/`: Postgres, the API with the seed, Expo Go on an iOS simulator, then `maestro test mobile/e2e/`. When it fails, the job log prints the API, Expo and Maestro logs.
 

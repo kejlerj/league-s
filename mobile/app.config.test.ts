@@ -64,3 +64,20 @@ test.each([
 ])('the %s build tells the app its environment', (appEnv, vars) => {
   expect(withEnvironment(BASE, vars).extra?.appEnv).toBe(appEnv);
 });
+
+const LEAGUE_ID = '01a10d58-8ae3-7c66-ac38-c7cac896cc65';
+
+test('EXPO_PUBLIC_LEAGUE_ID fixes the league of the build', () => {
+  expect(withEnvironment(BASE, { EXPO_PUBLIC_LEAGUE_ID: LEAGUE_ID }).extra?.leagueId).toBe(LEAGUE_ID);
+});
+
+test.each([
+  ['unset', {}],
+  ['empty', { EXPO_PUBLIC_LEAGUE_ID: '' }],
+])('with EXPO_PUBLIC_LEAGUE_ID %s, no league is fixed', (_, vars) => {
+  expect(withEnvironment(BASE, vars).extra?.leagueId).toBeNull();
+});
+
+test('an EXPO_PUBLIC_LEAGUE_ID that is not a UUID fails the build', () => {
+  expect(() => withEnvironment(BASE, { EXPO_PUBLIC_LEAGUE_ID: 'ligue-s' })).toThrow('EXPO_PUBLIC_LEAGUE_ID');
+});
