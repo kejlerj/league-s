@@ -51,6 +51,7 @@ Approach 1 keeps one step per goal and works for past matches, so the rest of th
 | An event belongs to one match and to one of its two teams (`team_id` is the home or the away team) | service, 422 on `team_id` |
 | Events are recorded on a **live** or **finished** match only. Scheduled, postponed and cancelled matches refuse them | `match.Match` rule, 409 |
 | A finished match's events can be added or deleted at any time, to correct it or to enter it late (#154). The match stays finished | `match.Match` |
+| A postponed match that gets a new kickoff is replayed from the start: its events are deleted in the same transaction (#184). A postponed match without a new date and a cancelled match keep their events | `Match.Reschedule` (`Replayed`), `match.Service` |
 | The minute is required, between 1 and 150. When the match has a kickoff, the admin form prefills it from the time elapsed since then | DTO validation, 422 |
 | Every player named in an event is in the squad of the right team on the match day: joined on or before it, and not left before it. The match day is the UTC date of `kickoff_at`, or the day the event is recorded when the match has no kickoff | service, 422 on the player field |
 | An event can't be edited: a wrong event is deleted and entered again | API surface |
@@ -334,13 +335,17 @@ Six code issues, each its own PR:
 - **A finished match can be corrected:** its score and its events. The standings and rankings follow, and the match stays finished (§3.3).
 - **Injury is an event type,** with a player, a minute and an optional note, and no effect on rankings or fair play (§3.6).
 
+### Decided on #184
+
+- **A postponed match is replayed from the start.** When it gets a new kickoff, its events are deleted with its score, so the replay starts clean (§3.1). A postponed match without a new date, and a cancelled match, keep their events for the record. They don't count in Buteurs, Passeurs or fair play, since only finished matches count (#178).
+
 ### Still open
 
 Each has the choice this spec makes. Merging the spec as is accepts these choices.
 
 1. **Fair-play scale.** This spec uses FIFA's values (yellow 1, two yellows 3, direct red 4, yellow then red 5). A simpler scale (yellow 1, red 3) is an option.
 2. **Goals without a scorer.** This spec allows them (`Buteur inconnu`), so an organizer who doesn't know the scorer can still record the goal and its minute. The alternative is to require a scorer.
-3. **Events of an interrupted match.** With #121, a live match can be postponed or cancelled. This spec keeps its events for the record. They don't count in Buteurs, Passeurs or fair play, since only finished matches count (#178). The alternative is to delete them.
+3. **Events of an interrupted match.** Decided in #184, see below.
 4. **Minute required.** This spec requires a minute (prefilled from kickoff). Some organizers may prefer to record only "who scored", without the minute.
 5. **Audit trail for corrections.** Correcting a finished match changes published standings. This spec keeps **no audit trail**: a correction leaves no trace beyond the new values, and events have a `created_at` only. The options are a `match_change` table (who, when, old and new score, event added or deleted), shown on the match page, or a log line per correction. Recommendation: no table now, but one structured log line per correction of a finished match (admin, match, old and new values), which costs nothing and can become a table if disputes happen.
 6. **Line-ups.** Without them there is no "matches played" per player, and substitutions are not checked. Line-ups could be a later feature.

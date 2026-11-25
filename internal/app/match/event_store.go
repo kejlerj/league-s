@@ -148,6 +148,13 @@ func (s *PostgresStore) DeleteEvent(ctx context.Context, leagueID, seasonID, mat
 	return nil
 }
 
+func (s *PostgresStore) DeleteEvents(ctx context.Context, leagueID, seasonID, matchID uuid.UUID) error {
+	if err := s.q.DeleteMatchEvents(ctx, db.DeleteMatchEventsParams{MatchID: matchID, SeasonID: seasonID, LeagueID: leagueID}); err != nil {
+		return fmt.Errorf("delete events of match %s: %w", matchID, err)
+	}
+	return nil
+}
+
 func (s *PostgresStore) IsSquadMember(ctx context.Context, leagueID, seasonID, teamID, playerID uuid.UUID, day time.Time) (bool, error) {
 	ok, err := s.q.IsSquadMemberOn(ctx, db.IsSquadMemberOnParams{
 		LeagueID: leagueID,

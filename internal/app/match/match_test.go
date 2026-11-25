@@ -234,6 +234,38 @@ func TestReschedule_AnInterruptedMatchLosesItsScore(t *testing.T) {
 	}
 }
 
+func TestReschedule_APostponedMatchWithANewKickoffIsReplayed(t *testing.T) {
+	kickoff := time.Date(2025, time.November, 8, 18, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name      string
+		postponed bool
+		kickoffAt *time.Time
+		want      bool
+	}{
+		{"postponed, new kickoff", true, &kickoff, true},
+		{"postponed, still no kickoff", true, nil, false},
+		{"scheduled, new kickoff", false, &kickoff, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := matchIn(StatusScheduled)
+			if tt.postponed {
+				m = interrupted(t, (*Match).Postpone)
+			}
+			if m.Replayed() {
+				t.Fatal("Replayed() = true before Reschedule, want false")
+			}
+			if err := m.Reschedule(1, tt.kickoffAt); err != nil {
+				t.Fatalf("Reschedule() error = %v", err)
+			}
+			if got := m.Replayed(); got != tt.want {
+				t.Errorf("Replayed() = %t, want %t", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestPostpone_ClearsTheKickoff(t *testing.T) {
 	m := matchIn(StatusScheduled)
 	m.kickoffAt = new(time.Date(2025, time.October, 4, 18, 0, 0, 0, time.UTC))

@@ -51,3 +51,9 @@ WHERE match_event.league_id = sqlc.arg(league_id)
   AND match.status = 'finished'
   AND match_event.type::text = ANY(sqlc.arg(types)::text[])
 ORDER BY match.kickoff_at NULLS FIRST, match.id, match_event.minute, match_event.id;
+
+-- name: DeleteMatchEvents :exec
+DELETE FROM match_event
+WHERE match_id = sqlc.arg(match_id)
+  AND season_id = sqlc.arg(season_id)
+  AND league_id = sqlc.arg(league_id);

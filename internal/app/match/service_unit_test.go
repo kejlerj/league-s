@@ -23,11 +23,12 @@ type fakeState struct {
 	countErr  error
 	createErr error
 
-	events       []Event
-	squad        map[uuid.UUID]uuid.UUID
-	squadDays    []time.Time
-	createdEvent *Event
-	deletedEvent uuid.UUID
+	events        []Event
+	squad         map[uuid.UUID]uuid.UUID
+	squadDays     []time.Time
+	createdEvent  *Event
+	deletedEvent  uuid.UUID
+	clearedEvents uuid.UUID
 }
 
 type fakeStore struct {
@@ -85,6 +86,12 @@ func (f *fakeStore) Save(_ context.Context, _ uuid.UUID, m *Match) (*Match, erro
 func (f *fakeStore) Delete(_ context.Context, _, _, id uuid.UUID) error {
 	f.record("Delete")
 	f.state.deleted = id
+	return nil
+}
+
+func (f *fakeStore) DeleteEvents(_ context.Context, _, _, matchID uuid.UUID) error {
+	f.record("DeleteEvents")
+	f.state.clearedEvents = matchID
 	return nil
 }
 
@@ -285,7 +292,7 @@ func TestServiceUpdate(t *testing.T) {
 		t.Fatalf("Update() error = %v", err)
 	}
 
-	wantCalls := []string{"begin", "tx.LockSeason", "tx.GetForUpdate", "tx.CountOnMatchday", "tx.Save", "commit"}
+	wantCalls := []string{"begin", "tx.LockSeason", "tx.GetForUpdate", "tx.CountOnMatchday", "tx.DeleteEvents", "tx.Save", "commit"}
 	if !slices.Equal(store.state.calls, wantCalls) {
 		t.Errorf("calls = %v, want %v", store.state.calls, wantCalls)
 	}
@@ -360,6 +367,64 @@ func TestServicePostpone(t *testing.T) {
 				t.Errorf("status = %s, want %s", got.Status(), tt.wantStatus)
 			}
 		})
+	}
+}
+
+func TestService_ReschedulingAPostponedMatchDeletesItsEvents(t *testing.T) {
+	withEvents := []string{"begin", "tx.LockSeason", "tx.GetForUpdate", "tx.CountOnMatchday", "tx.DeleteEvents", "tx.Save", "commit"}
+	withoutEvents := []string{"begin", "tx.LockSeason", "tx.GetForUpdate", "tx.CountOnMatchday", "tx.Save", "commit"}
+	tests := []struct {
+		name      string
+		status    Status
+		call      func(s *Service, id uuid.UUID) (*Match, error)
+		wantCalls []string
+	}{
+		{"a new kickoff on a postponed match", StatusPostponed, func(s *Service, id uuid.UUID) (*Match, error) {
+			return s.Update(t.Context(), uuid.New(), uuid.New(), id, nil, &inSeason, Details{})
+		}, withEvents},
+		{"a live match postponed to a new date", StatusLive, func(s *Service, id uuid.UUID) (*Match, error) {
+			return s.Postpone(t.Context(), uuid.New(), uuid.New(), id, &inSeason)
+		}, withEvents},
+		{"a live match postponed without a date", StatusLive, func(s *Service, id uuid.UUID) (*Match, error) {
+			return s.Postpone(t.Context(), uuid.New(), uuid.New(), id, nil)
+		}, withoutEvents},
+		{"a postponed match moved to another matchday only", StatusPostponed, func(s *Service, id uuid.UUID) (*Match, error) {
+			return s.Update(t.Context(), uuid.New(), uuid.New(), id, new(int32(2)), nil, Details{})
+		}, withoutEvents},
+		{"a new kickoff on a scheduled match", StatusScheduled, func(s *Service, id uuid.UUID) (*Match, error) {
+			return s.Update(t.Context(), uuid.New(), uuid.New(), id, nil, &inSeason, Details{})
+		}, withoutEvents},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := newFakeStore()
+			store.state.current = matchIn(tt.status)
+			id := store.state.current.ID()
+
+			if _, err := tt.call(NewService(store), id); err != nil {
+				t.Fatalf("error = %v", err)
+			}
+			if !slices.Equal(store.state.calls, tt.wantCalls) {
+				t.Errorf("calls = %v, want %v", store.state.calls, tt.wantCalls)
+			}
+			if slices.Contains(tt.wantCalls, "tx.DeleteEvents") && store.state.clearedEvents != id {
+				t.Errorf("events deleted for match %s, want %s", store.state.clearedEvents, id)
+			}
+		})
+	}
+}
+
+func TestService_ARefusedRescheduleKeepsTheEvents(t *testing.T) {
+	store := newFakeStore()
+	store.state.current = matchIn(StatusPostponed)
+	store.state.busy = 1
+
+	if _, err := NewService(store).Update(t.Context(), uuid.New(), uuid.New(), uuid.New(), nil, &inSeason, Details{}); !errors.Is(err, ErrScheduleTeamBusy) {
+		t.Fatalf("Update() error = %v, want ErrScheduleTeamBusy", err)
+	}
+	if store.state.clearedEvents != uuid.Nil {
+		t.Error("events deleted, want them kept when the reschedule is refused")
 	}
 }
 

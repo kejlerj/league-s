@@ -100,6 +100,24 @@ func (q *Queries) DeleteMatchEvent(ctx context.Context, arg DeleteMatchEventPara
 	return result.RowsAffected(), nil
 }
 
+const deleteMatchEvents = `-- name: DeleteMatchEvents :exec
+DELETE FROM match_event
+WHERE match_id = $1
+  AND season_id = $2
+  AND league_id = $3
+`
+
+type DeleteMatchEventsParams struct {
+	MatchID  uuid.UUID
+	SeasonID uuid.UUID
+	LeagueID uuid.UUID
+}
+
+func (q *Queries) DeleteMatchEvents(ctx context.Context, arg DeleteMatchEventsParams) error {
+	_, err := q.db.Exec(ctx, deleteMatchEvents, arg.MatchID, arg.SeasonID, arg.LeagueID)
+	return err
+}
+
 const isSquadMemberOn = `-- name: IsSquadMemberOn :one
 SELECT EXISTS (
     SELECT 1 FROM squad_membership
