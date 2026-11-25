@@ -31,6 +31,7 @@ type Match struct {
 	status     Status
 	score      *Score
 	details    Details
+	replayed   bool
 }
 
 type Details struct {
@@ -68,6 +69,7 @@ func (m *Match) HomeTeamID() uuid.UUID { return m.homeTeamID }
 func (m *Match) AwayTeamID() uuid.UUID { return m.awayTeamID }
 func (m *Match) Matchday() int32       { return m.matchday }
 func (m *Match) Status() Status        { return m.status }
+func (m *Match) Replayed() bool        { return m.replayed }
 
 func (m *Match) KickoffAt() *time.Time {
 	if m.kickoffAt == nil {
@@ -161,6 +163,7 @@ func (m *Match) Reschedule(matchday int32, kickoffAt *time.Time) error {
 	m.matchday = matchday
 	m.kickoffAt = kickoffAt
 	if kickoffAt != nil {
+		m.replayed = m.status == StatusPostponed
 		m.status = StatusScheduled
 		m.score = nil
 	}

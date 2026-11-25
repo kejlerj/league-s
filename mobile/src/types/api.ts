@@ -765,6 +765,7 @@ export interface paths {
          * Change the matchday or kickoff, or fill in the details
          * @description Access: league admin. At least one field is required (422 otherwise).
          *     Matchday and kickoff change only while the match is scheduled or postponed (409).
+         *     A postponed match given a kickoff is replayed from the start: its score and its events are deleted.
          */
         patch: operations["updateMatch"];
         trace?: never;
@@ -858,7 +859,7 @@ export interface paths {
          * Postpone a scheduled or live match
          * @description Access: league admin. Without `kickoff_at`, the match becomes `postponed`.
          *     With it, the match is rescheduled at that time.
-         *     A live match keeps its score while postponed. Once it has a new kickoff, it is scheduled again without a score.
+         *     A live match keeps its score and its events while postponed. Once it has a new kickoff, it is replayed from the start: scheduled again without a score and without its events.
          *     A finished, postponed or cancelled match can't be postponed (409).
          */
         post: operations["postponeMatch"];

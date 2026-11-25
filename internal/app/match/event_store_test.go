@@ -14,6 +14,41 @@ import (
 	"league-s/internal/testdb"
 )
 
+func TestDeleteEvents_OnlyThoseOfTheMatch(t *testing.T) {
+	s := testdb.New(t, testPool)
+	seasonRow := s.CreateSeason(testdb.SeasonParams{})
+	home, away := s.CreateTeam(testdb.TeamParams{}), s.CreateTeam(testdb.TeamParams{})
+	s.RegisterTeams(seasonRow, home, away)
+	replayed := s.CreateMatch(testdb.MatchParams{Season: seasonRow, Home: home, Away: away, Status: db.MatchStatusLive, Score: &testdb.Score{}})
+	other := s.CreateMatch(testdb.MatchParams{Season: seasonRow, Home: home, Away: away, Matchday: 2, Status: db.MatchStatusLive, Score: &testdb.Score{}})
+	store := NewPostgresStore(testPool)
+	ctx := t.Context()
+
+	for _, matchID := range []uuid.UUID{replayed, replayed, other} {
+		if _, err := store.CreateEvent(ctx, seasonRow.LeagueID, seasonRow.ID, Event{MatchID: matchID, TeamID: home.ID, Type: EventGoal, Minute: 10}); err != nil {
+			t.Fatalf("CreateEvent() error = %v", err)
+		}
+	}
+
+	otherLeague := s.CreateLeague(testdb.LeagueParams{})
+	if err := store.DeleteEvents(ctx, otherLeague.ID, seasonRow.ID, replayed); err != nil {
+		t.Fatalf("DeleteEvents() from another league error = %v", err)
+	}
+	if got, _ := store.ListEvents(ctx, seasonRow.LeagueID, seasonRow.ID, replayed); len(got) != 2 {
+		t.Fatalf("events after a delete from another league = %d, want 2", len(got))
+	}
+
+	if err := store.DeleteEvents(ctx, seasonRow.LeagueID, seasonRow.ID, replayed); err != nil {
+		t.Fatalf("DeleteEvents() error = %v", err)
+	}
+	if got, _ := store.ListEvents(ctx, seasonRow.LeagueID, seasonRow.ID, replayed); len(got) != 0 {
+		t.Errorf("events of the replayed match = %d, want 0", len(got))
+	}
+	if got, _ := store.ListEvents(ctx, seasonRow.LeagueID, seasonRow.ID, other); len(got) != 1 {
+		t.Errorf("events of the other match = %d, want 1", len(got))
+	}
+}
+
 func TestMatchEventConstraints(t *testing.T) {
 	s := testdb.New(t, testPool)
 	seasonRow := s.CreateSeason(testdb.SeasonParams{})

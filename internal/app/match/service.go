@@ -17,6 +17,7 @@ type Store interface {
 	ListEvents(ctx context.Context, leagueID, seasonID, matchID uuid.UUID) ([]Event, error)
 	CreateEvent(ctx context.Context, leagueID, seasonID uuid.UUID, e Event) (Event, error)
 	DeleteEvent(ctx context.Context, leagueID, seasonID, matchID, id uuid.UUID) error
+	DeleteEvents(ctx context.Context, leagueID, seasonID, matchID uuid.UUID) error
 	IsSquadMember(ctx context.Context, leagueID, seasonID, teamID, playerID uuid.UUID, day time.Time) (bool, error)
 	InTx(ctx context.Context, fn func(store Store) error) error
 }
@@ -171,6 +172,11 @@ func (s *Service) change(ctx context.Context, leagueID, seasonID, id uuid.UUID, 
 		}
 		if err := checkCalendar(ctx, store, season, m); err != nil {
 			return err
+		}
+		if m.Replayed() {
+			if err := store.DeleteEvents(ctx, leagueID, seasonID, id); err != nil {
+				return err
+			}
 		}
 
 		res, err = store.Save(ctx, leagueID, m)

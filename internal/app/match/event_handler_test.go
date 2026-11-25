@@ -161,6 +161,61 @@ func TestSetScore_CannotGoBelowTheGoalEvents(t *testing.T) {
 	}
 }
 
+func TestPostponedMatch_IsReplayedFromTheStartWithoutItsEvents(t *testing.T) {
+	tests := []struct {
+		name       string
+		reschedule func(f eventFixture, matchID uuid.UUID)
+	}{
+		{"postponed, then given a new kickoff", func(f eventFixture, matchID uuid.UUID) {
+			f.do(t, http.MethodPost, f.matchPath(matchID, "/postpone"), `{}`, http.StatusOK)
+			f.do(t, http.MethodPatch, f.matchPath(matchID, ""), `{"kickoff_at": "2025-11-08T18:00:00Z"}`, http.StatusOK)
+		}},
+		{"postponed to a new date at once", func(f eventFixture, matchID uuid.UUID) {
+			f.do(t, http.MethodPost, f.matchPath(matchID, "/postpone"), `{"kickoff_at": "2025-11-08T18:00:00Z"}`, http.StatusOK)
+		}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := newEventFixture(t)
+			matchID := f.liveMatch(t)
+			f.record(t, matchID, goalBody(f.home.ID, 10, fmt.Sprintf(`, "player_id": %q`, f.homePlayer.ID)), http.StatusCreated)
+			f.record(t, matchID, goalBody(f.home.ID, 20, ""), http.StatusCreated)
+
+			tt.reschedule(f, matchID)
+
+			if events := f.events(t, matchID); len(events) != 0 {
+				t.Errorf("events after the reschedule = %d, want 0", len(events))
+			}
+			f.do(t, http.MethodPost, f.matchPath(matchID, "/start"), "", http.StatusOK)
+			created := f.record(t, matchID, goalBody(f.away.ID, 5, ""), http.StatusCreated)
+			if created.HomeScore == nil || *created.HomeScore != 0 || *created.AwayScore != 1 {
+				t.Errorf("running score of the first goal of the replay = %v-%v, want 0-1", created.HomeScore, created.AwayScore)
+			}
+			if m := f.do(t, http.MethodPut, f.matchPath(matchID, "/score"), `{"home": 0, "away": 1}`, http.StatusOK); *m.HomeScore != 0 || *m.AwayScore != 1 {
+				t.Errorf("score of the replayed match = %d-%d, want 0-1", *m.HomeScore, *m.AwayScore)
+			}
+		})
+	}
+}
+
+func TestPostponedMatch_KeepsItsEventsUntilRescheduled(t *testing.T) {
+	f := newEventFixture(t)
+	matchID := f.liveMatch(t)
+	f.record(t, matchID, goalBody(f.home.ID, 10, ""), http.StatusCreated)
+
+	f.do(t, http.MethodPost, f.matchPath(matchID, "/postpone"), `{}`, http.StatusOK)
+	f.do(t, http.MethodPatch, f.matchPath(matchID, ""), `{"venue": "Le Five Paris 18"}`, http.StatusOK)
+	if events := f.events(t, matchID); len(events) != 1 {
+		t.Errorf("events while postponed = %d, want 1", len(events))
+	}
+
+	f.do(t, http.MethodPost, f.matchPath(matchID, "/cancel"), "", http.StatusOK)
+	if events := f.events(t, matchID); len(events) != 1 {
+		t.Errorf("events after cancelling = %d, want 1: a cancelled match keeps them for the record", len(events))
+	}
+}
+
 func TestListEvents_ByMinuteWithTheReadModel(t *testing.T) {
 	f := newEventFixture(t)
 	matchID := f.liveMatch(t)
