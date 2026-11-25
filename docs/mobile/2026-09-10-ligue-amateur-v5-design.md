@@ -354,10 +354,13 @@ subtle accent-tinted background. Footer note:
 `zone` from `src/logic/standingsZone.ts` (unit-tested): rank 1 → `promotion`,
 rank 2 → `playoff`, rank ≥ 9 (of 10) → `relegation`, else `none`.
 
-**Buteurs / Passeurs / MVP tabs:** `SectionLabel` = `peopleTitle`
-(`MEILLEURS BUTEURS` / `MEILLEURES PASSES` / `PLUS VOTÉS MVP`), `Card` of 8
-`PeopleRow`s (rank mono, avatar, name + team, `value` mono + `unit`), footer
-`peopleFoot` (short explanatory line per tab).
+**Buteurs / Passeurs tabs** (#180, `GET …/seasons/{seasonId}/scorers` and
+`/assists`, loaded for the selected season when the tab opens): `SectionLabel`
+`MEILLEURS BUTEURS` / `MEILLEURS PASSEURS`, then a `RankingCard` of every
+ranked player (rank mono, avatar, name + team, value mono with `buts` /
+`passes`). A row opens the player (`/standings/player/{playerId}`). Empty state:
+`Aucun but pour le moment.` / `Aucune passe pour le moment.` The `MVP` tab comes
+with #45.
 
 **States:** skeleton / error per tab load.
 
@@ -378,9 +381,10 @@ follow hint line (`Vous suivez cette équipe — compos, buts, résultats` /
    Convocation 13:45`.
 2. `DERNIERS RÉSULTATS` — `Card` of 3 rows: result chip (`V`/`N`/`D`),
    `Étoile de Mornay` + `dom.`/`ext.`, score `3–1` (mono).
-3. `EFFECTIF · {squadCount} JOUEURS` label + `MJ · BUTS · PD` legend; `Card` of
-   squad rows (number mono, avatar, name + position, `MP · goals · assists`
-   line); final row `Voir l'effectif complet ›` opens the full squad
+3. `EFFECTIF · {squadCount} JOUEURS` label; `Card` of squad rows (number mono,
+   avatar, name, and the line `{goals} buts · {assists} passes` for this team
+   and season, #180; no `MJ`, since there are no line-ups); final row
+   `Voir l'effectif complet ›` opens the full squad
 . `SAISONS` — `Card` of the seasons the team played
    (`GET /leagues/{id}/teams/{teamId}/seasons`, most recent first), one row per
    season name with `›`; a row opens that season's standings
@@ -429,8 +433,16 @@ spectateurs`.
 1. **Video card** — striped 16:9 area with a play glyph and
    `résumé YouTube · 8:42` overlay; footer row `Résumé du match` + `OUVRIR ›`.
    Whole card → `Linking.openURL(match.videoUrl)`.
-2. `FAITS DE MATCH` — `Card` of `MatchEvent` rows: minute (mono, ~34 px), a
-   type-tinted square, `playerName` + `detail`, running `score` (muted right).
+2. `FAITS DE MATCH` (#180, live and finished matches,
+   `GET …/matches/{matchId}/events`) — `Card` of event rows from
+   `src/logic/matchEvents.ts`: minute (mono, ~34 px), a type-tinted square (goal
+   accent, yellow card amber, second yellow and red card red, substitution and
+   injury grey), the player + a detail line (`Passe de M. Diarra`, `Penalty`,
+   `Contre son camp`, `Buteur inconnu`, `Carton jaune`, `2e jaune`,
+   `Carton rouge`, `Remplace L. Dupont`, `Blessure` without the note), and the
+   running score on goals (muted right), shown only when the goal events add up
+   to the match score. Hidden when there is no event; skeleton and
+   `Réessayer` while loading or on error.
 3. **`MVP DU MATCH` card** — label + `{voteCount} votes`; player avatar +
    `Malik Diarra` + `Milieu · 2 buts, 1 passe · 61 % des voix`; progress bar at
    `votePercent`; **vote toggle button**: `Voter pour le MVP` ↔ `Vous avez voté`

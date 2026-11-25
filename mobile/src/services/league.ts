@@ -1,5 +1,5 @@
 import { apiGet, pathSegment } from '@/src/api/client';
-import type { CareerEntry, League, PlayerDetail, Season, SquadRow, StandingRow, Team } from '@/src/types';
+import type { CareerEntry, League, PlayerDetail, RankingRow, Season, SquadRow, StandingRow, Team } from '@/src/types';
 
 function leaguePath(leagueId: string): string {
   return `/leagues/${pathSegment(leagueId)}`;
@@ -23,6 +23,14 @@ export function getTeam(leagueId: string, teamId: string): Promise<Team> {
 
 export function getStandings(leagueId: string, seasonId: string): Promise<StandingRow[]> {
   return apiGet<StandingRow[]>(`${leaguePath(leagueId)}/seasons/${pathSegment(seasonId)}/standings`);
+}
+
+export function getScorers(leagueId: string, seasonId: string): Promise<RankingRow[]> {
+  return apiGet<RankingRow[]>(`${leaguePath(leagueId)}/seasons/${pathSegment(seasonId)}/scorers`);
+}
+
+export function getAssists(leagueId: string, seasonId: string): Promise<RankingRow[]> {
+  return apiGet<RankingRow[]>(`${leaguePath(leagueId)}/seasons/${pathSegment(seasonId)}/assists`);
 }
 
 export function getSquad(

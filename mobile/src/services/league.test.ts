@@ -1,4 +1,4 @@
-import { getSquad } from './league';
+import { getAssists, getScorers, getSquad } from './league';
 
 let requested: string[] = [];
 
@@ -18,4 +18,14 @@ test('getSquad asks for the current squad by default', async () => {
 test('getSquad with all asks for the departures too', async () => {
   await getSquad('l', 's', 't', { all: true });
   expect(requested[0]).toMatch(/\/leagues\/l\/seasons\/s\/teams\/t\/squad\?all=true$/);
+});
+
+test('getScorers asks for the season scorers', async () => {
+  await getScorers('l', 's');
+  expect(requested[0]).toMatch(/\/leagues\/l\/seasons\/s\/scorers$/);
+});
+
+test('getAssists asks for the season assists', async () => {
+  await getAssists('l', 's');
+  expect(requested[0]).toMatch(/\/leagues\/l\/seasons\/s\/assists$/);
 });

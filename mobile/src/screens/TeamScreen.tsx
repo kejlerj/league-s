@@ -179,9 +179,14 @@ export function TeamScreen({ id, origin }: { id: string; origin: TabOrigin }) {
                         {player.number}
                       </ThemedText>
                       <Avatar size={32} uri={player.icon} />
-                      <ThemedText weight="medium" size={14.5} className="flex-1">
-                        {player.firstname} {player.lastname}
-                      </ThemedText>
+                      <View className="flex-1">
+                        <ThemedText weight="medium" size={14.5}>
+                          {player.firstname} {player.lastname}
+                        </ThemedText>
+                        <ThemedText tone="muted" size={11.5} className="mt-0.5">
+                          {fr.team.squadStats(player.goals, player.assists)}
+                        </ThemedText>
+                      </View>
                     </CardRow>
                   ))
                 )}

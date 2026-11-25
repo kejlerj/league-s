@@ -16,3 +16,9 @@ name: Team follow
 - tapOn:
     id: "tab-profile"
 - assertVisible: "Équipes suivies"
+- tapOn:
+    id: "tab-standings"
+- tapOn: ".*US Bastille.*"
+- scrollUntilVisible:
+    element: ".* buts · .*"
+    direction: DOWN

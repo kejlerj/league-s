@@ -150,6 +150,41 @@ func TestSeed_CurrentSeasonHasOneLiveMatchBetweenPlayedAndUpcomingOnes(t *testin
 	}
 }
 
+func TestSeed_PlayedMatchesHaveGoalEventsThatAddUpToTheirScore(t *testing.T) {
+	testdb.New(t, testPool)
+	seed(t, seedNow)
+
+	mismatched := count(t, `
+		SELECT count(*) FROM match m
+		JOIN season s ON s.id = m.season_id
+		WHERE s.league_id = $1 AND m.status IN ('finished', 'live')
+		  AND (m.home_score <> (SELECT count(*) FROM match_event e WHERE e.match_id = m.id AND e.type = 'goal' AND e.team_id = m.home_team_id)
+		    OR m.away_score <> (SELECT count(*) FROM match_event e WHERE e.match_id = m.id AND e.type = 'goal' AND e.team_id = m.away_team_id))`, LeagueID)
+	if mismatched != 0 {
+		t.Errorf("played matches whose goal events don't add up to the score = %d, want 0", mismatched)
+	}
+
+	if n := count(t, `SELECT count(*) FROM match_event WHERE league_id = $1 AND type = 'goal' AND assist_player_id IS NOT NULL`, LeagueID); n == 0 {
+		t.Error("goals with an assist = 0, want some for the Passeurs ranking")
+	}
+	if n := count(t, `SELECT count(*) FROM match_event WHERE league_id = $1 AND type = 'yellow_card'`, LeagueID); n == 0 {
+		t.Error("yellow cards = 0, want some")
+	}
+	if n := count(t, `
+		SELECT count(*) FROM match_event e JOIN match m ON m.id = e.match_id
+		WHERE e.league_id = $1 AND m.status NOT IN ('finished', 'live')`, LeagueID); n != 0 {
+		t.Errorf("events on matches not played = %d, want 0", n)
+	}
+	if n := count(t, `
+		SELECT count(*) FROM match_event e
+		JOIN match m ON m.id = e.match_id
+		WHERE e.league_id = $1 AND e.player_id IS NOT NULL AND NOT EXISTS (
+			SELECT 1 FROM squad_membership sm
+			WHERE sm.player_id = e.player_id AND sm.season_id = e.season_id AND sm.team_id = e.team_id)`, LeagueID); n != 0 {
+		t.Errorf("events whose player is not in the team's squad = %d, want 0", n)
+	}
+}
+
 func TestSeed_KeepsTheSameIDsWhenRunAgain(t *testing.T) {
 	testdb.New(t, testPool)
 
