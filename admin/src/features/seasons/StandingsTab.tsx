@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { getStandings } from '@/api/standings'
-import type { StandingRow } from '@/api/types'
+import type { StandingRow, TieBreaker } from '@/api/types'
 import { DataTable, type Column } from '@/ui/DataTable'
 import { PageState } from '@/ui/PageState'
 import { TeamName } from '@/ui/TeamLogo'
@@ -26,7 +26,12 @@ const COLUMNS: Column<StandingRow>[] = [
   number('Pts', (row) => row.points),
 ]
 
-export function StandingsTab({ leagueId, seasonId }: { leagueId: string; seasonId: string }) {
+const FAIR_PLAY = number('Fair-play', (row) => row.fair_play_points)
+
+type Props = { leagueId: string; seasonId: string; tieBreakers: TieBreaker[] }
+
+export function StandingsTab({ leagueId, seasonId, tieBreakers }: Props) {
+  const columns = tieBreakers.includes('fair_play') ? [...COLUMNS, FAIR_PLAY] : COLUMNS
   const query = useQuery({
     queryKey: ['season', seasonId, 'standings'],
     queryFn: () => getStandings(leagueId, seasonId),
@@ -34,7 +39,7 @@ export function StandingsTab({ leagueId, seasonId }: { leagueId: string; seasonI
 
   return (
     <PageState query={query}>
-      {(rows) => <DataTable rows={rows} columns={COLUMNS} rowKey={(row) => row.team_id} empty="Aucun match terminé." />}
+      {(rows) => <DataTable rows={rows} columns={columns} rowKey={(row) => row.team_id} empty="Aucun match terminé." />}
     </PageState>
   )
 }

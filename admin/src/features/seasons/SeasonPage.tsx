@@ -27,7 +27,7 @@ export function SeasonPage() {
             tabs={[
               { id: 'teams', label: 'Équipes', content: <SeasonTeamsTab leagueId={leagueId} seasonId={seasonId} /> },
               { id: 'matches', label: 'Matchs', content: <MatchesTab leagueId={leagueId} seasonId={seasonId} /> },
-              { id: 'standings', label: 'Classement', content: <StandingsTab leagueId={leagueId} seasonId={seasonId} /> },
+              { id: 'standings', label: 'Classement', content: <StandingsTab leagueId={leagueId} seasonId={seasonId} tieBreakers={season.tie_breakers} /> },
             ]}
           />
         </div>

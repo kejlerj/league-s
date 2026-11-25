@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
-import { adminOne, leagueL1, mockLeague, mockSeason, teamA, teamB } from '@/test/fixtures'
+import { adminOne, leagueL1, mockLeague, mockSeason, seasonS1, teamA, teamB } from '@/test/fixtures'
 import { renderRoute } from '@/test/render'
 import { API, server } from '@/test/server'
 
@@ -83,7 +83,7 @@ test('the standings show a full row', async () => {
       HttpResponse.json([
         {
           rank: 1, team_id: 'T1', team_name: 'AS Alpha', team_logo: null, played: 12, won: 8, drawn: 3, lost: 1,
-          goals_for: 27, goals_against: 9, goal_difference: 18, points: 26,
+          goals_for: 27, goals_against: 9, goal_difference: 18, points: 26, fair_play_points: 5,
         },
       ]),
     ),
@@ -93,6 +93,25 @@ test('the standings show a full row', async () => {
   expect(cells).toEqual(['1', 'AAS Alpha', '12', '8', '3', '1', '27', '9', '+18', '26'])
   const headers = screen.getAllByRole('columnheader').map((header) => header.textContent)
   expect(headers).toEqual(['#', 'Équipe', 'J', 'G', 'N', 'P', 'BP', 'BC', 'Diff', 'Pts'])
+})
+
+test('a season that uses fair play shows the Fair-play column', async () => {
+  setup(
+    'standings',
+    http.get(S, () => HttpResponse.json({ ...seasonS1, tie_breakers: ['goal_difference', 'fair_play'] })),
+    http.get(`${S}/standings`, () =>
+      HttpResponse.json([
+        {
+          rank: 1, team_id: 'T1', team_name: 'AS Alpha', team_logo: null, played: 12, won: 8, drawn: 3, lost: 1,
+          goals_for: 27, goals_against: 9, goal_difference: 18, points: 26, fair_play_points: 5,
+        },
+      ]),
+    ),
+  )
+  const row = (await screen.findByText('AS Alpha')).closest('tr')!
+  const headers = screen.getAllByRole('columnheader').map((header) => header.textContent)
+  expect(headers).toEqual(['#', 'Équipe', 'J', 'G', 'N', 'P', 'BP', 'BC', 'Diff', 'Pts', 'Fair-play'])
+  expect(within(row).getAllByRole('cell').at(-1)).toHaveTextContent('5')
 })
 
 test('each standings row shows the team logo, or its initial without one', async () => {
