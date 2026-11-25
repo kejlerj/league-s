@@ -50,6 +50,7 @@ updates:
       - dependency-name: "react-native-*"
       - dependency-name: "@react-native-async-storage/*"
       - dependency-name: "@react-navigation/*"
+      - dependency-name: "@sentry/react-native"
       - dependency-name: tailwindcss
         update-types: ["version-update:semver-major"]
       - dependency-name: "@types/jest"
