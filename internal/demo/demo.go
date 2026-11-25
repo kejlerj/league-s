@@ -31,6 +31,7 @@ const (
 	kindMembership
 	kindMatch
 	kindUser
+	kindEvent
 )
 
 var (
@@ -107,6 +108,8 @@ type writer struct {
 	played  int32
 	members uint32
 	matches uint32
+	events  uint32
+	players [][]uuid.UUID
 }
 
 func (w *writer) exec(ctx context.Context, what, sql string, args ...any) error {
@@ -160,15 +163,18 @@ func (w *writer) seed(ctx context.Context) error {
 			`INSERT INTO team (id, league_id, name) VALUES ($1, $2, $3)`, t.ID, LeagueID, t.Name); err != nil {
 			return err
 		}
+		squad := make([]uuid.UUID, playersPerTeam)
 		for j := range playersPerTeam {
 			n := i*playersPerTeam + j
 			player++
+			squad[j] = id(kindPlayer, player)
 			if err := w.exec(ctx, "create player of "+t.Name,
 				`INSERT INTO player (id, league_id, firstname, lastname) VALUES ($1, $2, $3, $4)`,
-				id(kindPlayer, player), LeagueID, firstnames[n%len(firstnames)], lastnames[(n*7+i)%len(lastnames)]); err != nil {
+				squad[j], LeagueID, firstnames[n%len(firstnames)], lastnames[(n*7+i)%len(lastnames)]); err != nil {
 				return err
 			}
 		}
+		w.players = append(w.players, squad)
 	}
 
 	for _, s := range seasons {
@@ -265,9 +271,56 @@ func (w *writer) calendar(ctx context.Context, s season) error {
 				id(kindMatch, w.matches), s.id, w.teams[pairing[0]].ID, w.teams[pairing[1]].ID, matchday, kickoff, status, home, away); err != nil {
 				return err
 			}
+			if home != nil {
+				if err := w.matchEvents(ctx, s, pairing, *home, *away, status == "finished"); err != nil {
+					return err
+				}
+			}
 		}
 	}
 	return nil
+}
+
+func (w *writer) matchEvents(ctx context.Context, s season, pairing [2]int, home, away int32, finished bool) error {
+	var sides []int
+	for h, a := home, away; h > 0 || a > 0; {
+		if h > 0 {
+			sides, h = append(sides, 0), h-1
+		}
+		if a > 0 {
+			sides, a = append(sides, 1), a-1
+		}
+	}
+
+	matchID := id(kindMatch, w.matches)
+	offset := int(w.matches)
+	for g, side := range sides {
+		team := pairing[side]
+		var assist *uuid.UUID
+		if g%2 == 0 {
+			assist = new(w.player(team, offset+g+1))
+		}
+		if err := w.event(ctx, s, matchID, team, "goal", int32(4+9*g+offset%5), w.player(team, offset+g), assist); err != nil {
+			return err
+		}
+	}
+
+	if finished && offset%3 == 0 {
+		return w.event(ctx, s, matchID, pairing[1], "yellow_card", 55, w.player(pairing[1], offset+3), nil)
+	}
+	return nil
+}
+
+func (w *writer) event(ctx context.Context, s season, matchID uuid.UUID, team int, typ string, minute int32, player uuid.UUID, assist *uuid.UUID) error {
+	w.events++
+	return w.exec(ctx, fmt.Sprintf("create a %s in match %d of %s", typ, w.matches, s.name),
+		`INSERT INTO match_event (id, league_id, season_id, match_id, team_id, type, minute, player_id, assist_player_id)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+		id(kindEvent, w.events), LeagueID, s.id, matchID, w.teams[team].ID, typ, minute, player, assist)
+}
+
+func (w *writer) player(team, n int) uuid.UUID {
+	return w.players[team][n%playersPerTeam]
 }
 
 func (w *writer) score() (*int32, *int32) {
