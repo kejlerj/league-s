@@ -307,7 +307,7 @@ Following `docs/agents/testing.md`:
   - correcting a finished match's score: 200, the match stays finished, and the standings change;
   - an injury with and without a note; a note on another event type is a 422; `note` is `null` for a public reader and present for a league admin;
   - a player outside the squad on the match day is a 422;
-  - Buteurs and Passeurs: own goals and unknown scorers left out, live matches counted, cancelled ones not, ties share a rank;
+  - Buteurs and Passeurs: own goals and unknown scorers left out, only finished matches counted (live, postponed and cancelled ones not), ties share a rank;
   - squad `goals` and `assists` per team after a transfer;
   - the migration's `CHECK` constraints reject inconsistent rows written directly in SQL.
 - **OpenAPI:** `docs/openapi.yaml` describes the new routes and fields (`TestOpenAPIDescribesEveryRoute`).
