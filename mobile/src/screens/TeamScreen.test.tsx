@@ -118,3 +118,14 @@ test('the next match and the results show the opponent crest', async () => {
   const initials = screen.getAllByTestId('crest-initial', { includeHiddenElements: true }).map((node) => node.props.children);
   expect(initials).toEqual(expect.arrayContaining(['R', 'A']));
 });
+
+test('each squad row shows the goals and assists of the season', async () => {
+  jest.mocked(leagueService.getSquad).mockResolvedValue([
+    { membership_id: 'x', player_id: 'p', firstname: 'David', lastname: 'Benali', icon: null, number: 4, joined_on: '2026-08-29', left_on: null, goals: 2, assists: 1 },
+    { membership_id: 'y', player_id: 'q', firstname: 'Malik', lastname: 'Diarra', icon: null, number: 9, joined_on: '2026-08-29', left_on: null, goals: 0, assists: 0 },
+  ]);
+  render(<TeamScreen id={TEAM_ID} origin="following" />);
+
+  await waitFor(() => expect(screen.getByText('2 buts · 1 passe')).toBeTruthy());
+  expect(within(screen.getByTestId('team-squad')).getByText('0 but · 0 passe')).toBeTruthy();
+});

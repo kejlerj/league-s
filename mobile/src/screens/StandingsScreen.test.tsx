@@ -4,11 +4,12 @@ import { StandingsScreen } from './StandingsScreen';
 import * as leagueService from '../services/league';
 import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
-import type { StandingRow } from '../types';
+import type { RankingRow, StandingRow } from '../types';
 import { season } from '../test/fixtures';
 
+const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }));
 jest.mock('../services/league');
 
@@ -20,6 +21,7 @@ function row(team_id: string, team_name: string, rank: number): StandingRow {
 }
 
 beforeEach(() => {
+  jest.clearAllMocks();
   useAppStore.setState({ themeMode: 'system', leagueId: 'l', followsByLeague: {} });
   jest.mocked(leagueService.listSeasons).mockResolvedValue([RECENT, PREVIOUS]);
   jest.mocked(leagueService.getStandings).mockImplementation(async (_leagueId: string, seasonId: string) =>
@@ -69,4 +71,93 @@ test('shows the error state when standings fail', async () => {
   jest.mocked(leagueService.getStandings).mockRejectedValueOnce(new Error('network'));
   render(<StandingsScreen />);
   await waitFor(() => expect(screen.getByText(fr.standings.error)).toBeTruthy());
+});
+
+function ranking(player_id: string, firstname: string, lastname: string, rank: number, value: number): RankingRow {
+  return { rank, player_id, firstname, lastname, team_id: 'a', team_name: 'Team A', value };
+}
+
+test('the Buteurs tab lists the scorers of the season', async () => {
+  jest.mocked(leagueService.getScorers).mockResolvedValue([
+    ranking('p1', 'Malik', 'Diarra', 1, 7),
+    ranking('p2', 'Léo', 'Dupont', 2, 1),
+  ]);
+  render(<StandingsScreen />);
+  await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
+
+  fireEvent.press(screen.getByTestId(`segmented-tab-${fr.standings.tabs[1]}`));
+
+  await waitFor(() => expect(screen.getByText('Malik Diarra')).toBeTruthy());
+  expect(leagueService.getScorers).toHaveBeenCalledWith('l', RECENT.id);
+  expect(screen.getByText(fr.standings.scorersTitle)).toBeTruthy();
+  const first = within(screen.getByTestId('ranking-row-p1'));
+  expect(first.getByText('1')).toBeTruthy();
+  expect(first.getByText('Team A')).toBeTruthy();
+  expect(first.getByText('7 buts')).toBeTruthy();
+  expect(within(screen.getByTestId('ranking-row-p2')).getByText('1 but')).toBeTruthy();
+});
+
+test('the Passeurs tab lists the assists, and a row opens the player', async () => {
+  jest.mocked(leagueService.getAssists).mockResolvedValue([ranking('p1', 'Malik', 'Diarra', 1, 3)]);
+  render(<StandingsScreen />);
+  await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
+
+  fireEvent.press(screen.getByTestId(`segmented-tab-${fr.standings.tabs[2]}`));
+
+  await waitFor(() => expect(screen.getByText('3 passes')).toBeTruthy());
+  expect(leagueService.getAssists).toHaveBeenCalledWith('l', RECENT.id);
+  expect(screen.getByText(fr.standings.assistsTitle)).toBeTruthy();
+  fireEvent.press(screen.getByText('Malik Diarra'));
+  expect(mockPush).toHaveBeenCalledWith('/standings/player/p1');
+});
+
+test.each([
+  [1, 'getScorers', fr.standings.noScorers],
+  [2, 'getAssists', fr.standings.noAssists],
+] as const)('tab %i shows its empty state', async (tab, service, message) => {
+  jest.mocked(leagueService[service]).mockResolvedValue([]);
+  render(<StandingsScreen />);
+  await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
+
+  fireEvent.press(screen.getByTestId(`segmented-tab-${fr.standings.tabs[tab]}`));
+
+  await waitFor(() => expect(screen.getByText(message)).toBeTruthy());
+});
+
+test('a rankings error shows a retry', async () => {
+  jest.mocked(leagueService.getScorers).mockRejectedValueOnce(new Error('network')).mockResolvedValue([ranking('p1', 'Malik', 'Diarra', 1, 7)]);
+  render(<StandingsScreen />);
+  await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
+
+  fireEvent.press(screen.getByTestId(`segmented-tab-${fr.standings.tabs[1]}`));
+
+  await waitFor(() => expect(screen.getByText(fr.standings.rankingError)).toBeTruthy());
+  fireEvent.press(screen.getByText(fr.common.retry));
+  await waitFor(() => expect(screen.getByText('Malik Diarra')).toBeTruthy());
+});
+
+test('the rankings follow the selected season, and are not loaded on the Général tab', async () => {
+  jest.mocked(leagueService.getScorers).mockResolvedValue([]);
+  render(<StandingsScreen />);
+  await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
+  expect(leagueService.getScorers).not.toHaveBeenCalled();
+
+  fireEvent.press(screen.getByTestId('segmented-tab-2025-2026'));
+  fireEvent.press(screen.getByTestId(`segmented-tab-${fr.standings.tabs[1]}`));
+
+  await waitFor(() => expect(leagueService.getScorers).toHaveBeenCalledWith('l', PREVIOUS.id));
+});
+
+test('switching from Buteurs to Passeurs never shows the scorers as passers', async () => {
+  jest.mocked(leagueService.getScorers).mockResolvedValue([ranking('p1', 'Malik', 'Diarra', 1, 7)]);
+  jest.mocked(leagueService.getAssists).mockReturnValue(new Promise(() => {}));
+  render(<StandingsScreen />);
+  await waitFor(() => expect(screen.getByText('Team A')).toBeTruthy());
+  fireEvent.press(screen.getByTestId(`segmented-tab-${fr.standings.tabs[1]}`));
+  await waitFor(() => expect(screen.getByText('Malik Diarra')).toBeTruthy());
+
+  fireEvent.press(screen.getByTestId(`segmented-tab-${fr.standings.tabs[2]}`));
+
+  await waitFor(() => expect(screen.queryByText('Malik Diarra')).toBeNull());
+  expect(screen.queryByText('7 passes')).toBeNull();
 });

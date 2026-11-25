@@ -25,6 +25,14 @@ export const fr = {
     columnHeaders: { rank: '#', team: 'Équipe', played: 'MJ', diff: 'DIFF', pts: 'PTS' },
     error: 'Impossible de charger le classement.',
     empty: 'Aucun classement pour cette saison.',
+    tabs: ['Général', 'Buteurs', 'Passeurs'],
+    scorersTitle: 'Meilleurs buteurs',
+    assistsTitle: 'Meilleurs passeurs',
+    goals: (count: number) => `${count} ${count > 1 ? 'buts' : 'but'}`,
+    assists: (count: number) => `${count} ${count > 1 ? 'passes' : 'passe'}`,
+    noScorers: 'Aucun but pour le moment.',
+    noAssists: 'Aucune passe pour le moment.',
+    rankingError: 'Impossible de charger ce classement.',
   },
   team: {
     back: 'Retour',
@@ -45,6 +53,8 @@ export const fr = {
     away: 'ext.',
     squad: (count: number) => `Effectif · ${count} joueurs`,
     noSquad: 'Effectif non disponible.',
+    squadStats: (goals: number, assists: number) =>
+      `${goals} ${goals > 1 ? 'buts' : 'but'} · ${assists} ${assists > 1 ? 'passes' : 'passe'}`,
     fullSquad: "Voir l'effectif complet",
     seasons: 'Saisons',
     noSeasons: 'Aucune saison pour le moment.',
