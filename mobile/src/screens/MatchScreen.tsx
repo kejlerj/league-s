@@ -12,8 +12,9 @@ import { ErrorState } from '../components/ErrorState';
 import { useAsync } from '../hooks/useAsync';
 import { useCurrentSeason } from '../hooks/useCurrentSeason';
 import { useLeagueId } from '../hooks/useLeagueId';
-import { getMatch } from '../services/matches';
+import { getMatch, getMatchEvents } from '../services/matches';
 import { statusOf } from '../logic/results';
+import { eventRows, type EventTone } from '../logic/matchEvents';
 import { isWebUrl } from '../logic/url';
 import { formatDateTime, formatTime, parseApiDate } from '../logic/dateTime';
 import { fr } from '../i18n/fr';
@@ -26,12 +27,26 @@ const STATUS_LABEL: Record<MatchStatus, string> = {
   cancelled: fr.match.cancelled,
 };
 
+const TONE_CLASS: Record<EventTone, string> = {
+  goal: 'bg-accent dark:bg-accentDark',
+  yellow: 'bg-warn dark:bg-warnDark',
+  red: 'bg-neg dark:bg-negDark',
+  neutral: 'bg-textMuted dark:bg-textMutedDark',
+};
+
 export function MatchScreen({ id }: { id: string }) {
   const leagueId = useLeagueId();
   const season = useCurrentSeason();
   const match = useAsync(
     () => (season.season ? getMatch(leagueId, season.season.id, id) : Promise.resolve(null)),
     [leagueId, season.season?.id, id]
+  );
+
+  const seasonId = season.season?.id;
+  const hasEvents = match.data?.status === 'live' || match.data?.status === 'finished';
+  const events = useAsync(
+    () => (seasonId && hasEvents ? getMatchEvents(leagueId, seasonId, id) : Promise.resolve([])),
+    [leagueId, seasonId, id, hasEvents]
   );
 
   const loading = season.loading || match.loading;
@@ -105,6 +120,35 @@ export function MatchScreen({ id }: { id: string }) {
                   </CardRow>
                 </Card>
               </Pressable>
+            )}
+
+            {hasEvents && events.loading && (
+              <View testID="match-events-loading">
+                <Skeleton rows={3} />
+              </View>
+            )}
+            {hasEvents && events.error && <ErrorState message={fr.match.eventsError} onRetry={events.reload} />}
+            {hasEvents && events.data && events.data.length > 0 && (
+              <View className="gap-2.5" testID="match-events">
+                <SectionLabel>{fr.match.events}</SectionLabel>
+                <Card>
+                  {eventRows(events.data, data).map((row, index) => (
+                    <CardRow key={row.id} isFirst={index === 0}>
+                      <ThemedText mono weight="medium" size={13} tone="muted" style={{ width: 34 }}>
+                        {row.minute}
+                      </ThemedText>
+                      <View className={`w-5 h-5 rounded-[5px] ${TONE_CLASS[row.tone]}`} />
+                      <View className="flex-1">
+                        <ThemedText weight="medium" size={14.5}>{row.playerName}</ThemedText>
+                        <ThemedText tone="muted" size={11.5} className="mt-0.5">{row.detail}</ThemedText>
+                      </View>
+                      {row.score && (
+                        <ThemedText mono tone="muted" weight="medium" size={12.5}>{row.score}</ThemedText>
+                      )}
+                    </CardRow>
+                  ))}
+                </Card>
+              </View>
             )}
 
             <View className="gap-2.5">

@@ -19,3 +19,6 @@ export type SquadRow = Schemas['SquadMember'];
 export type PlayerDetail = Schemas['PlayerDetail'];
 export type SeasonRef = Schemas['SeasonRef'];
 export type CareerEntry = Schemas['CareerEntry'];
+export type MatchEvent = Schemas['MatchEvent'];
+export type MatchEventPlayer = Schemas['MatchEventPlayer'];
+export type RankingRow = Schemas['RankingRow'];

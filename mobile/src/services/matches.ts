@@ -1,6 +1,6 @@
 import { apiGet, pathSegment } from '@/src/api/client';
 import { parseApiDate } from '@/src/logic/dateTime';
-import type { ApiMatch, ApiMatchStatus } from '@/src/types';
+import type { ApiMatch, ApiMatchStatus, MatchEvent } from '@/src/types';
 
 export type MatchQuery = {
   team?: string;
@@ -19,6 +19,12 @@ export function listMatches(leagueId: string, seasonId: string, query: MatchQuer
 
 export function getMatch(leagueId: string, seasonId: string, matchId: string): Promise<ApiMatch> {
   return apiGet<ApiMatch>(`/leagues/${pathSegment(leagueId)}/seasons/${pathSegment(seasonId)}/matches/${pathSegment(matchId)}`);
+}
+
+export function getMatchEvents(leagueId: string, seasonId: string, matchId: string): Promise<MatchEvent[]> {
+  return apiGet<MatchEvent[]>(
+    `/leagues/${pathSegment(leagueId)}/seasons/${pathSegment(seasonId)}/matches/${pathSegment(matchId)}/events`
+  );
 }
 
 function kickoffTime(match: ApiMatch): number {
