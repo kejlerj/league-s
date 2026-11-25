@@ -175,7 +175,7 @@ All under `/admin`.
   - `Modifier`: matchday and kickoff only on a scheduled or postponed match, plus venue, referee, call time and video link.
   - `Corriger le score` on a live or finished match. A finished match stays finished, and the standings follow.
   - Faits de match, on a live or finished match: `But`, `Carton jaune`, `Carton rouge`, `Remplacement`, `Blessure`, each opening a short form (team buttons, the team's squad on the match day by number then name, minute prefilled from the kickoff). The list shows the newest event first, each with `Supprimer` behind a confirmation. After a goal, the header score updates.
-- **Standings**: read-only, refreshed after each action on a match.
+- **Standings**: read-only, refreshed after each action on a match. When the season's tie-breakers include `fair_play`, a `Fair-play` column shows each team's `fair_play_points` (fewer is better).
 
 ### Accepting an invitation
 
