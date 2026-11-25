@@ -133,6 +133,87 @@ func (q *Queries) IsSquadMemberOn(ctx context.Context, arg IsSquadMemberOnParams
 	return exists, err
 }
 
+const listFinishedSeasonEvents = `-- name: ListFinishedSeasonEvents :many
+SELECT match_event.id, match_event.league_id, match_event.season_id, match_event.match_id, match_event.team_id, match_event.type, match_event.minute, match_event.player_id, match_event.assist_player_id, match_event.player_in_id, match_event.own_goal, match_event.penalty, match_event.note, match_event.created_at,
+       scorer.firstname AS player_firstname, scorer.lastname AS player_lastname,
+       assist.firstname AS assist_firstname, assist.lastname AS assist_lastname
+FROM match_event
+JOIN match ON match.id = match_event.match_id AND match.season_id = match_event.season_id
+LEFT JOIN player scorer ON scorer.id = match_event.player_id
+LEFT JOIN player assist ON assist.id = match_event.assist_player_id
+WHERE match_event.league_id = $1
+  AND match_event.season_id = $2
+  AND match.status = 'finished'
+  AND match_event.type::text = ANY($3::text[])
+ORDER BY match.kickoff_at NULLS FIRST, match.id, match_event.minute, match_event.id
+`
+
+type ListFinishedSeasonEventsParams struct {
+	LeagueID uuid.UUID
+	SeasonID uuid.UUID
+	Types    []string
+}
+
+type ListFinishedSeasonEventsRow struct {
+	ID              uuid.UUID
+	LeagueID        uuid.UUID
+	SeasonID        uuid.UUID
+	MatchID         uuid.UUID
+	TeamID          uuid.UUID
+	Type            MatchEventType
+	Minute          int32
+	PlayerID        pgtype.UUID
+	AssistPlayerID  pgtype.UUID
+	PlayerInID      pgtype.UUID
+	OwnGoal         bool
+	Penalty         bool
+	Note            *string
+	CreatedAt       time.Time
+	PlayerFirstname *string
+	PlayerLastname  *string
+	AssistFirstname *string
+	AssistLastname  *string
+}
+
+func (q *Queries) ListFinishedSeasonEvents(ctx context.Context, arg ListFinishedSeasonEventsParams) ([]ListFinishedSeasonEventsRow, error) {
+	rows, err := q.db.Query(ctx, listFinishedSeasonEvents, arg.LeagueID, arg.SeasonID, arg.Types)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFinishedSeasonEventsRow
+	for rows.Next() {
+		var i ListFinishedSeasonEventsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.LeagueID,
+			&i.SeasonID,
+			&i.MatchID,
+			&i.TeamID,
+			&i.Type,
+			&i.Minute,
+			&i.PlayerID,
+			&i.AssistPlayerID,
+			&i.PlayerInID,
+			&i.OwnGoal,
+			&i.Penalty,
+			&i.Note,
+			&i.CreatedAt,
+			&i.PlayerFirstname,
+			&i.PlayerLastname,
+			&i.AssistFirstname,
+			&i.AssistLastname,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMatchEvents = `-- name: ListMatchEvents :many
 SELECT match_event.id, match_event.league_id, match_event.season_id, match_event.match_id, match_event.team_id, match_event.type, match_event.minute, match_event.player_id, match_event.assist_player_id, match_event.player_in_id, match_event.own_goal, match_event.penalty, match_event.note, match_event.created_at,
        scorer.firstname AS player_firstname, scorer.lastname AS player_lastname,

@@ -37,3 +37,17 @@ SELECT EXISTS (
       AND joined_on <= sqlc.arg(day)::date
       AND (left_on IS NULL OR left_on >= sqlc.arg(day)::date)
 );
+
+-- name: ListFinishedSeasonEvents :many
+SELECT match_event.*,
+       scorer.firstname AS player_firstname, scorer.lastname AS player_lastname,
+       assist.firstname AS assist_firstname, assist.lastname AS assist_lastname
+FROM match_event
+JOIN match ON match.id = match_event.match_id AND match.season_id = match_event.season_id
+LEFT JOIN player scorer ON scorer.id = match_event.player_id
+LEFT JOIN player assist ON assist.id = match_event.assist_player_id
+WHERE match_event.league_id = sqlc.arg(league_id)
+  AND match_event.season_id = sqlc.arg(season_id)
+  AND match.status = 'finished'
+  AND match_event.type::text = ANY(sqlc.arg(types)::text[])
+ORDER BY match.kickoff_at NULLS FIRST, match.id, match_event.minute, match_event.id;

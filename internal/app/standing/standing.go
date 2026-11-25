@@ -13,6 +13,7 @@ const (
 	TieBreakerGoalDifference = "goal_difference"
 	TieBreakerGoalsScored    = "goals_scored"
 	TieBreakerHeadToHead     = "head_to_head"
+	TieBreakerFairPlay       = "fair_play"
 )
 
 type Rules struct {
@@ -23,9 +24,10 @@ type Rules struct {
 }
 
 type Team struct {
-	ID   uuid.UUID
-	Name string
-	Logo *string
+	ID             uuid.UUID
+	Name           string
+	Logo           *string
+	FairPlayPoints int32
 }
 
 type Row struct {
@@ -41,6 +43,7 @@ type Row struct {
 	GoalsAgainst   int32
 	GoalDifference int32
 	Points         int32
+	FairPlayPoints int32
 }
 
 type result struct {
@@ -53,7 +56,7 @@ func Compute(teams []Team, matches []*match.Match, rules Rules) []Row {
 
 	rows := make([]*Row, len(teams))
 	for i, t := range teams {
-		rows[i] = &Row{TeamID: t.ID, TeamName: t.Name, TeamLogo: t.Logo}
+		rows[i] = &Row{TeamID: t.ID, TeamName: t.Name, TeamLogo: t.Logo, FairPlayPoints: t.FairPlayPoints}
 	}
 	tally(rows, results, rules)
 
@@ -180,6 +183,10 @@ func keysFor(group []*Row, results []result, rules Rules, step int) map[uuid.UUI
 		tally(mini, results, rules)
 		for _, r := range mini {
 			keys[r.TeamID] = key{r.Points, r.GoalDifference}
+		}
+	case TieBreakerFairPlay:
+		for _, r := range group {
+			keys[r.TeamID] = key{-r.FairPlayPoints}
 		}
 	default:
 		for _, r := range group {
