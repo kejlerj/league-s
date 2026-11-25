@@ -174,6 +174,7 @@ All under `/admin`.
   - Status buttons: `scheduled` start, postpone, cancel, delete; `live` finish, postpone, cancel; `postponed` cancel; none for `finished` and `cancelled`. Finish, cancel and delete ask for confirmation. After delete, back to the list.
   - `Modifier`: matchday and kickoff only on a scheduled or postponed match, plus venue, referee, call time and video link.
   - `Corriger le score` on a live or finished match. A finished match stays finished, and the standings follow.
+  - Faits de match, on a live or finished match: `But`, `Carton jaune`, `Carton rouge`, `Remplacement`, `Blessure`, each opening a short form (team buttons, the team's squad on the match day by number then name, minute prefilled from the kickoff). The list shows the newest event first, each with `Supprimer` behind a confirmation. After a goal, the header score updates.
 - **Standings**: read-only, refreshed after each action on a match.
 
 ### Accepting an invitation
