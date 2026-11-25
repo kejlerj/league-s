@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { Screen } from '../components/Screen';
 import { HeaderCard } from '../components/HeaderCard';
 import { Card, CardRow } from '../components/Card';
@@ -13,8 +13,14 @@ import { useAsync } from '../hooks/useAsync';
 import { useAppStore } from '../store/useAppStore';
 import { listLeagues } from '../services/league';
 import { fr } from '../i18n/fr';
+import { fixedLeagueId } from '../config';
 
 export function LeaguePickerScreen() {
+  if (fixedLeagueId()) return <Redirect href="/following" />;
+  return <LeaguePicker />;
+}
+
+function LeaguePicker() {
   const router = useRouter();
   const currentLeagueId = useAppStore((s) => s.leagueId);
   const setLeague = useAppStore((s) => s.setLeague);

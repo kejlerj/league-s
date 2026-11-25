@@ -4,12 +4,18 @@ import { LeaguePickerScreen } from './LeaguePickerScreen';
 import * as leagueService from '../services/league';
 import { useAppStore } from '../store/useAppStore';
 import { fr } from '../i18n/fr';
+import { fixedLeagueId } from '../config';
 
 const mockReplace = jest.fn();
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
-}));
+jest.mock('expo-router', () => {
+  const { Text: MockText } = jest.requireActual('react-native');
+  return {
+    useRouter: () => ({ replace: mockReplace, back: jest.fn() }),
+    Redirect: ({ href }: { href: string }) => <MockText>{`redirect:${href}`}</MockText>,
+  };
+});
 jest.mock('../services/league');
+jest.mock('../config');
 
 const PARIS = { id: 'league-paris', name: 'Five Paris', logo: null };
 const LYON = { id: 'league-lyon', name: 'Urban Lyon', logo: null };
@@ -18,6 +24,16 @@ beforeEach(() => {
   mockReplace.mockClear();
   useAppStore.setState({ themeMode: 'system', leagueId: null, followsByLeague: {} });
   jest.mocked(leagueService.listLeagues).mockResolvedValue([PARIS, LYON]);
+  jest.mocked(fixedLeagueId).mockReturnValue(null);
+});
+
+test('with a league fixed by the build, the picker is skipped', () => {
+  jest.mocked(fixedLeagueId).mockReturnValue(PARIS.id);
+  jest.mocked(leagueService.listLeagues).mockClear();
+  render(<LeaguePickerScreen />);
+  expect(screen.getByText('redirect:/following')).toBeTruthy();
+  expect(screen.queryByText(fr.leagues.title)).toBeNull();
+  expect(leagueService.listLeagues).not.toHaveBeenCalled();
 });
 
 test('lists the leagues to choose from', async () => {

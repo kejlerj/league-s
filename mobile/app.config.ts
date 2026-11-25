@@ -18,9 +18,19 @@ export function resolveAppEnv(vars: Variables): AppEnv {
   return appEnv;
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function resolveLeagueId(vars: Variables): string | null {
+  const value = vars.EXPO_PUBLIC_LEAGUE_ID;
+  if (!value) return null;
+  if (!UUID.test(value)) throw new Error(`EXPO_PUBLIC_LEAGUE_ID must be a league UUID, got "${value}"`);
+  return value;
+}
+
 export function withEnvironment(config: ExpoConfig, vars: Variables): ExpoConfig {
   const appEnv = resolveAppEnv(vars);
-  const withAppEnv = { ...config, extra: { ...config.extra, appEnv } };
+  const leagueId = resolveLeagueId(vars);
+  const withAppEnv = { ...config, extra: { ...config.extra, appEnv, leagueId } };
   if (appEnv !== 'development') return withAppEnv;
   return {
     ...withAppEnv,

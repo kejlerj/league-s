@@ -1,4 +1,4 @@
-import { migrateAppState, useAppStore } from './useAppStore';
+import { mergeAppState, migrateAppState, useAppStore } from './useAppStore';
 
 const LEAGUE = '01a10d58-8ae3-7c66-ac38-c7cac896cc65';
 const OTHER_LEAGUE = '01a10d58-8ae3-7c66-ac38-c7cac896cc66';
@@ -67,4 +67,24 @@ test('migrating from version 2 drops the follows of the hard-coded league and ke
     2
   );
   expect(migrated).toEqual({ themeMode: 'dark', leagueId: null, followsByLeague: {} });
+});
+
+test('a fixed league replaces the stored league when the store loads', () => {
+  const current = useAppStore.getState();
+  const stored = { themeMode: 'dark' as const, leagueId: OTHER_LEAGUE, followsByLeague: { [LEAGUE]: { [LYON]: { notifyLevel: 'full' as const } } } };
+
+  const merged = mergeAppState(stored, current, LEAGUE);
+
+  expect(merged.leagueId).toBe(LEAGUE);
+  expect(merged.themeMode).toBe('dark');
+  expect(merged.followsByLeague).toEqual(stored.followsByLeague);
+});
+
+test('without a fixed league the stored league is kept', () => {
+  const stored = { themeMode: 'system' as const, leagueId: OTHER_LEAGUE, followsByLeague: {} };
+  expect(mergeAppState(stored, useAppStore.getState(), null).leagueId).toBe(OTHER_LEAGUE);
+});
+
+test('a fixed league is used on the first launch, before anything is stored', () => {
+  expect(mergeAppState(undefined, { ...useAppStore.getState(), leagueId: null }, LEAGUE).leagueId).toBe(LEAGUE);
 });
