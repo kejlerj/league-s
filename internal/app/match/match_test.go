@@ -238,18 +238,21 @@ func TestReschedule_APostponedMatchWithANewKickoffIsReplayed(t *testing.T) {
 	kickoff := time.Date(2025, time.November, 8, 18, 0, 0, 0, time.UTC)
 	tests := []struct {
 		name      string
-		match     func(t *testing.T) *Match
+		postponed bool
 		kickoffAt *time.Time
 		want      bool
 	}{
-		{"postponed, new kickoff", func(t *testing.T) *Match { return interrupted(t, (*Match).Postpone) }, &kickoff, true},
-		{"postponed, still no kickoff", func(t *testing.T) *Match { return interrupted(t, (*Match).Postpone) }, nil, false},
-		{"scheduled, new kickoff", func(*testing.T) *Match { return matchIn(StatusScheduled) }, &kickoff, false},
+		{"postponed, new kickoff", true, &kickoff, true},
+		{"postponed, still no kickoff", true, nil, false},
+		{"scheduled, new kickoff", false, &kickoff, false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			m := tt.match(t)
+			m := matchIn(StatusScheduled)
+			if tt.postponed {
+				m = interrupted(t, (*Match).Postpone)
+			}
 			if m.Replayed() {
 				t.Fatal("Replayed() = true before Reschedule, want false")
 			}
