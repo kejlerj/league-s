@@ -20,3 +20,5 @@ name: Match
 - assertVisible: "Informations"
 - assertVisible: "Coup d'envoi"
 - assertVisible: "US Bastille"
+- assertVisible: "Faits de match"
+- assertVisible: "Passe de .*"
